@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSession } from '../session';
+import type { SessionState } from '../session';
 import { PORTAL_URL } from '../config';
 
 /**
@@ -12,10 +12,17 @@ import { PORTAL_URL } from '../config';
  *
  * Kept intentionally minimal so it works with no Tailwind class lookups — the
  * gate doubles as a debug surface when opening the Rx app standalone.
+ *
+ * The session comes from App's `useSession()` so that signing out there locks
+ * the workspace immediately (the gate must not hold its own copy).
  */
-export function SessionGate({ children }: { children: React.ReactNode }) {
-  const [session] = useSession();
-
+export function SessionGate({
+  session,
+  children,
+}: {
+  session: SessionState;
+  children: React.ReactNode;
+}) {
   if (session.status === 'loading') {
     return (
       <div className="h-full flex items-center justify-center bg-ink-900 text-ink-400 text-sm">

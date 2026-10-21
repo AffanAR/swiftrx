@@ -14,35 +14,39 @@ export type SessionState =
   | { status: 'signed-in'; session: SessionPayload; user: User; hospital: Hospital };
 
 /**
- * Session hook. Reads localStorage once, refreshes the user from the shared
- * mock db so role / status changes take effect on next render, and validates
- * the tenant is still alive. Exposes sign-out.
+ * Read the stored session, refresh the user from the shared mock db so role /
+ * status changes take effect, and validate the tenant is still alive. Clears
+ * the stored session when it is no longer valid.
  */
-export function useSession(): [SessionState, () => void] {
+function readSession(): SessionState {
+  const s = loadSession();
+  if (!s) return { status: 'signed-out' };
+  const user = getUserById(s.userId);
+  if (!user || user.status === 'disabled') {
+    logout();
+    return { status: 'signed-out' };
+  }
+  let hospital: Hospital | null = null;
+  if (s.role !== 'platform_admin') {
+    hospital = getHospital(s.hospitalSlug);
+    if (!hospital || hospital.status === 'suspended') {
+      logout();
+      return { status: 'signed-out' };
+    }
+  }
+  return { status: 'signed-in', session: s, user, hospital: hospital! };
+}
+
+/**
+ * Session hook. Reads localStorage on mount and exposes sign-out plus
+ * `refresh`, which the login page calls after writing a new session so the
+ * router sees the signed-in state without a page reload.
+ */
+export function useSession(): [SessionState, () => void, () => void] {
   const [state, setState] = useState<SessionState>({ status: 'loading' });
 
   useEffect(() => {
-    const s = loadSession();
-    if (!s) {
-      setState({ status: 'signed-out' });
-      return;
-    }
-    const user = getUserById(s.userId);
-    if (!user || user.status === 'disabled') {
-      logout();
-      setState({ status: 'signed-out' });
-      return;
-    }
-    let hospital: Hospital | null = null;
-    if (s.role !== 'platform_admin') {
-      hospital = getHospital(s.hospitalSlug);
-      if (!hospital || hospital.status === 'suspended') {
-        logout();
-        setState({ status: 'signed-out' });
-        return;
-      }
-    }
-    setState({ status: 'signed-in', session: s, user, hospital: hospital! });
+    setState(readSession());
   }, []);
 
   const signOut = useCallback(() => {
@@ -50,5 +54,9 @@ export function useSession(): [SessionState, () => void] {
     setState({ status: 'signed-out' });
   }, []);
 
-  return [state, signOut];
+  const refresh = useCallback(() => {
+    setState(readSession());
+  }, []);
+
+  return [state, signOut, refresh];
 }

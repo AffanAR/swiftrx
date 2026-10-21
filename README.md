@@ -100,12 +100,17 @@ Rx pad, portal, and admin panel all stay isolated.
 | `↑ / ↓`            | Move within an open suggestion list                     |
 | `Enter`            | Accept highlighted suggestion (or sign via `⌘Enter`)    |
 | `Tab` (in med box) | Accept top suggestion (brand → generic shortcut)        |
-| `⌘/Ctrl + 1/2/3`   | Inject Quick Pack #1 / #2 / #3 for current diagnosis    |
+| `Alt + 1/2/3`      | Inject Quick Pack #1 / #2 / #3 for current diagnosis    |
+| `Alt + N`          | New patient                                             |
 | `⌘/Ctrl + S`       | Sign & print                                            |
-| `⌘/Ctrl + Enter`   | Sign & print                                            |
+| `⌘/Ctrl + Enter`   | Sign & print (saves instead inside the New Patient form)|
 | `⌘/Ctrl + P`       | Print current view (or browser print dialog)            |
 | `Backspace`        | On empty input inside an open row → remove that row     |
 | `Esc`              | Clear the workspace                                     |
+
+Quick packs and New patient use `Alt` because browsers reserve `Ctrl/⌘ + N`
+(new window) and `Ctrl/⌘ + 1–8` (tab switching) and won't let a page take
+them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 
 ## Production swap-ins
 

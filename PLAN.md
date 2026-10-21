@@ -214,11 +214,11 @@ Durations are rough, for one developer.
 Goal: the demo works end to end in one browser, and the repo is safe to
 iterate on.
 
-- [ ] `git init`, add `.gitignore` (`node_modules`, `dist`, `*.tsbuildinfo`,
-      `.puku/*.db*`), first commit.
+- [x] `git init`, add `.gitignore` (`node_modules`, `dist`, `*.tsbuildinfo`,
+      `.puku/`), first commit.
 - [ ] Convert to npm workspaces. Delete the portal's own lockfile and
       `node_modules`. One install at the root.
-- [ ] Fix P0 #1–#7:
+- [x] Fix P0 #1–#7 (done 2026-10-22; checked in the browser):
   - print the just-signed Rx;
   - portal login updates session state;
   - one session source in the Rx pad;

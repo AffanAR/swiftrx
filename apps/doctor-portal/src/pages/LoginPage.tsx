@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { TextField, LiveDot, Spinner, HospitalBadge, type Hospital } from '@swiftrx/shared';
 import { login } from '../auth';
 
-type Props = { hospital: Hospital };
+type Props = { hospital: Hospital; onSignedIn: () => void };
 
-export function LoginPage({ hospital }: Props) {
+export function LoginPage({ hospital, onSignedIn }: Props) {
   const navigate = useNavigate();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -24,6 +24,7 @@ export function LoginPage({ hospital }: Props) {
         setError(reasonToMessage(result.reason));
         return;
       }
+      onSignedIn();
       navigate('/dashboard', { replace: true });
     }, 300);
   };

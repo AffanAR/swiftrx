@@ -14,6 +14,7 @@ import { printCurrent } from './print';
 
 export default function App() {
   const [session, signOut] = useSession();
+  const showNewPatient = useApp((s) => s.showNewPatient);
   const patientSearchRef = React.useRef<HTMLInputElement>(null);
   const diagnosisRef = React.useRef<HTMLInputElement>(null);
 
@@ -67,9 +68,8 @@ export default function App() {
   );
 
   const onSign = React.useCallback(() => {
-    const ok = actions.sign();
-    if (!ok) return;
-    printCurrent();
+    const signed = actions.sign();
+    if (signed) printCurrent(signed);
   }, []);
 
   const onPrint = React.useCallback(() => {
@@ -89,9 +89,13 @@ export default function App() {
       handler: () => patientSearchRef.current?.focus(),
       allowInInputs: true,
     },
+    // Alt (not Ctrl/Cmd) for N and 1/2/3: browsers reserve Ctrl/Cmd+N for a
+    // new window and Ctrl/Cmd+1–8 for tab switching, and won't let pages
+    // override them.
     {
       key: 'n',
-      meta: true,
+      code: 'KeyN',
+      alt: true,
       description: 'New patient',
       handler: () => actions.openNewPatient(),
       allowInInputs: true,
@@ -123,21 +127,24 @@ export default function App() {
     },
     {
       key: '1',
-      meta: true,
+      code: 'Digit1',
+      alt: true,
       description: 'Apply Quick Pack 1',
       handler: () => applyPackByIndex(0),
       allowInInputs: true,
     },
     {
       key: '2',
-      meta: true,
+      code: 'Digit2',
+      alt: true,
       description: 'Apply Quick Pack 2',
       handler: () => applyPackByIndex(1),
       allowInInputs: true,
     },
     {
       key: '3',
-      meta: true,
+      code: 'Digit3',
+      alt: true,
       description: 'Apply Quick Pack 3',
       handler: () => applyPackByIndex(2),
       allowInInputs: true,
@@ -151,10 +158,10 @@ export default function App() {
         actions.setFocusZone('diagnosis');
       },
     },
-  ]);
+  ], session.status === 'signed-in' && !showNewPatient); // off while signed out or a modal is open
 
   return (
-    <SessionGate>
+    <SessionGate session={session}>
       <SignedInShell onSignOut={onSignOut}>
         <TopBar onSignOut={onSignOut} />
         <div className="flex-1 flex min-h-0">

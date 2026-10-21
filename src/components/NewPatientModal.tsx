@@ -33,13 +33,21 @@ export function NewPatientModal() {
     }
   }, [open]);
 
-  // Esc closes the modal
+  // Latest submit handler, so the window listener below never sees stale form state.
+  const submitRef = React.useRef<() => void>(() => {});
+
+  // Esc closes the modal; Cmd/Ctrl+Enter saves it. Capture phase + stopPropagation
+  // keeps these keys away from the workspace hotkeys (e.g. Cmd+Enter = Sign & Print).
   React.useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
         actions.closeNewPatient();
+      } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        submitRef.current();
       }
     };
     window.addEventListener('keydown', handler, true);
@@ -89,7 +97,12 @@ export function NewPatientModal() {
       allergies,
       activeProblems: problems,
     });
+    // createPatient closes the modal; continue the keyboard flow at diagnosis.
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLInputElement>('[data-zone="diagnosis"]')?.focus();
+    });
   };
+  submitRef.current = submit;
 
   return (
     <div

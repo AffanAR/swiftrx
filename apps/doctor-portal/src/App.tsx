@@ -12,7 +12,7 @@ import { TenantNotFound } from './pages/TenantNotFound';
 
 export default function App() {
   const tenant = useTenant();
-  const [session, signOut] = useSession();
+  const [session, signOut, refreshSession] = useSession();
 
   if (session.status === 'loading') {
     return (
@@ -39,7 +39,7 @@ export default function App() {
         element={
           session.status === 'signed-in'
             ? <Navigate to="/dashboard" replace />
-            : <LoginPage hospital={hospital} />
+            : <LoginPage hospital={hospital} onSignedIn={refreshSession} />
         }
       />
       <Route

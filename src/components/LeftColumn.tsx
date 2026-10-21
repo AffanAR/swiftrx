@@ -86,7 +86,7 @@ export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefOb
                 }}
               >
                 <span>+ Create &quot;{query}&quot;</span>
-                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-ink-200 border border-ink-600">⌘N</span>
+                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-ink-200 border border-ink-600">Alt+N</span>
               </button>
             </li>
           )}
@@ -96,10 +96,10 @@ export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefOb
       <button
         onClick={() => actions.openNewPatient()}
         className="mt-2 w-full px-2.5 py-1.5 rounded-md border border-dashed border-ink-700 text-xs text-ink-400 hover:text-rx-accent hover:border-rx-accent/40 transition-all duration-200 flex items-center justify-center gap-2 hover:bg-rx-accent/5"
-        title="New patient (⌘N)"
+        title="New patient (Alt+N)"
       >
         <span>+ New patient</span>
-        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-800 text-ink-300 border border-ink-700">⌘N</span>
+        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-800 text-ink-300 border border-ink-700">Alt+N</span>
       </button>
 
       <Section title="Active Problems">

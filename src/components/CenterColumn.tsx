@@ -26,13 +26,12 @@ export function CenterColumn({
   }, [banner, setBanner]);
 
   const handleSign = React.useCallback(() => {
-    const ok = actions.sign();
-    if (!ok) return;
-    printCurrent();
+    const signed = actions.sign();
+    if (signed) printCurrent(signed);
   }, []);
 
   const handleSendToPharmacy = React.useCallback(() => {
-    printCurrent({ forceDraft: true });
+    printCurrent();
   }, []);
 
   // Build a tiny "Rx completeness" gauge: 0 when only diagnosis, 1 with a med,
@@ -114,7 +113,7 @@ export function CenterColumn({
             <div className="rounded-lg border border-dashed border-ink-700 p-6 text-center text-sm text-ink-400 transition-colors hover:border-rx-accent/40 hover:text-ink-300">
               <div className="flex items-center justify-center gap-2">
                 <TypingDots className="text-ink-500" />
-                <span>Add a medication above, or pick a quick pack (⌘1/⌘2/⌘3).</span>
+                <span>Add a medication above, or pick a quick pack (Alt+1/2/3).</span>
               </div>
             </div>
           )}

@@ -2,20 +2,17 @@ import type { SignedRx } from './types';
 import { getState } from './store';
 import { DEFAULT_RX_DESIGN, getRxDesign, type RxDesign } from '@swiftrx/shared';
 
-// Render the most recently signed Rx into the #print-area for the browser print dialog.
-// If `payload` is supplied, it is rendered instead of (or in absence of) the most recent signed Rx.
-export function renderPrintable(payload?: SignedRx | null) {
-  const list = (window as any).__signedRxList as SignedRx[] | undefined;
-  const latest = payload ?? list?.[0];
+// Render a prescription into the #print-area for the browser print dialog.
+export function renderPrintable(rx: SignedRx) {
   const target = document.getElementById('print-area');
-  if (!target || !latest) return;
+  if (!target) return;
 
   // Defensive default for older payloads that predate the investigations field.
   // We pass a shallow copy to the renderer so we never mutate the caller's
-  // SignedRx (which is held in `__signedRxList` and re-rendered on each print).
-  const safe: SignedRx = latest.investigations
-    ? latest
-    : { ...latest, investigations: [] };
+  // SignedRx (which also lives in the store's signed history).
+  const safe: SignedRx = rx.investigations
+    ? rx
+    : { ...rx, investigations: [] };
 
   const design = getRxDesign(safe.hospitalSlug) ?? DEFAULT_RX_DESIGN;
 
@@ -242,14 +239,10 @@ export function buildDraftRx(): SignedRx | null {
 
 // Always renders the printable area, then triggers window.print() on the next paint.
 // Use this for any user-facing print action so the area is never blank.
-export function printCurrent(opts?: { forceDraft?: boolean }) {
-  let payload: SignedRx | null | undefined;
-  if (opts?.forceDraft) {
-    payload = buildDraftRx();
-  } else {
-    const list = (window as any).__signedRxList as SignedRx[] | undefined;
-    payload = list?.[0] ?? buildDraftRx();
-  }
+// Pass the Rx returned by `sign()` to print it; with no argument the current
+// draft is printed instead.
+export function printCurrent(rx?: SignedRx) {
+  const payload = rx ?? buildDraftRx();
   if (!payload) return;
   renderPrintable(payload);
   // Two rAFs + a small timeout is the most reliable cross-browser pattern

@@ -28,7 +28,7 @@ export function RightColumn({ onApply }: Props) {
           <LiveDot color="bg-rx-accent" />
           <span>ML Quick Packs</span>
         </div>
-        <div className="text-[10px] text-ink-500">⌘1 / ⌘2 / ⌘3</div>
+        <div className="text-[10px] text-ink-500">Alt+1 / Alt+2 / Alt+3</div>
       </div>
 
       {!diagnosis && (
@@ -99,7 +99,7 @@ export function RightColumn({ onApply }: Props) {
                   </div>
                 </div>
                 <div className="shrink-0 px-2 py-0.5 rounded bg-rx-accent/15 text-rx-accent font-mono text-xs border border-rx-accent/30 flex items-center gap-1">
-                  <span>⌘</span>
+                  <span>Alt</span>
                   <span>{pack.shortcutKey}</span>
                 </div>
               </div>

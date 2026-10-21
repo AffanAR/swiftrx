@@ -75,7 +75,8 @@ export interface AppActions {
   setBanner: (banner: AppState['banner']) => void;
   openNewPatient: () => void;
   closeNewPatient: () => void;
-  sign: () => boolean;
+  /** Signs the current pad. Returns the signed Rx, or null if the pad is incomplete. */
+  sign: () => SignedRx | null;
   setDoctorIdentity: (id: { doctorName: string; doctorLicense: string }) => void;
 }
 
@@ -153,6 +154,7 @@ class Store {
           investigations: [],
           medications: [],
           activeRowId: null,
+          showNewPatient: false,
         });
         return id;
       },
@@ -230,7 +232,7 @@ class Store {
         const patient = this.state.patients.find((p) => p.id === this.state.patientId);
         if (!patient || !this.state.diagnosis || !this.state.medications.length) {
           this.set({ banner: { kind: 'warn', text: 'Need patient, diagnosis, and at least one medication to sign.' } });
-          return false;
+          return null;
         }
         const bridge = currentBridge();
         const signed: SignedRx = {
@@ -264,7 +266,7 @@ class Store {
           medications: [],
           activeRowId: null,
         });
-        return true;
+        return signed;
       },
       setDoctorIdentity: (id) => this.set({ doctorName: id.doctorName, doctorLicense: id.doctorLicense }),
     };
