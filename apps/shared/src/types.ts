@@ -246,13 +246,15 @@ export interface SignedRx {
   doctorId: string;
   doctorName: string;
   doctorLicense: string;
+  /** Set when the doctor signed despite critical safety alerts. */
+  safetyOverride?: { reason: string; alerts: SafetyAlert[] };
 }
 
 // --- Audit log ---------------------------------------------------------------
 
 export type AuditEvent =
   | { kind: 'login'; userId: string; userEmail: string; at: string; hospitalSlug: string | null; ip?: string }
-  | { kind: 'sign_rx'; userId: string; userEmail: string; at: string; hospitalSlug: string; rxId: string; patientName: string }
+  | { kind: 'sign_rx'; userId: string; userEmail: string; at: string; hospitalSlug: string; rxId: string; patientName: string; overrideReason?: string }
   | { kind: 'create_patient'; userId: string; userEmail: string; at: string; hospitalSlug: string; patientId: string; patientName: string }
   | { kind: 'create_hospital'; userId: string; userEmail: string; at: string; hospitalSlug: string; hospitalName: string }
   | { kind: 'invite_user'; userId: string; userEmail: string; at: string; hospitalSlug: string; invitedEmail: string };

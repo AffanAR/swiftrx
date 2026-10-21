@@ -105,9 +105,14 @@ Rx pad, portal, and admin panel all stay isolated.
 | `Alt + R`          | Repeat the patient's last prescription (Previous Rx)    |
 | `⌘/Ctrl + S`       | Sign & print                                            |
 | `⌘/Ctrl + Enter`   | Sign & print (saves instead inside the New Patient form)|
-| `⌘/Ctrl + P`       | Print current view (or browser print dialog)            |
+| `⌘/Ctrl + P`       | Print a DRAFT of the current pad (not valid to dispense)|
 | `Backspace`        | On empty input inside an open row → remove that row     |
 | `Esc`              | Clear the workspace                                     |
+
+Signing is refused when a dose or duration is 0, and when a critical alert
+(an allergy) is on the pad until the doctor enters an override reason; the
+reason is saved on the prescription and in the audit log. Only active doctors
+with a license number can open the Rx pad.
 
 Repeat fills an empty pad with the previous diagnosis, tests and medications.
 If the pad already has content it keeps your diagnosis and only adds

@@ -47,12 +47,16 @@ export function login(opts: { email: string; password: string; hospitalSlug: str
 
   writeSessionToStorage(SESSION_KEY, r.session);
 
-  if (r.user.role === 'doctor' || r.user.role === 'hospital_admin') {
+  // Only licensed doctors get an Rx pad hand-off. Anyone else clears any
+  // bridge left behind on this browser so they can't open the pad as someone else.
+  if (r.user.role !== 'doctor' || !r.user.licenseNo) {
+    sharedClearBridge();
+  } else {
     const bridge: BridgeSession = {
       doctorId: r.user.id,
       hospitalSlug: r.user.hospitalSlug!,
       doctorName: r.user.name,
-      licenseNo: r.user.licenseNo ?? '',
+      licenseNo: r.user.licenseNo,
       email: r.user.email,
       issuedAt: Date.now(),
     };

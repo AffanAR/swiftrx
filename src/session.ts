@@ -17,7 +17,11 @@
 // directly across subdomains without a backend-issued cookie.
 
 import { useEffect, useState, useCallback } from 'react';
-import { decodeBridgeToken as sharedDecodeToken, type BridgeSession as SharedBridge } from '@swiftrx/shared';
+import {
+  decodeBridgeToken as sharedDecodeToken,
+  getUserById,
+  type BridgeSession as SharedBridge,
+} from '@swiftrx/shared';
 
 export const BRIDGE_KEY = 'swiftrx.session';
 
@@ -80,8 +84,32 @@ export function consumeTokenFromUrl(): BridgeSession | null {
 
 export type SessionState =
   | { status: 'loading' }
-  | { status: 'signed-out' }
+  | { status: 'signed-out'; reason?: string }
   | { status: 'signed-in'; session: BridgeSession };
+
+/**
+ * Why this session can't prescribe, or null if it can. Only active doctors with
+ * a license, at the hospital the session names, may use the pad. The token is
+ * unsigned, so the identity must also match the user record. (A mock-level
+ * check — real enforcement belongs on the server.)
+ */
+function prescriberProblem(s: BridgeSession): string | null {
+  const user = getUserById(s.doctorId);
+  if (!user || user.status !== 'active') return 'This account is not active.';
+  if (user.role !== 'doctor' || !user.licenseNo) {
+    return 'Only doctors with a registered license number can use the Rx pad.';
+  }
+  if (user.hospitalSlug !== s.hospitalSlug) return "This account doesn't belong to that hospital.";
+  if (user.licenseNo !== s.licenseNo || user.name !== s.doctorName) {
+    return "Your session doesn't match your doctor record. Please sign in again.";
+  }
+  return null;
+}
+
+// Why the session was rejected on this page load. Kept outside React state so
+// a re-run of the mount effect (StrictMode runs it twice in dev), which finds
+// the bridge already cleared, still shows the reason.
+let rejectedReason: string | null = null;
 
 /**
  * Hook that returns the current bridge session. On first mount it also
@@ -93,7 +121,18 @@ export function useSession(): [SessionState, () => void] {
   useEffect(() => {
     consumeTokenFromUrl();
     const s = loadBridge();
-    setState(s ? { status: 'signed-in', session: s } : { status: 'signed-out' });
+    if (!s) {
+      setState({ status: 'signed-out', reason: rejectedReason ?? undefined });
+      return;
+    }
+    const problem = prescriberProblem(s);
+    if (problem) {
+      rejectedReason = problem;
+      clearBridge();
+      setState({ status: 'signed-out', reason: problem });
+      return;
+    }
+    setState({ status: 'signed-in', session: s });
   }, []);
 
   const signOut = useCallback(() => {

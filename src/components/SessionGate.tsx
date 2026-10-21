@@ -35,13 +35,13 @@ export function SessionGate({
   }
 
   if (session.status === 'signed-out') {
-    return <SignedOutScreen />;
+    return <SignedOutScreen reason={session.reason} />;
   }
 
   return <>{children}</>;
 }
 
-function SignedOutScreen() {
+function SignedOutScreen({ reason }: { reason?: string }) {
   return (
     <div className="h-full grid lg:grid-cols-2 bg-ink-900">
       {/* Left: branding — mirrors the portal's left rail so the handoff feels seamless */}
@@ -93,6 +93,15 @@ function SignedOutScreen() {
             You'll be sent to your hospital's secure doctor portal. After signing in,
             you'll come back here with your session loaded.
           </p>
+
+          {reason && (
+            <div
+              role="alert"
+              className="mt-6 rounded-md border border-rx-danger/40 bg-rx-danger/10 px-3 py-2 text-sm text-rx-danger"
+            >
+              {reason}
+            </div>
+          )}
 
           <a
             href={PORTAL_URL}

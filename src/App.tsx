@@ -6,15 +6,18 @@ import { LeftColumn } from './components/LeftColumn';
 import { CenterColumn } from './components/CenterColumn';
 import { RightColumn } from './components/RightColumn';
 import { NewPatientModal } from './components/NewPatientModal';
+import { SafetyOverrideModal } from './components/SafetyOverrideModal';
 import { SessionGate } from './components/SessionGate';
 import { useSession, loadSession } from './session';
 import { QUICK_PACKS } from './data';
 import type { QuickPack, SignedRx } from './types';
-import { printCurrent } from './print';
+import { printCurrent, signAndPrint } from './print';
 
 export default function App() {
   const [session, signOut] = useSession();
   const showNewPatient = useApp((s) => s.showNewPatient);
+  const overrideOpen = useApp((s) => s.overridePrompt !== null);
+  const hasPatient = useApp((s) => s.patients.some((p) => p.id === s.patientId));
   const patientSearchRef = React.useRef<HTMLInputElement>(null);
   const diagnosisRef = React.useRef<HTMLInputElement>(null);
 
@@ -77,12 +80,13 @@ export default function App() {
   }, []);
 
   const onSign = React.useCallback(() => {
-    const signed = actions.sign();
-    if (signed) printCurrent(signed);
+    signAndPrint();
   }, []);
 
   const onPrint = React.useCallback(() => {
-    printCurrent();
+    if (!printCurrent()) {
+      actions.setBanner({ kind: 'info', text: 'Nothing to print yet: add a diagnosis and at least one medication.' });
+    }
   }, []);
 
   const onSignOut = React.useCallback(() => {
@@ -126,8 +130,11 @@ export default function App() {
     {
       key: 'p',
       meta: true,
-      description: 'Print / send to pharmacy',
+      description: 'Print a DRAFT of the current pad',
       handler: onPrint,
+      // Also inside inputs: otherwise the browser's own print runs and shows
+      // whatever is left in #print-area.
+      allowInInputs: true,
     },
     {
       key: 'Escape',
@@ -180,21 +187,52 @@ export default function App() {
         actions.setFocusZone('diagnosis');
       },
     },
-  ], session.status === 'signed-in' && !showNewPatient); // off while signed out or a modal is open
+  ], session.status === 'signed-in' && !showNewPatient && !overrideOpen); // off while signed out or a modal is open
 
   return (
     <SessionGate session={session}>
       <SignedInShell onSignOut={onSignOut}>
-        <TopBar onSignOut={onSignOut} />
-        <div className="flex-1 flex min-h-0">
-          <LeftColumn patientSearchRef={patientSearchRef} />
-          <CenterColumn diagnosisRef={diagnosisRef} />
-          <RightColumn onApply={applyPack} onRepeat={repeatPrescription} />
-        </div>
+        {hasPatient ? (
+          <>
+            <TopBar onSignOut={onSignOut} />
+            <div className="flex-1 flex min-h-0">
+              <LeftColumn patientSearchRef={patientSearchRef} />
+              <CenterColumn diagnosisRef={diagnosisRef} />
+              <RightColumn onApply={applyPack} onRepeat={repeatPrescription} />
+            </div>
+          </>
+        ) : (
+          <EmptyRoster />
+        )}
         <StatusLine />
         <NewPatientModal />
+        <SafetyOverrideModal />
       </SignedInShell>
     </SessionGate>
+  );
+}
+
+/**
+ * Shown when the signed-in doctor's hospital has no patients yet. The pad's
+ * columns all assume a selected patient, so we offer to add the first one.
+ */
+function EmptyRoster() {
+  return (
+    <div className="flex-1 flex items-center justify-center p-6">
+      <div className="rounded-xl bg-ink-800/70 border border-ink-700 shadow-card p-8 max-w-sm text-center animate-fadeIn">
+        <div className="text-base font-semibold text-ink-100">No patients yet</div>
+        <p className="mt-1 text-sm text-ink-400">
+          Your hospital's roster is empty. Add the first patient to start prescribing.
+        </p>
+        <button
+          onClick={() => actions.openNewPatient()}
+          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-rx-accent text-ink-900 font-semibold hover:bg-rx-accentDark transition-colors"
+        >
+          + New patient
+          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-900/30">Alt+N</span>
+        </button>
+      </div>
+    </div>
   );
 }
 

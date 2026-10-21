@@ -226,7 +226,7 @@ iterate on.
   - modal ⌘↵ saves instead of signing;
   - Tailwind `content` includes `../shared/src/**/*.{ts,tsx}`;
   - remap hotkeys to Alt+1/2/3 and Alt+N.
-- [ ] Interim safety:
+- [x] Interim safety (done 2026-10-22; checked in the browser):
   - block signing on critical alerts unless a reason is entered;
   - reject dose ≤ 0;
   - print a "DRAFT — NOT VALID" watermark on unsigned prints;

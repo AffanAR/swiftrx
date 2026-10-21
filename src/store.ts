@@ -4,9 +4,10 @@ import type {
   Investigation,
   Patient,
   RxMedication,
+  SafetyAlert,
   SignedRx,
 } from './types';
-import { PATIENTS, DRUGS } from './data';
+import { DRUGS } from './data';
 import { evaluateAllMedications, findDrug } from './safety';
 import {
   loadBridge,
@@ -54,6 +55,8 @@ export interface AppState {
   activeRowId: string | null;
   // New-patient modal visibility
   showNewPatient: boolean;
+  // Critical alerts waiting for an override reason before signing (opens the modal)
+  overridePrompt: SafetyAlert[] | null;
   // Toast / banner
   banner: { kind: 'info' | 'success' | 'warn' | 'danger'; text: string } | null;
 }
@@ -75,8 +78,13 @@ export interface AppActions {
   setBanner: (banner: AppState['banner']) => void;
   openNewPatient: () => void;
   closeNewPatient: () => void;
-  /** Signs the current pad. Returns the signed Rx, or null if the pad is incomplete. */
-  sign: () => SignedRx | null;
+  /**
+   * Signs the current pad. Returns the signed Rx, or null if it can't be signed
+   * yet. Critical alerts need `overrideReason` (see MIN_OVERRIDE_REASON);
+   * without it this opens the override prompt instead.
+   */
+  sign: (overrideReason?: string) => SignedRx | null;
+  cancelOverride: () => void;
   /** Copies a previous Rx for the current patient onto the pad (see the action for merge rules). */
   repeatRx: (rx: SignedRx) => void;
   setDoctorIdentity: (id: { doctorName: string; doctorLicense: string }) => void;
@@ -84,22 +92,28 @@ export interface AppActions {
 
 export type AppStore = AppState & AppActions;
 
+/** Shortest override reason accepted when signing past a critical alert. */
+export const MIN_OVERRIDE_REASON = 10;
+
 const newRowId = () => 'r_' + Math.random().toString(36).slice(2, 9);
 const newPatientId = () => 'p_' + Math.random().toString(36).slice(2, 9);
 
+// Empty until bootstrapFromBridge() loads the signed-in doctor's hospital:
+// no default patients and no default doctor identity.
 const initialState: AppState = {
-  patients: PATIENTS,
-  patientId: PATIENTS[0]?.id ?? '',
+  patients: [],
+  patientId: '',
   diagnosis: null,
   diagnosisQuery: '',
   investigations: [],
   medications: [],
   signed: [],
-  doctorName: 'Dr. Affan Ahmed',
-  doctorLicense: 'PMDC-78421',
+  doctorName: '',
+  doctorLicense: '',
   focusZone: null,
   activeRowId: null,
   showNewPatient: false,
+  overridePrompt: null,
   banner: null,
 };
 
@@ -121,10 +135,16 @@ class Store {
           activeRowId: null,
         }),
       createPatient: (input: NewPatientInput) => {
+        // Patients always belong to the signed-in doctor's hospital — no fallback.
+        const bridge = currentBridge();
+        if (!bridge) {
+          this.set({ banner: { kind: 'danger', text: 'Sign in as a doctor to add patients.' } });
+          return '';
+        }
         const id = newPatientId();
         const p: Patient = {
           id,
-          hospitalSlug: currentHospitalSlug() ?? 'unknown',
+          hospitalSlug: bridge.hospitalSlug,
           name: input.name,
           age: input.age,
           sex: input.sex,
@@ -143,8 +163,8 @@ class Store {
         MOCK_PATIENTS.push(p);
         appendAudit({
           kind: 'create_patient',
-          userId: currentBridge()?.doctorId ?? 'unknown',
-          userEmail: currentBridge()?.email ?? 'unknown',
+          userId: bridge.doctorId,
+          userEmail: bridge.email,
           at: new Date().toISOString(),
           hospitalSlug: p.hospitalSlug,
           patientId: p.id,
@@ -232,46 +252,76 @@ class Store {
       setBanner: (banner: AppState['banner']) => this.set({ banner }),
       openNewPatient: () => this.set({ showNewPatient: true }),
       closeNewPatient: () => this.set({ showNewPatient: false }),
-      sign: () => {
-        const patient = this.state.patients.find((p) => p.id === this.state.patientId);
-        if (!patient || !this.state.diagnosis || !this.state.medications.length) {
+      sign: (overrideReason?: string) => {
+        const s = this.state;
+        const patient = s.patients.find((p) => p.id === s.patientId);
+        if (!patient || !s.diagnosis || !s.medications.length) {
           this.set({ banner: { kind: 'warn', text: 'Need patient, diagnosis, and at least one medication to sign.' } });
           return null;
         }
+        // Only the signed-in doctor can sign — there is no fallback identity.
         const bridge = currentBridge();
+        if (!bridge || !s.doctorName || !s.doctorLicense) {
+          this.set({ banner: { kind: 'danger', text: 'Only a signed-in doctor with a license number can sign.' } });
+          return null;
+        }
+        const badRow = s.medications.findIndex((m) => !(m.dosage.value > 0) || !(m.durationDays > 0));
+        if (badRow >= 0) {
+          const m = s.medications[badRow];
+          this.set({
+            banner: { kind: 'danger', text: `Row ${badRow + 1} (${m.genericName}): dose and duration must be greater than 0.` },
+          });
+          return null;
+        }
+        // Critical alerts (allergies) block signing until the doctor records
+        // why they are overriding them.
+        const critical = [...evaluateAllMedications(s.medications, patient, DRUGS).values()]
+          .flat()
+          .filter((a) => a.severity === 'critical');
+        const reason = overrideReason?.trim() ?? '';
+        if (critical.length && reason.length < MIN_OVERRIDE_REASON) {
+          this.set({ overridePrompt: critical });
+          return null;
+        }
         const signed: SignedRx = {
           id: 'rx_' + Date.now().toString(36),
           signedAt: new Date().toISOString(),
           hospitalSlug: patient.hospitalSlug,
           patient,
-          diagnosis: this.state.diagnosis,
-          medications: this.state.medications,
-          investigations: this.state.investigations,
-          doctorId: bridge?.doctorId ?? 'unknown',
-          doctorName: this.state.doctorName,
-          doctorLicense: this.state.doctorLicense,
+          diagnosis: s.diagnosis,
+          medications: s.medications,
+          investigations: s.investigations,
+          doctorId: bridge.doctorId,
+          doctorName: s.doctorName,
+          doctorLicense: s.doctorLicense,
+          safetyOverride: critical.length ? { reason, alerts: critical } : undefined,
         };
         appendSignedRx(signed);
         appendAudit({
           kind: 'sign_rx',
-          userId: bridge?.doctorId ?? 'unknown',
-          userEmail: bridge?.email ?? 'unknown',
+          userId: bridge.doctorId,
+          userEmail: bridge.email,
           at: signed.signedAt,
           hospitalSlug: patient.hospitalSlug,
           rxId: signed.id,
           patientName: patient.name,
+          overrideReason: critical.length ? reason : undefined,
         });
         this.set({
-          signed: [signed, ...this.state.signed],
-          banner: { kind: 'success', text: `Signed ${signed.id} for ${patient.name}.` },
+          signed: [signed, ...s.signed],
+          banner: critical.length
+            ? { kind: 'warn', text: `Signed ${signed.id} for ${patient.name} with an allergy override.` }
+            : { kind: 'success', text: `Signed ${signed.id} for ${patient.name}.` },
           diagnosis: null,
           diagnosisQuery: '',
           investigations: [],
           medications: [],
           activeRowId: null,
+          overridePrompt: null,
         });
         return signed;
       },
+      cancelOverride: () => this.set({ overridePrompt: null }),
       repeatRx: (rx: SignedRx) => {
         const s = this.state;
         if (rx.patient.id !== s.patientId) return;
@@ -343,8 +393,7 @@ export function useApp<T>(selector: (s: AppState) => T): T {
 // -----------------------------------------------------------------------------
 //  Bootstrap: seed the store with the hospital-scoped patient roster + signed
 //  Rx history. Called once from App.tsx on mount, after the bridge session is
-//  loaded. If no bridge is present we fall back to the first hospital's
-//  patients so the pad still works for local tinkering.
+//  loaded. Without a bridge the roster stays empty — never another hospital's.
 // -----------------------------------------------------------------------------
 
 function currentBridge(): BridgeSession | null {
@@ -358,14 +407,14 @@ function currentHospitalSlug(): string | null {
 
 export function bootstrapFromBridge(): void {
   const slug = currentHospitalSlug();
-  const patients = slug ? listPatientsForHospital(slug) : PATIENTS;
+  const patients = slug ? listPatientsForHospital(slug) : [];
   const signed = slug ? listSignedRxForHospital(slug) : [];
   const bridge = currentBridge();
   store.set({
-    patients: patients.length ? patients : PATIENTS,
-    patientId: patients[0]?.id ?? PATIENTS[0]?.id ?? '',
+    patients,
+    patientId: patients[0]?.id ?? '',
     signed,
-    doctorName: bridge?.doctorName ?? initialState.doctorName,
-    doctorLicense: bridge?.licenseNo || initialState.doctorLicense,
+    doctorName: bridge?.doctorName ?? '',
+    doctorLicense: bridge?.licenseNo ?? '',
   });
 }

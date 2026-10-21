@@ -1,9 +1,10 @@
 import type { SignedRx } from './types';
-import { getState } from './store';
+import { actions, getState } from './store';
 import { DEFAULT_RX_DESIGN, getRxDesign, type RxDesign } from '@swiftrx/shared';
 
 // Render a prescription into the #print-area for the browser print dialog.
-export function renderPrintable(rx: SignedRx) {
+// `draft` marks an unsigned pad: DRAFT watermark, no signature verification.
+export function renderPrintable(rx: SignedRx, opts?: { draft?: boolean }) {
   const target = document.getElementById('print-area');
   if (!target) return;
 
@@ -20,11 +21,11 @@ export function renderPrintable(rx: SignedRx) {
   // up the right paper size / orientation.
   applyPageGeometry(design);
 
-  target.innerHTML = renderHtml(safe, design);
+  target.innerHTML = renderHtml(safe, design, opts?.draft);
 }
 
 // Pure HTML render used by renderPrintable. Exported so tests / preview can call it.
-export function renderHtml(rx: SignedRx, design: RxDesign = DEFAULT_RX_DESIGN): string {
+export function renderHtml(rx: SignedRx, design: RxDesign = DEFAULT_RX_DESIGN, draft = false): string {
   const signedAt = new Date(rx.signedAt);
   const meds = rx.medications;
   const invs = rx.investigations || [];
@@ -38,19 +39,33 @@ export function renderHtml(rx: SignedRx, design: RxDesign = DEFAULT_RX_DESIGN): 
       ? `<div style="display:inline-block; margin-top: 6px; padding: 3px 8px; border: 1.5px solid #b91c1c; color: #b91c1c; border-radius: 999px; font-size: 11px; font-weight: 600;">&#9888; ALLERGIES: ${escape(rx.patient.allergies.join(', '))}</div>`
       : '';
 
-  const watermark =
-    design.watermark === 'none'
+  // Drafts always carry a red DRAFT watermark in place of the hospital's own.
+  const watermarkText = draft
+    ? 'DRAFT'
+    : design.watermark === 'none'
       ? ''
-      : `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:0;">
-          <div style="font-size: 96px; font-weight: 900; letter-spacing: 6px; color: ${accent}; opacity: 0.06; transform: rotate(-22deg);">
-            ${escape(
-              design.watermark === 'confidential'
-                ? 'CONFIDENTIAL'
-                : design.watermark === 'hospital'
-                  ? (design.headerTitle || '').toUpperCase()
-                  : (rx.doctorName || '').toUpperCase(),
-            )}
+      : design.watermark === 'confidential'
+        ? 'CONFIDENTIAL'
+        : design.watermark === 'hospital'
+          ? (design.headerTitle || '').toUpperCase()
+          : (rx.doctorName || '').toUpperCase();
+
+  const watermark = watermarkText
+    ? `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:0;">
+          <div style="font-size: ${draft ? 140 : 96}px; font-weight: 900; letter-spacing: 6px; color: ${draft ? '#dc2626' : accent}; opacity: ${draft ? 0.14 : 0.06}; transform: rotate(-22deg);">
+            ${escape(watermarkText)}
           </div>
+        </div>`
+    : '';
+
+  const draftBanner = draft
+    ? `<div style="margin-bottom: 12px; padding: 6px 10px; border: 2px solid #dc2626; border-radius: 6px; color: #dc2626; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-align: center;">DRAFT &mdash; NOT A VALID PRESCRIPTION &middot; unsigned, do not dispense</div>`
+    : '';
+
+  const verification = draft
+    ? `<div style="color:#dc2626; font-weight:600;">Unsigned draft &middot; not valid for dispensing</div>`
+    : `<div>Verified digitally &middot; signature hash
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color:${accent}; font-weight:600;">${shortHash(rx.id)}</span>
         </div>`;
 
   const headerBadge = design.showRxBadge
@@ -70,6 +85,7 @@ export function renderHtml(rx: SignedRx, design: RxDesign = DEFAULT_RX_DESIGN): 
       ${watermark}
 
       <div style="position:relative; z-index:1;">
+        ${draftBanner}
         <!-- Letterhead -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding-bottom: 10px; ${design.showAccentBand ? `margin-bottom: 4px;` : `margin-bottom: 14px; border-bottom: 2px solid ${accent};`}">
           <div style="display:flex; align-items:center; gap:10px; min-width:0;">
@@ -187,7 +203,7 @@ export function renderHtml(rx: SignedRx, design: RxDesign = DEFAULT_RX_DESIGN): 
             : ''
         }
         ${
-          design.showValidUntil
+          design.showValidUntil && !draft
             ? `<div style="font-size: 12px; margin-top: 4px;"><span style="color:#64748b; text-transform: uppercase; letter-spacing: 1.5px; font-size: 10px;">Valid until</span> &nbsp; <strong>${escape(validUntil)}</strong></div>`
             : ''
         }
@@ -197,9 +213,7 @@ export function renderHtml(rx: SignedRx, design: RxDesign = DEFAULT_RX_DESIGN): 
           design.showSignatureLine
             ? `<div style="margin-top: 28px; display:flex; justify-content:space-between; align-items:flex-end; gap:24px;">
                 <div style="font-size: 10px; color:#64748b; line-height:1.5; max-width:60%;">
-                  <div>Verified digitally &middot; signature hash
-                    <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color:${accent}; font-weight:600;">${shortHash(rx.id)}</span>
-                  </div>
+                  ${verification}
                   <div style="margin-top:2px;">${escape(design.footerText || 'This prescription was generated and signed electronically by SwiftRx.')}</div>
                 </div>
                 <div style="text-align: center; min-width: 220px;">
@@ -215,6 +229,15 @@ export function renderHtml(rx: SignedRx, design: RxDesign = DEFAULT_RX_DESIGN): 
       </div>
     </div>
   `;
+}
+
+// Sign the pad and print the result — the one path for every "Sign & Print"
+// trigger. Returns null when signing was refused (incomplete pad, invalid dose,
+// or a critical alert that still needs an override reason).
+export function signAndPrint(overrideReason?: string): SignedRx | null {
+  const signed = actions.sign(overrideReason);
+  if (signed) printCurrent(signed);
+  return signed;
 }
 
 // Build a SignedRx snapshot from the current store draft so Print works even without
@@ -240,17 +263,28 @@ export function buildDraftRx(): SignedRx | null {
 // Always renders the printable area, then triggers window.print() on the next paint.
 // Use this for any user-facing print action so the area is never blank.
 // Pass the Rx returned by `sign()` to print it; with no argument the current
-// draft is printed instead.
-export function printCurrent(rx?: SignedRx) {
+// draft is printed instead, marked DRAFT. Returns false if there was nothing
+// to print.
+export function printCurrent(rx?: SignedRx): boolean {
   const payload = rx ?? buildDraftRx();
-  if (!payload) return;
-  renderPrintable(payload);
+  if (!payload) return false;
+  renderPrintable(payload, { draft: !rx });
   // Two rAFs + a small timeout is the most reliable cross-browser pattern
   // for letting layout/paint settle before the print dialog opens.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       setTimeout(() => window.print(), 50);
     });
+  });
+  return true;
+}
+
+// Empty the print area once the dialog closes, so a later print from the
+// browser menu can't reproduce an old (possibly signed) prescription.
+if (typeof window !== 'undefined') {
+  window.addEventListener('afterprint', () => {
+    const target = document.getElementById('print-area');
+    if (target) target.innerHTML = '';
   });
 }
 

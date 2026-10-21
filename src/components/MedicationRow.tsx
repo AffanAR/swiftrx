@@ -28,8 +28,11 @@ export function MedicationRow({ med, index }: RowProps) {
     return acc;
   }, null);
 
+  // Signing refuses these (see store.sign); flag the row so the doctor sees why.
+  const invalidAmount = !(med.dosage.value > 0) || !(med.durationDays > 0);
+
   const borderColor =
-    worstSeverity === 'critical'
+    worstSeverity === 'critical' || invalidAmount
       ? 'border-rx-danger/70 bg-rx-danger/5'
       : worstSeverity === 'moderate'
       ? 'border-rx-warn/60 bg-rx-warn/5'
@@ -116,8 +119,14 @@ export function MedicationRow({ med, index }: RowProps) {
         </button>
       </div>
 
-      {alerts.length > 0 && (
+      {(alerts.length > 0 || invalidAmount) && (
         <ul className="mt-1.5 space-y-0.5">
+          {invalidAmount && (
+            <li className="text-[11px] px-2 py-0.5 rounded bg-rx-danger/15 text-rx-danger">
+              <span className="font-semibold uppercase tracking-wider mr-1">[required]</span>
+              Dose and duration must be greater than 0.
+            </li>
+          )}
           {alerts.map((a, i) => (
             <li
               key={i}

@@ -4,7 +4,7 @@ import { DiagnosisField } from './DiagnosisField';
 import { MedicationSearch } from './MedicationSearch';
 import { MedicationRow } from './MedicationRow';
 import { cx } from '../useHotkeys';
-import { printCurrent } from '../print';
+import { printCurrent, signAndPrint } from '../print';
 import { LiveDot, AnimatedNumber } from './Fx';
 
 export function CenterColumn({
@@ -26,11 +26,11 @@ export function CenterColumn({
   }, [banner, setBanner]);
 
   const handleSign = React.useCallback(() => {
-    const signed = actions.sign();
-    if (signed) printCurrent(signed);
+    signAndPrint();
   }, []);
 
-  const handleSendToPharmacy = React.useCallback(() => {
+  // Prints the unsigned pad, watermarked DRAFT (there is no pharmacy link yet).
+  const handlePrintDraft = React.useCallback(() => {
     printCurrent();
   }, []);
 
@@ -130,10 +130,11 @@ export function CenterColumn({
             <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-ink-900/30">⌘S</span>
           </button>
           <button
-            onClick={handleSendToPharmacy}
+            onClick={handlePrintDraft}
             className="px-3 py-2 rounded-md border border-ink-700 text-ink-200 hover:bg-ink-700/40 flex items-center gap-2 transition-colors hover:border-rx-focus/40"
+            title="Print the unsigned pad, marked DRAFT"
           >
-            <span>Send to Pharmacy</span>
+            <span>Print draft</span>
             <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-ink-800">⌘P</span>
           </button>
           <div className="flex-1" />

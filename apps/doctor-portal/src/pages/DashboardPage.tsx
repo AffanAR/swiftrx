@@ -156,12 +156,6 @@ function DoctorDashboard({ hospital, user }: Props) {
 function AdminDashboard({ hospital, user }: Props) {
   const patients = listPatientsForHospital(hospital.slug);
   const rx = listSignedRxForHospital(hospital.slug);
-  const rxLink = (() => {
-    const bridge = loadBridge();
-    if (!bridge) return RX_APP_URL;
-    const token = encodeBridgeToken(bridge);
-    return `${RX_APP_URL}/?session=${encodeURIComponent(token)}`;
-  })();
 
   return (
     <div className="p-6 sm:p-8 max-w-6xl mx-auto space-y-6 animate-fadeIn">
@@ -178,26 +172,12 @@ function AdminDashboard({ hospital, user }: Props) {
       </header>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <a
-          href={rxLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rx-card rx-hover-lift p-5 transition-all hover:border-rx-accent/50 hover:shadow-glow animate-fadeIn group"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-xs text-rx-accent uppercase tracking-wider flex items-center gap-1.5">
-                <LiveDot color="bg-rx-accent" />
-                <span>Open Rx Pad</span>
-              </div>
-              <div className="mt-1 text-base font-medium text-ink-100">
-                Open the prescription pad
-              </div>
-              <p className="mt-2 text-sm text-ink-400">Start a new prescription as any doctor.</p>
-            </div>
-            <span className="text-rx-accent text-xl group-hover:translate-x-0.5 transition-transform">↗</span>
-          </div>
-        </a>
+        {/* Hospital admins don't prescribe — only doctors sign in to the Rx pad. */}
+        <Card title="Prescribing" subtitle="Doctors only">
+          <p className="text-sm text-ink-400">
+            Doctors open the Rx pad from their own dashboard. Admin accounts can't sign prescriptions.
+          </p>
+        </Card>
 
         <Card title="Patients" subtitle={`${patients.length} active`}>
           <Link to="/patients" className="text-sm text-rx-accent hover:underline">View roster →</Link>
