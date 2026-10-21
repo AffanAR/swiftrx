@@ -3,14 +3,16 @@ import { useApp, actions } from '../store';
 import { QUICK_PACKS, DRUGS } from '../data';
 import { evaluateMedication, severityRank } from '../safety';
 import { cx } from '../useHotkeys';
-import type { QuickPack } from '../types';
+import type { QuickPack, SignedRx } from '../types';
 import { LiveDot, ProgressBar } from './Fx';
+import { PreviousRx } from './PreviousRx';
 
 interface Props {
   onApply: (pack: QuickPack) => void;
+  onRepeat: (rx: SignedRx) => void;
 }
 
-export function RightColumn({ onApply }: Props) {
+export function RightColumn({ onApply, onRepeat }: Props) {
   const diagnosis = useApp((s) => s.diagnosis);
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
 
@@ -163,6 +165,8 @@ export function RightColumn({ onApply }: Props) {
           No curated packs for {diagnosis.code}. Build the prescription manually.
         </div>
       )}
+
+      <PreviousRx onRepeat={onRepeat} />
     </aside>
   );
 }

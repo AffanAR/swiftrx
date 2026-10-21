@@ -102,13 +102,18 @@ Rx pad, portal, and admin panel all stay isolated.
 | `Tab` (in med box) | Accept top suggestion (brand → generic shortcut)        |
 | `Alt + 1/2/3`      | Inject Quick Pack #1 / #2 / #3 for current diagnosis    |
 | `Alt + N`          | New patient                                             |
+| `Alt + R`          | Repeat the patient's last prescription (Previous Rx)    |
 | `⌘/Ctrl + S`       | Sign & print                                            |
 | `⌘/Ctrl + Enter`   | Sign & print (saves instead inside the New Patient form)|
 | `⌘/Ctrl + P`       | Print current view (or browser print dialog)            |
 | `Backspace`        | On empty input inside an open row → remove that row     |
 | `Esc`              | Clear the workspace                                     |
 
-Quick packs and New patient use `Alt` because browsers reserve `Ctrl/⌘ + N`
+Repeat fills an empty pad with the previous diagnosis, tests and medications.
+If the pad already has content it keeps your diagnosis and only adds
+medications that aren't on the pad yet.
+
+Quick packs, New patient and Repeat use `Alt` because browsers reserve `Ctrl/⌘ + N`
 (new window) and `Ctrl/⌘ + 1–8` (tab switching) and won't let a page take
 them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 

@@ -77,6 +77,8 @@ export interface AppActions {
   closeNewPatient: () => void;
   /** Signs the current pad. Returns the signed Rx, or null if the pad is incomplete. */
   sign: () => SignedRx | null;
+  /** Copies a previous Rx for the current patient onto the pad (see the action for merge rules). */
+  repeatRx: (rx: SignedRx) => void;
   setDoctorIdentity: (id: { doctorName: string; doctorLicense: string }) => void;
 }
 
@@ -113,6 +115,7 @@ class Store {
         this.set({
           patientId: id,
           diagnosis: null,
+          diagnosisQuery: '',
           investigations: [],
           medications: [],
           activeRowId: null,
@@ -151,6 +154,7 @@ class Store {
           patients: [...this.state.patients, p],
           patientId: p.id,
           diagnosis: null,
+          diagnosisQuery: '',
           investigations: [],
           medications: [],
           activeRowId: null,
@@ -268,6 +272,32 @@ class Store {
         });
         return signed;
       },
+      repeatRx: (rx: SignedRx) => {
+        const s = this.state;
+        if (rx.patient.id !== s.patientId) return;
+        // On an empty pad this is a full repeat. If the doctor already started,
+        // keep their diagnosis and only add meds that aren't on the pad yet.
+        const takeDiagnosis = !s.diagnosis;
+        const onPad = new Set(s.medications.map((m) => m.drugId));
+        const added: RxMedication[] = rx.medications
+          .filter((m) => !onPad.has(m.drugId))
+          .map((m) => ({ ...m, dosage: { ...m.dosage }, rowId: newRowId() }));
+        const skipped = rx.medications.length - added.length;
+        const date = new Date(rx.signedAt).toLocaleDateString();
+        this.set({
+          diagnosis: takeDiagnosis ? rx.diagnosis : s.diagnosis,
+          diagnosisQuery: takeDiagnosis ? `${rx.diagnosis.code} ${rx.diagnosis.name}` : s.diagnosisQuery,
+          investigations: takeDiagnosis ? [...(rx.investigations ?? [])] : s.investigations,
+          medications: [...s.medications, ...added],
+          activeRowId: added[added.length - 1]?.rowId ?? s.activeRowId,
+          banner: {
+            kind: 'success',
+            text:
+              `Repeated Rx from ${date}: ${added.length} med${added.length === 1 ? '' : 's'} added` +
+              (skipped ? `, ${skipped} already on the pad.` : '.'),
+          },
+        });
+      },
       setDoctorIdentity: (id) => this.set({ doctorName: id.doctorName, doctorLicense: id.doctorLicense }),
     };
   }
@@ -293,6 +323,13 @@ export const actions = store.actions;
 
 export function getState(): AppState {
   return store.state$;
+}
+
+/** A patient's signed prescriptions from the loaded history, newest first. */
+export function previousRxForPatient(signed: SignedRx[], patientId: string): SignedRx[] {
+  return signed
+    .filter((rx) => rx.patient.id === patientId)
+    .sort((a, b) => b.signedAt.localeCompare(a.signedAt));
 }
 
 export function useApp<T>(selector: (s: AppState) => T): T {

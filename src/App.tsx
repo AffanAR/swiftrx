@@ -1,5 +1,5 @@
 import React from 'react';
-import { actions, getState, useApp, bootstrapFromBridge } from './store';
+import { actions, getState, useApp, bootstrapFromBridge, previousRxForPatient } from './store';
 import { useHotkeys, cx } from './useHotkeys';
 import { TopBar } from './components/TopBar';
 import { LeftColumn } from './components/LeftColumn';
@@ -9,7 +9,7 @@ import { NewPatientModal } from './components/NewPatientModal';
 import { SessionGate } from './components/SessionGate';
 import { useSession, loadSession } from './session';
 import { QUICK_PACKS } from './data';
-import type { QuickPack } from './types';
+import type { QuickPack, SignedRx } from './types';
 import { printCurrent } from './print';
 
 export default function App() {
@@ -66,6 +66,15 @@ export default function App() {
     },
     [applyPack],
   );
+
+  // Copy a previous Rx onto the pad, then hand focus to the medication search
+  // so the doctor can add more or sign straight away.
+  const repeatPrescription = React.useCallback((rx: SignedRx) => {
+    actions.repeatRx(rx);
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLInputElement>('[data-zone="med-search"]')?.focus();
+    });
+  }, []);
 
   const onSign = React.useCallback(() => {
     const signed = actions.sign();
@@ -150,6 +159,19 @@ export default function App() {
       allowInInputs: true,
     },
     {
+      key: 'r',
+      code: 'KeyR',
+      alt: true,
+      description: "Repeat the patient's last prescription",
+      handler: () => {
+        const s = getState();
+        const last = previousRxForPatient(s.signed, s.patientId)[0];
+        if (last) repeatPrescription(last);
+        else actions.setBanner({ kind: 'info', text: 'No previous prescription for this patient.' });
+      },
+      allowInInputs: true,
+    },
+    {
       key: '/',
       description: 'Focus diagnosis search',
       handler: () => {
@@ -167,7 +189,7 @@ export default function App() {
         <div className="flex-1 flex min-h-0">
           <LeftColumn patientSearchRef={patientSearchRef} />
           <CenterColumn diagnosisRef={diagnosisRef} />
-          <RightColumn onApply={applyPack} />
+          <RightColumn onApply={applyPack} onRepeat={repeatPrescription} />
         </div>
         <StatusLine />
         <NewPatientModal />
