@@ -11,7 +11,12 @@
     <style>
       html, body, #root { height: 100%; }
       body { background: #0c1122; color: #eef0f4; }
+      /* Keyboard focus ring (focus-visible, so mouse clicks don't show it). Text
+         fields are left out: they show focus with their own border / glow. */
       *:focus { outline: none; }
+      :focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+      textarea:focus-visible,
+      input:not([type="color"], [type="checkbox"], [type="radio"]):focus-visible { outline: none; }
     </style>
   </head>
   <body class="font-sans antialiased">

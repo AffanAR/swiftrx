@@ -5,14 +5,17 @@ for local development and production.
 
 ## App layout
 
-| App              | Code path                | Production host            | Dev port |
+| App              | Code path                | Planned production host    | Dev port |
 |------------------|--------------------------|----------------------------|----------|
 | Admin panel      | `apps/admin/`            | `admin.swiftrx.com`        | 5175     |
 | Hospital portal  | `apps/doctor-portal/`    | `<slug>.swiftrx.com`       | 5174     |
 | Rx pad           | `src/` (workspace root)  | `<slug>.swiftrx.com/rx`    | 5173     |
-| Dev gateway      | `scripts/dev.mjs`        | `localhost:5172`           | 5172     |
+| Dev gateway      | `scripts/dev.mjs`        | — (dev only)               | 5172     |
 
 ## Production
+
+> Nothing is hosted yet, and the `/rx` routing below doesn't work as
+> written. See [`ONLINE.md`](ONLINE.md) for what has to happen first.
 
 1. Add DNS records:
    - `A swiftrx.com        → <lb ip>`
@@ -22,7 +25,9 @@ for local development and production.
 2. Point the wildcard at a load balancer that terminates TLS and forwards
    to your app servers.
 3. Use the example nginx config in `deploy/nginx.swiftrx.com.conf` to map
-   hostnames to bundles, or replicate the routing in your cloud LB.
+   hostnames to bundles, or replicate the routing in your cloud LB. Its
+   `/rx` block needs rework first: the Rx pad is built with base `/`, so
+   under `/rx/` its assets would load from the portal.
 4. The admin panel and the portal live at different hostnames, so cookies
    and localStorage are isolated — the portal writes a small `BridgeSession`
    to localStorage and passes it to the Rx pad via the `?session=<token>`
@@ -38,12 +43,16 @@ Two ways to run the system locally:
 2. Run `npm run dev:all`. This boots the three Vite apps and the dev
    gateway on port 5172.
 3. Open any of these:
-   - `http://localhost:5172`             → admin login
    - `http://admin.localhost:5172`       → admin login
    - `http://city-hospital.localhost:5172`  → portal login
    - `http://northstar-medical.localhost:5172`  → portal login
-   - `http://riverside-clinic.localhost:5172`  → portal login
-   - `http://city-hospital.localhost:5172/rx`  → Rx pad for that tenant
+   - `http://riverside-clinic.localhost:5172`  → portal login (no accounts yet)
+
+   The Rx pad isn't reachable through the gateway yet (`/rx` returns a
+   proxy error). Sign in to a portal as a doctor and click **Start a new
+   prescription**, which opens `http://localhost:5173` with the session.
+   Plain `http://localhost:5172` has no hospital in it, so the portal shows
+   "Hospital portal not found".
 
 Chrome and Firefox natively resolve `*.localhost` to `127.0.0.1`. Other
 browsers may need a `/etc/hosts` entry. See below.
@@ -77,13 +86,9 @@ following to your OS hosts file:
 
 ## Demo credentials
 
-- **Admin**: `admin@swiftrx.com` / `admin1234`
-- **City Hospital doctor**: `ayesha@city-hospital.com` / `demo1234`
-  (also: `bilal@city-hospital.com`)
-- **Northstar doctor**: `sana@northstar-medical.com` / `demo1234`
-
-The portal will reject any credentials that don't belong to the resolved
-tenant. Open the correct hospital subdomain for each doctor.
+See the table in the [README](../README.md#demo-credentials). The portal
+rejects accounts that don't belong to the hospital in the URL, so open the
+right hospital subdomain for each account.
 
 ## Build all apps
 

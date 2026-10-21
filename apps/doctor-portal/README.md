@@ -1,56 +1,55 @@
 # SwiftRx Doctor Portal
 
-Per-hospital login portal deployed on `<hospital-slug>.swiftrx.com`.
-Doctors sign in with their hospital-issued email, sessions are scoped to that
-tenant, and every navigation surfaces the hospital's identity.
+Per-hospital sign-in portal, planned for `<hospital-slug>.swiftrx.com`.
+Doctors and hospital admins sign in with their hospital-issued email,
+sessions are scoped to that hospital, and every page shows the hospital's
+identity. Doctors open the Rx pad from their dashboard; hospital admins
+can't prescribe.
 
-> Mock build — auth is local-only (`localStorage` keyed by session). Swap
-> `src/auth.ts` for a real API call when the backend is ready.
+> Mock build — sign-in runs in the browser against
+> `apps/shared/src/mockDb.ts` and sessions live in localStorage. See the
+> root [README](../../README.md) and [PLAN.md](../../PLAN.md).
 
 ## Tenant model
 
-| Subdomain                    | Tenant             |
-| ---------------------------- | ------------------ |
-| `city-hospital.swiftrx.com`  | City Hospital      |
-| `northstar-medical.swiftrx.com` | Northstar Medical |
+| Subdomain                       | Tenant             |
+| ------------------------------- | ------------------ |
+| `city-hospital.swiftrx.com`     | City Hospital      |
+| `northstar-medical.swiftrx.com` | Northstar Medical  |
 | `riverside-clinic.swiftrx.com`  | Riverside Clinic   |
 
-The portal resolves its tenant from the host (subdomain) on every load.
-Local development uses `*.localhost`, which Chrome and Firefox resolve to
-`127.0.0.1` without DNS changes.
+The portal resolves its tenant from the host (subdomain) when it loads, or
+from a `?hospital=<slug>` query param. Local development uses `*.localhost`,
+which Chrome and Firefox resolve to `127.0.0.1` without DNS changes.
 
 ## Develop
 
+From the repo root (one install covers every app — npm workspaces):
+
 ```bash
-cd apps/doctor-portal
 npm install
-npm run dev
+npm run dev:portal
 ```
 
 Then visit:
 
 - `http://city-hospital.localhost:5174` — City Hospital portal
 - `http://northstar-medical.localhost:5174` — Northstar portal
-- `http://localhost:5174/?hospital=riverside-clinic` — fallback via query param
+- `http://localhost:5174/?hospital=city-hospital` — fallback via query param
 
-### Demo credentials
+Demo accounts are listed in the [root README](../../README.md#demo-credentials).
 
-| Email                         | Password   | Tenant                |
-| ----------------------------- | ---------- | --------------------- |
-| ayesha@city-hospital.com      | demo1234   | city-hospital         |
-| bilal@city-hospital.com       | demo1234   | city-hospital         |
-| sana@northstar-medical.com    | demo1234   | northstar-medical     |
+## Rx pad hand-off
 
-## Wiring to SwiftRx main app
-
-The doctor's workspace (Rx pad, patient queue) will live inside this same
-portal. Each card on the dashboard is a placeholder that points to a route
-under construction. When the real workspace is ready, link it from
-`pages/DashboardPage.tsx`.
+When a doctor signs in, `src/auth.ts` saves a small "bridge" session to
+localStorage. The dashboard's **Start a new prescription** link passes it to
+the Rx pad as `?session=<token>`; the link target comes from
+`VITE_RX_APP_URL` (default `http://localhost:5173`). Hospital admins get no
+bridge, and any left over on the browser is cleared when they sign in.
 
 ## Replacing the mock backend
 
-`src/auth.ts` exposes `login`, `logout`, `loadSession`, and `getDoctorById`.
-Each of those is a single function — swap their bodies for `fetch` calls
-when the API is online. The rest of the app uses session state via the
-`useSession` hook, so no other files need to change.
+`src/auth.ts` exposes `login`, `logout`, `loadSession` and
+`getUserFromSession`. Swap their bodies for API calls once the backend
+exists. Pages read the session through `useSession()` in
+`src/useSession.ts`, which also exposes `refresh()` for the login page.

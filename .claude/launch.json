@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:admin"],
       "port": 5175
+    },
+    {
+      "name": "gateway",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:gateway"],
+      "port": 5172
     }
   ]
 }

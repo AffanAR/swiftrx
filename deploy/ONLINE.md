@@ -1,267 +1,121 @@
-# Putting SwiftRx Online (free, for testing)
+# Putting SwiftRx online
 
-This doc covers three things, in the order you should try them:
-
-1. **[5 min] Share the local dev environment with anyone, anywhere** via
-   a Cloudflare quick tunnel — no DNS, no signup, no credit card.
-2. **[30 min] Publish all three apps on Vercel** with the free `*.vercel.app`
-   subdomain. The admin, hospital portal, and Rx pad each get their own
-   URL, and the dev gateway still routes them by host.
-3. **[optional] Get a real wildcard domain** like `*.swiftrx.com` for free
-   (or nearly so) so hospitals can live on `<slug>.swiftrx.com`.
-
-> ⚠️ This is a **testing** deployment. The mock database is in localStorage
-> and lives per-browser. For a real launch, swap `apps/shared/src/mockDb.ts`
-> for a real backend (the API surface it exposes is what the real backend
-> should mirror).
+> **Status (2026-10-22):** SwiftRx is a front-end prototype with no backend.
+> There is **no tested way to host it for other people yet.** This page
+> covers what works today, what doesn't and why, and what has to happen
+> before it can go online. The roadmap is in [`PLAN.md`](../PLAN.md).
+>
+> Nothing here is suitable for real patient data.
 
 ---
 
-## Part 1 — Share the local dev build instantly (Cloudflare Quick Tunnel)
-
-This is the fastest path. You keep running the dev server, and anyone with
-the URL hits your machine through Cloudflare's edge. Zero config, zero
-signup, zero cost. The tunnel URL is random and changes every time you
-restart it, so it's only good for live demos.
-
-### 1.1 Install `cloudflared`
-
-Pick one:
-
-- **macOS** — `brew install cloudflared`
-- **Windows (winget)** — `winget install Cloudflare.cloudflared`
-- **Windows (scoop)** — `scoop install cloudflared`
-- **Linux** — grab the binary from <https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/>
-  or `curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared && chmod +x cloudflared && sudo mv cloudflared /usr/local/bin/`
-
-Verify: `cloudflared --version`
-
-### 1.2 Start the dev gateway
+## 1. What works today: a local demo
 
 From the repo root:
 
 ```bash
-npm run dev
+npm install        # one install for every app (npm workspaces)
+npm run dev:all    # Rx pad :5173, portal :5174, admin :5175, gateway :5172
 ```
 
-That boots all four servers:
+Then open, in Chrome or Firefox (they resolve `*.localhost` to 127.0.0.1;
+other browsers need the hosts-file entries in [`DNS.md`](DNS.md)):
 
-| Surface         | Local URL                       |
-| --------------- | ------------------------------- |
-| Dev gateway     | http://localhost:5172           |
-| Admin panel     | http://admin.localhost:5172     |
-| Hospital portal | http://city-hospital.localhost:5172 |
-| Rx pad          | http://localhost:5173/rx        |
+| URL                                        | Shows                          |
+| ------------------------------------------ | ------------------------------ |
+| `http://admin.localhost:5172`              | Admin panel sign-in            |
+| `http://city-hospital.localhost:5172`      | City Hospital portal sign-in   |
+| `http://northstar-medical.localhost:5172`  | Northstar portal sign-in       |
+| `http://localhost:5174/?hospital=city-hospital` | Portal without the gateway |
 
-### 1.3 Open the tunnel
+**Rx pad:** sign in to a portal as a **doctor** and click **Start a new
+prescription**. That opens `http://localhost:5173` with the doctor's
+session. Hospital admins can't open the Rx pad.
 
-In a second terminal:
-
-```bash
-cloudflared tunnel --url http://localhost:5172
-```
-
-Cloudflare prints a `https://<random-words>.trycloudflare.com` URL.
-That's your public entry point. Send it to anyone:
-
-| URL                                       | Goes to                |
-| ----------------------------------------- | ---------------------- |
-| `https://<rand>.trycloudflare.com/`              | Admin panel (root path) |
-| `https://<rand>.trycloudflare.com/rx`            | Rx pad                  |
-| `https://<rand>.trycloudflare.com/city-hospital` | City Hospital portal    |
-
-> **Note on subdomains:** quick tunnels give you one host, not many. So
-> the `<slug>.swiftrx.com` style routing only works in Part 2+. For Part 1
-> we use the path-based fallback at the gateway. If you want the subdomain
-> feel in Part 1, run named tunnels (see Cloudflare docs) — those require
-> a free Cloudflare account and a domain you control.
-
-### 1.4 Demo credentials
-
-| Role           | Email                          | Password    | Lands on            |
-| -------------- | ------------------------------ | ----------- | ------------------- |
-| Platform admin | `admin@swiftrx.com`            | `admin1234` | Admin panel         |
-| Hospital admin | `admin@city-hospital.com`      | `admin1234` | City Hospital       |
-| Doctor         | `ayesha@city-hospital.com`     | `dr1234`    | City Hospital (simple UI) |
-| Doctor         | `sana@northstar-medical.com`   | `dr1234`    | Northstar           |
-| Hospital admin | `admin@riverside-clinic.com`   | `admin1234` | Riverside           |
-
-> Doctor sign-in is intentionally a tiny UI — no subscription, doctor
-> roster, or settings. See `apps/doctor-portal/src/components/PortalShell.tsx`
-> for the role-based nav.
+Demo accounts are listed in the [README](../README.md#demo-credentials).
 
 ---
 
-## Part 2 — Free static hosting
+## 2. Why it can't be shared yet
 
-Vercel hosts the three static SPAs for free. The gateway (a long-lived
-Node Web proxy) lives on a small free VM. The two are wired together
-with a single public hostname.
-
-### 2.1 One-time setup
-
-```bash
-npm i -g vercel
-vercel login
-```
-
-### 2.2 Deploy the three static apps to Vercel
-
-In the repo root, run:
-
-```bash
-# Admin panel  →  https://swiftrx-admin.vercel.app
-cd apps/admin && vercel --prod --yes
-cd ../..
-
-# Hospital portal → https://swiftrx-portal.vercel.app
-cd apps/doctor-portal && vercel --prod --yes
-cd ../..
-
-# Rx pad → https://swiftrx-rx.vercel.app
-vercel --prod --yes      # project root for the Rx pad
-cd ..
-```
-
-Each app already has a `vercel.json` that rewrites every path to
-`index.html` so client-side routing keeps working on hard reload.
-
-If you prefer the Vercel UI: click *Add New → Project*, **Import** the
-repo three times, and set each project's **Root Directory** to
-`apps/admin`, `apps/doctor-portal`, or repo root respectively. The
-`vercel.json` files take care of the rest.
-
-### 2.3 Deploy the gateway to a free VM
-
-Vercel serverless functions can't run a long-lived Web proxy, so the
-gateway lives on a small free VM. Pick whichever you like:
-
-| Service              | Free tier                       | Setup                                            |
-| -------------------- | ------------------------------- | ------------------------------------------------ |
-| Render               | Free web service (spins down after idle, but free) | New → Web Service → connect repo, root = `scripts`, build = `npm install`, start = `node dev.mjs` |
-| Railway              | $5 free credit / month          | New → Deploy from repo, set `scripts` as root, start = `node dev.mjs` |
-| Fly.io               | Free allowance for small VMs    | `fly launch --copy-config` then `fly deploy`     |
-| Glitch               | Always-free Node project        | New Project → `hello-node`, paste in the gateway code |
-
-Set these env vars on the gateway host:
-
-| Var                     | Value                            |
-| ----------------------- | -------------------------------- |
-| `SWIFTRX_ADMIN_URL`     | `https://swiftrx-admin.vercel.app`     |
-| `SWIFTRX_PORTAL_URL`    | `https://swiftrx-portal.vercel.app`    |
-| `SWIFTRX_RX_URL`        | `https://swiftrx-rx.vercel.app`        |
-| `SWIFTRX_PUBLIC_HOST`   | `<your-gateway-hostname>`               |
-| `PORT`                  | `8080` (Render/Railway convention)      |
-
-The gateway reads these and rewrites `Host:` so the downstream Vercel
-apps see a unified origin. With `SWIFTRX_PUBLIC_HOST=swiftrx-gateway.onrender.com`,
-the router now resolves:
-
-| URL                                                    | Goes to           |
-| ------------------------------------------------------ | ----------------- |
-| `https://swiftrx-gateway.onrender.com/`                | Admin panel       |
-| `https://swiftrx-gateway.onrender.com/rx`              | Rx pad            |
-| `https://swiftrx-gateway.onrender.com/city-hospital`   | Hospital portal   |
-| `https://swiftrx-gateway.onrender.com/northstar-medical` | Hospital portal |
-| `https://swiftrx-gateway.onrender.com/riverside-clinic` | Hospital portal  |
+- **No backend.** All data lives in each browser tab's memory (admin
+  feature edits go to that browser's localStorage). Different people,
+  devices, and even different apps never see each other's changes, and a
+  reload resets everything.
+- **Mock sign-in.** Passwords ship inside the app bundles and sessions are
+  unsigned. Acceptable on your own machine, not on the internet.
+- **One URL can't reach all three apps.** The dev gateway picks the app by
+  hostname (`admin.localhost` vs `<slug>.localhost`). A single tunnel URL
+  has one hostname, so through the gateway it only reaches the portal
+  (add `?hospital=<slug>`), and the portal's Rx pad link still points at
+  `localhost:5173`, which is the *viewer's* own machine.
+- **The dev servers reject outside hostnames.** Tunnelling straight to an
+  app port (e.g. 5174) returns *"Blocked request. This host is not
+  allowed"* unless the host is added to `server.allowedHosts` in that
+  app's `vite.config.ts`.
+- **`/rx` routing doesn't work yet**, neither through the dev gateway
+  (the Rx dev server only listens on IPv6 `[::1]:5173`, and the Rx app
+  has no `/rx` base path, so its scripts would load from the portal) nor
+  in [`nginx.swiftrx.com.conf`](nginx.swiftrx.com.conf) (the Rx build
+  uses base `/`, so its `/assets/…` requests hit the portal).
 
 ---
 
-## Part 3 — Real wildcard domain (free options)
+## 3. What has to happen first
 
-The hospital portal lives on `<slug>.swiftrx.com`. To make that work
-without paying for a domain, pick one of these paths.
+These are phases in [`PLAN.md`](../PLAN.md):
 
-### 3.1 Free subdomains you actually own
-
-| Provider        | What you get                            | Caveat                                                  |
-| --------------- | --------------------------------------- | ------------------------------------------------------- |
-| `eu.org`        | Free permanent subdomain under `eu.org` | Application takes 1–4 weeks. You become the registrant. |
-| `is-a.dev`      | Free subdomain like `swiftrx.is-a.dev` (or any name you register) | GitHub PR registration. |
-| `js.org`        | Free `swiftrx.js.org`                   | Project must be a JavaScript project (yours is).        |
-| `onrender.com`  | `swiftrx.onrender.com`                  | Free Render static site, no wildcard.                   |
-| `vercel.app`    | `swiftrx.vercel.app`                    | Free with Vercel, no wildcard (use a project per slug). |
-| `glitch.com`    | `swift-rx.glitch.me`                    | Free, no wildcard.                                      |
-
-For a true wildcard (`*.swiftrx.com` → one IP), you need your own
-domain. Cheapest path is:
-
-- **Porkbun** — `.com` is ~$9/yr, `.xyz` is ~$1/yr. Free WHOIS privacy.
-- **Cloudflare Registrar** — at-cost, no markup. Requires a free
-  Cloudflare account.
-- **Spaceship** (Namecheap spinoff) — `.xyz` from ~$1/yr the first year.
-
-### 3.2 DNS for `*.swiftrx.com`
-
-Once you own `swiftrx.com`, in Cloudflare DNS add:
-
-| Type | Name | Value                       | Proxy |
-| ---- | ---- | --------------------------- | ----- |
-| A    | `@`  | `<gateway-ipv4>`            | Proxied |
-| A    | `*`  | `<gateway-ipv4>`            | Proxied |
-
-Then in the Cloudflare dashboard, point `swiftrx.com` and `*.swiftrx.com`
-at the gateway. Cloudflare's free tier terminates TLS for both apex and
-wildcard automatically.
-
-### 3.3 Gateway config for wildcard
-
-Set on the gateway host:
-
-```bash
-SWIFTRX_WILDCARD_DOMAIN=swiftrx.com
-SWIFTRX_GATEWAY_PORT=443
-SWIFTRX_TLS_EMAIL=ops@swiftrx.com   # for Let's Encrypt
-```
-
-The gateway's router now resolves:
-
-| Host                            | App            |
-| ------------------------------- | -------------- |
-| `admin.swiftrx.com`             | Admin panel    |
-| `rx.swiftrx.com`                | Rx pad         |
-| `city-hospital.swiftrx.com`     | City Hospital  |
-| `northstar-medical.swiftrx.com` | Northstar      |
-| `riverside-clinic.swiftrx.com`  | Riverside      |
-| `swiftrx.com`                   | Admin panel (root) |
-
-### 3.4 Local-only wildcard with `nip.io` / `sslip.io`
-
-If you want `<slug>.swiftrx.com` to work on a dev machine without owning
-the real domain:
-
-- Use `nip.io`: add `127.0.0.1.nip.io` to your hosts file. `city-hospital.swiftrx.127.0.0.1.nip.io` resolves to 127.0.0.1.
-- Or use `sslip.io`: `city-hospital.127.0.0.1.sslip.io` works the same.
-
-Or just edit `/etc/hosts` (or `C:\Windows\System32\drivers\etc\hosts`):
-
-```
-127.0.0.1   admin.swiftrx.com
-127.0.0.1   rx.swiftrx.com
-127.0.0.1   city-hospital.swiftrx.com
-127.0.0.1   northstar-medical.swiftrx.com
-127.0.0.1   riverside-clinic.swiftrx.com
-```
-
-Then run `npm run dev` and visit `http://city-hospital.swiftrx.com:5172/`.
+1. **Phase 1 — move the Rx pad into the portal** as a `/rx` route. Each
+   hospital is then one app on one hostname: no session hand-off, no
+   `/rx` proxying, and a single tunnel URL can demo the whole doctor flow.
+2. **Phase 2 — backend.** A real API and database, server-issued session
+   cookies, and data that persists and is shared across apps and devices.
+3. **Phase 4 — pilot readiness.** Hosting with backups and monitoring, a
+   security review, and privacy and data-processing agreements with
+   hospitals.
 
 ---
 
-## Part 4 — Production checklist (when you're ready)
+## 4. Hosting outline (for when those are done)
 
-These are the things to do **before** you let real doctors sign in:
+- **Domain with wildcard DNS** pointing at your server or load balancer:
 
-- [ ] Replace `apps/shared/src/mockDb.ts` with a real backend.
-      The exports there are the contract: `getHospital`, `getUserByEmail`,
-      `appendSignedRx`, `appendAudit`, etc.
-- [ ] Replace the localStorage bridge token with an HTTP-only signed
-      cookie between the portal and the Rx pad.
-- [ ] Move audit log to an append-only store (S3 + Object Lock, or a
-      managed ledger).
-- [ ] Add rate limiting on the login endpoints (1 attempt / 2s / IP).
-- [ ] HIPAA: encrypt at rest, sign a BAA with the cloud provider, restrict
-      egress, add SSO + MFA for doctors.
-- [ ] Set up a real domain + Cloudflare + monitoring.
+  | Type | Name | Value         |
+  | ---- | ---- | ------------- |
+  | A    | `@`  | `<server-ip>` |
+  | A    | `*`  | `<server-ip>` |
 
-Until then, the Vercel + Cloudflare tunnel setup above is fine for
-internal demos and stakeholder review.
+- **TLS for the apex and the wildcard**, e.g. a wildcard Let's Encrypt
+  certificate (DNS challenge) or a proxy such as Cloudflare in front.
+- **Reverse proxy:** [`nginx.swiftrx.com.conf`](nginx.swiftrx.com.conf)
+  maps `admin.<domain>` to the admin build and `<slug>.<domain>` to the
+  portal build. Its `/rx` block needs rework (see section 2).
+- **Build-time env vars** (copy the `.env.example` files):
+
+  | Var               | Read by  | Purpose                                    | Default                 |
+  | ----------------- | -------- | ------------------------------------------ | ----------------------- |
+  | `VITE_RX_APP_URL` | Portal   | Target of the "Open Rx Pad" link           | `http://localhost:5173` |
+  | `VITE_PORTAL_URL` | Rx pad   | Target of "Open doctor portal" when signed out | `http://localhost:5174` |
+
+  `VITE_ADMIN_APP_URL`, `VITE_PORTAL_APP_URL` and `VITE_DEV_GATEWAY_URL`
+  are defined in `apps/shared/src/config.ts` but nothing uses them yet.
+
+---
+
+## 5. Production checklist
+
+Before any real doctor signs in:
+
+- [ ] Replace `apps/shared/src/mockDb.ts` with a real backend. Its exports
+      (`getHospital`, `listPatientsForHospital`, `appendSignedRx`,
+      `appendAudit`, …) are the contract.
+- [ ] Replace the localStorage / URL session hand-off with server-issued,
+      HTTP-only session cookies.
+- [ ] Enforce roles, tenant isolation, plan limits and feature flags on the
+      server.
+- [ ] Store the audit log append-only.
+- [ ] Rate-limit sign-in; add MFA for admins.
+- [ ] Encrypt data at rest, take backups, and meet the privacy rules and
+      hospital agreements that apply to patient data.
+- [ ] Have a clinician review the safety rules (allergy, interaction, dose).
+- [ ] Add monitoring and error reporting that never logs patient data.

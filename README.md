@@ -4,7 +4,7 @@ Keyboard-first, ultra-low-latency digital prescription pad for clinicians. The
 workspace is split into **three** apps that all run out of one repo and share
 a single source of truth:
 
-| App              | Surface                          | Production host           |
+| App              | Surface                          | Planned production host   |
 | ---------------- | -------------------------------- | ------------------------- |
 | **Admin panel**  | Platform admin (tenants, users,  | `admin.swiftrx.com`       |
 |                  | usage, audit log)                |                           |
@@ -20,6 +20,7 @@ and UI primitives via the local `@swiftrx/shared` package.
 ## Run it
 
 ```bash
+# One install at the root covers every app (npm workspaces):
 npm install
 
 # Run the whole system (admin + portal + rx + dev gateway on :5172):
@@ -42,18 +43,29 @@ After `npm run dev:all`, open:
 - `http://admin.localhost:5172`            — admin login
 - `http://city-hospital.localhost:5172`   — portal login for City Hospital
 - `http://northstar-medical.localhost:5172` — portal login for Northstar
-- `http://riverside-clinic.localhost:5172` — portal login for Riverside
-- `http://city-hospital.localhost:5172/rx` — Rx pad for City Hospital
+- `http://riverside-clinic.localhost:5172` — portal login for Riverside (no accounts yet)
+
+To open the **Rx pad**, sign in to a portal as a doctor and click **Start a
+new prescription**: it opens `http://localhost:5173` with the doctor's
+session. (`/rx` through the gateway doesn't work yet; see
+[`deploy/ONLINE.md`](deploy/ONLINE.md).) Without the gateway, open the
+portal at `http://localhost:5174/?hospital=city-hospital`.
 
 Chrome and Firefox resolve `*.localhost` to `127.0.0.1` natively. Other
 browsers may need a `/etc/hosts` entry — see `deploy/DNS.md`.
 
 ### Demo credentials
 
-- **Admin**: `admin@swiftrx.com` / `admin1234`
-- **City Hospital doctor**: `ayesha@city-hospital.com` / `demo1234`
-  (also: `bilal@city-hospital.com`)
-- **Northstar doctor**: `sana@northstar-medical.com` / `demo1234`
+| Role            | Email                          | Password    | Sign in at          |
+| --------------- | ------------------------------ | ----------- | ------------------- |
+| Platform admin  | `admin@swiftrx.com`            | `admin1234` | Admin panel         |
+| Hospital admin  | `admin@city-hospital.com`      | `demo1234`  | City Hospital       |
+| Hospital admin  | `admin@northstar-medical.com`  | `demo1234`  | Northstar           |
+| Doctor          | `ayesha@city-hospital.com`     | `demo1234`  | City Hospital       |
+| Doctor          | `bilal@city-hospital.com`      | `demo1234`  | City Hospital       |
+| Doctor          | `sana@northstar-medical.com`   | `demo1234`  | Northstar           |
+
+Only doctors can open the Rx pad. Riverside Clinic has no accounts yet.
 
 ## Repo layout
 
@@ -70,7 +82,9 @@ SwiftRX/
 ```
 
 `@swiftrx/shared` is consumed by each app via a Vite alias and a TypeScript
-`paths` entry — there's no build step, no monorepo tooling beyond `npm`.
+`paths` entry — there's no build step. The apps are npm workspaces
+(`apps/*`), so there is one `package-lock.json` and one `node_modules` at
+the root.
 Replace it with a real backend by swapping the `mockDb.ts` functions for
 HTTP calls; the components don't change.
 
@@ -82,8 +96,11 @@ reverse proxy (see `deploy/nginx.swiftrx.com.conf`) do the routing by host:
 ```
 admin.swiftrx.com           → admin app
 city-hospital.swiftrx.com   → doctor portal
-city-hospital.swiftrx.com/rx → Rx pad
+city-hospital.swiftrx.com/rx → Rx pad   (planned — /rx routing doesn't work yet)
 ```
+
+Nothing is hosted yet; [`deploy/ONLINE.md`](deploy/ONLINE.md) explains what
+works today and what has to happen first.
 
 Inside the doctor portal, login is gated to the resolved tenant — a
 doctor registered for `northstar-medical` cannot sign in at

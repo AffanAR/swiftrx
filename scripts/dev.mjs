@@ -8,6 +8,10 @@
 //    *                 → portal (or the rx pad if /rx is on the path)
 //    *.localhost       → portal (Chrome/Firefox resolve *.localhost → 127.0.0.1)
 //
+//  Known gap: /rx doesn't work yet. The Rx dev server listens on IPv6 [::1]
+//  only and the Rx app has no /rx base path (see deploy/ONLINE.md). Doctors
+//  reach the Rx pad from the portal dashboard instead (localhost:5173).
+//
 //  In production the same mapping is done by a reverse proxy (see deploy/nginx
 //  in the repo for an example).
 // =============================================================================
@@ -114,12 +118,13 @@ if (targets.gateway) {
       '════════════════════════════════════════════════════════════════',
       '  SwiftRx dev gateway',
       '════════════════════════════════════════════════════════════════',
-      `  Gateway    :  http://localhost:${GATEWAY_PORT}`,
+      `  Gateway    :  port ${GATEWAY_PORT}, routes by hostname:`,
       `  Admin      :  http://admin.localhost:${GATEWAY_PORT}`,
       `  Hospitals  :  http://city-hospital.localhost:${GATEWAY_PORT}`,
       `                http://northstar-medical.localhost:${GATEWAY_PORT}`,
       `                http://riverside-clinic.localhost:${GATEWAY_PORT}`,
-      `  Rx pad     :  http://city-hospital.localhost:${GATEWAY_PORT}/rx`,
+      `  Rx pad     :  sign in as a doctor → "Start a new prescription"`,
+      `                (opens http://localhost:${RX_PORT}; /rx via the gateway is not wired yet)`,
       '',
       '  Each app also runs standalone on its own port:',
       `    Rx      http://localhost:${RX_PORT}`,

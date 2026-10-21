@@ -37,7 +37,12 @@
         #print-area table { page-break-inside: avoid; }
         #print-area tr { page-break-inside: avoid; }
       }
+      /* Keyboard focus ring (focus-visible, so mouse clicks don't show it). Text
+         fields are left out: they show focus with their own border / glow. */
       *:focus { outline: none; }
+      :focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+      textarea:focus-visible,
+      input:not([type="color"], [type="checkbox"], [type="radio"]):focus-visible { outline: none; }
     </style>
   </head>
   <body class="font-sans antialiased">

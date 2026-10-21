@@ -284,7 +284,7 @@ function ChipRow({
   return (
     <div>
       <span className="block text-[11px] uppercase tracking-wider text-ink-400 mb-1">{label}</span>
-      <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-ink-700 bg-ink-900/40 p-1.5 min-h-9">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-ink-700 bg-ink-900/40 p-1.5 min-h-9 transition-colors focus-within:border-rx-focus">
         {chips.map((c) => (
           <span
             key={c}

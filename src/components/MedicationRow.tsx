@@ -107,7 +107,7 @@ export function MedicationRow({ med, index }: RowProps) {
           value={med.instructions}
           onChange={(e) => update(med.rowId, { instructions: e.target.value })}
           onKeyDown={onKey}
-          className="w-40 bg-ink-800 border border-ink-700 rounded px-2 py-1 text-xs"
+          className="w-40 bg-ink-800 border border-ink-700 rounded px-2 py-1 text-xs focus:border-rx-focus"
         />
 
         <button
@@ -167,7 +167,7 @@ function NumberInput({
       onChange={(e) => onChange(Number(e.target.value) || 0)}
       onKeyDown={onKeyDown}
       className={cx(
-        'bg-ink-800 border border-ink-700 rounded px-1.5 py-1 text-xs font-mono',
+        'bg-ink-800 border border-ink-700 rounded px-1.5 py-1 text-xs font-mono focus:border-rx-focus',
         className,
       )}
     />

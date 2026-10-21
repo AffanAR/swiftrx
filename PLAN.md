@@ -216,7 +216,7 @@ iterate on.
 
 - [x] `git init`, add `.gitignore` (`node_modules`, `dist`, `*.tsbuildinfo`,
       `.puku/`), first commit.
-- [ ] Convert to npm workspaces. Delete the portal's own lockfile and
+- [x] Convert to npm workspaces (done 2026-10-22). Delete the portal's own lockfile and
       `node_modules`. One install at the root.
 - [x] Fix P0 #1–#7 (done 2026-10-22; checked in the browser):
   - print the just-signed Rx;
@@ -233,8 +233,10 @@ iterate on.
   - bridge only for `doctor` users with a license;
   - remove the hard-coded doctor fallback and the cross-tenant patient
     fallback.
-- [ ] Restore visible focus rings.
-- [ ] Fix README / `deploy/ONLINE.md` drift.
+- [x] Restore visible focus rings (done 2026-10-22).
+- [x] Fix README / `deploy/ONLINE.md` drift (done 2026-10-22). The docs now
+      say `/rx` routing (gateway and nginx) doesn't work yet; Phase 1's move
+      of the Rx pad into the portal removes it.
 
 **Exit:** sign in → open Rx → add meds → sign → the signed Rx prints. No
 console errors.

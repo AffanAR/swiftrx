@@ -3,19 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev:rx": "vite",
-    "dev:portal": "npm --prefix apps/doctor-portal run dev",
-    "dev:admin": "npm --prefix apps/admin run dev",
+    "dev:portal": "npm run dev -w @swiftrx/doctor-portal",
+    "dev:admin": "npm run dev -w @swiftrx/admin",
     "dev:all": "node scripts/dev.mjs all",
     "dev:gateway": "node scripts/dev.mjs gateway",
     "build:rx": "tsc -b && vite build",
-    "build:portal": "npm --prefix apps/doctor-portal run build",
-    "build:admin": "npm --prefix apps/admin run build",
+    "build:portal": "npm run build -w @swiftrx/doctor-portal",
+    "build:admin": "npm run build -w @swiftrx/admin",
     "build": "npm run build:rx && npm run build:portal && npm run build:admin",
     "preview:rx": "vite preview",
-    "preview:portal": "npm --prefix apps/doctor-portal run preview",
-    "preview:admin": "npm --prefix apps/admin run preview"
+    "preview:portal": "npm run preview -w @swiftrx/doctor-portal",
+    "preview:admin": "npm run preview -w @swiftrx/admin"
   },
   "dependencies": {
     "react": "^18.3.1",
