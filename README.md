@@ -169,7 +169,8 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/doctor-portal/src/rx/store.ts`          | Rx pad state + `useApp` hook                       |
 | `apps/doctor-portal/src/rx/safety.ts`         | Allergy / interaction / duplicate checks           |
 | `apps/doctor-portal/src/rx/search.ts`         | Fuzzy search + brand → generic matching            |
-| `apps/doctor-portal/src/rx/print.ts`          | Render `#print-area` for browser print dialog      |
+| `apps/doctor-portal/src/rx/print.ts`          | Fill `#print-area` and open the browser print dialog |
+| `apps/shared/src/print.ts`                    | `renderRxHtml()`, the one print template (Rx pad + admin preview) |
 | `apps/admin/src/pages/*`                      | Admin console pages (dashboard, hospitals, audit)  |
 | `apps/doctor-portal/src/pages/*`              | Portal pages (login, dashboard, patients, …)       |
 | `scripts/dev.mjs`                             | Dev orchestrator + subdomain gateway               |

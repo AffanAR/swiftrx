@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   DEFAULT_HOSPITAL_FEATURES,
@@ -9,13 +9,18 @@ import {
   Select,
   Card,
   HospitalBadge,
+  RX_PAGE_MARGIN_MM,
   getHospital,
+  listDoctorsForHospital,
+  renderRxHtml,
+  rxPageSizeMm,
   updateHospitalFeatures,
   updateHospitalRxDesign,
   type HospitalFeatures,
   type RxDesign,
   type RxPageSize,
   type RxWatermarkMode,
+  type SignedRx,
   cx,
 } from '@swiftrx/shared';
 
@@ -340,12 +345,13 @@ export function HospitalFeaturesPage() {
             title="Live preview"
             subtitle="What the printed Rx will look like for this hospital."
           >
-            <RxPreview design={design} hospital={initial} />
+            <RxPreview design={design} hospitalSlug={initial.slug} />
           </Card>
 
           <div className="mt-4 text-[11px] text-ink-500 leading-relaxed px-1">
-            The preview uses the same <code className="text-ink-300">RxDesign</code> object
-            the print pipeline uses. Saving here updates the design that all doctors on{' '}
+            The preview is drawn by the same template the Rx pad prints with
+            (<code className="text-ink-300">renderRxHtml</code>), using a sample prescription.
+            Saving here updates the design that all doctors on{' '}
             <span className="text-ink-300">{initial.name}</span> see when they print.
           </div>
         </div>
@@ -425,165 +431,102 @@ function clampInt(v: string, lo: number, hi: number) {
 // -----------------------------------------------------------------------------
 //  Live preview
 //  ---------------------------------------------------------------------------
-//  Kept intentionally inline here so changes to RxDesign are immediately
-//  reflected without a round-trip. The exact same field-by-field logic
-//  lives in apps/swiftrx/src/print.ts (step 4).
+//  Renders the shared print template (renderRxHtml), the same HTML the Rx pad
+//  prints, at true paper size, then scales the page down to fit the column.
 // -----------------------------------------------------------------------------
 
-function RxPreview({
-  design,
-  hospital,
-}: {
-  design: RxDesign;
-  hospital: { name: string; city: string };
-}) {
-  // Stable, fake patient for the preview so it always renders the same way.
-  const patient = useMemo(
-    () => ({
+// CSS defines 96px per inch.
+const PX_PER_MM = 96 / 25.4;
+
+/** A fixed sample prescription, so the preview always shows the same content. */
+function sampleRx(hospitalSlug: string): SignedRx {
+  const doctor = listDoctorsForHospital(hospitalSlug)[0];
+  const now = new Date().toISOString();
+  return {
+    id: 'rx_preview',
+    signedAt: now,
+    hospitalSlug,
+    patient: {
+      id: 'p_preview',
+      hospitalSlug,
       name: 'Bilal Ahmed',
       age: 42,
-      sex: 'M' as const,
+      sex: 'M',
       weightKg: 78,
+      contact: '+92-300-1234567',
       allergies: ['Penicillin'],
-    }),
-    [],
-  );
-  const meds = useMemo(
-    () => [
-      { name: 'Lisinopril', dose: '10 mg', freq: 'QD', days: 90, instr: 'Same time daily' },
-      { name: 'Amlodipine', dose: '5 mg', freq: 'QD', days: 90, instr: 'Morning' },
-      { name: 'Atorvastatin', dose: '20 mg', freq: 'QHS', days: 90, instr: 'At bedtime' },
+      activeProblems: [],
+      activeMedications: [],
+      recentVitals: [],
+      createdAt: now,
+    },
+    diagnosis: { code: 'I10', name: 'Essential (primary) hypertension', category: 'Cardiovascular' },
+    medications: [
+      { rowId: 'r1', drugId: 'lisinopril', genericName: 'Lisinopril', dosage: { value: 10, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Same time daily' },
+      { rowId: 'r2', drugId: 'amlo', genericName: 'Amlodipine', brandName: 'Norvasc', dosage: { value: 5, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Morning' },
+      { rowId: 'r3', drugId: 'atorva', genericName: 'Atorvastatin', dosage: { value: 20, unit: 'mg' }, frequency: 'QHS', durationDays: 90, instructions: 'At bedtime' },
     ],
-    [],
-  );
+    investigations: [
+      { code: 'BMP', name: 'Basic Metabolic Panel', type: 'lab' },
+      { code: 'Lipid', name: 'Lipid Profile', type: 'lab' },
+    ],
+    doctorId: doctor?.id ?? 'd_preview',
+    doctorName: doctor?.name ?? 'Dr. Sample Doctor',
+    doctorLicense: doctor?.licenseNo ?? 'PMDC-00000',
+  };
+}
 
-  const validUntil = new Date(Date.now() + 90 * 86_400_000).toLocaleDateString();
+function RxPreview({ design, hospitalSlug }: { design: RxDesign; hospitalSlug: string }) {
+  const sample = useMemo(() => sampleRx(hospitalSlug), [hospitalSlug]);
+  const html = useMemo(() => renderRxHtml(sample, design), [sample, design]);
+  const { widthMm, heightMm } = rxPageSizeMm(design);
+  const paperW = widthMm * PX_PER_MM;
+  const paperH = heightMm * PX_PER_MM;
+
+  // Track the column width so the full-size page can be scaled to fit it.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [boxWidth, setBoxWidth] = useState(0);
+  const [actualSize, setActualSize] = useState(false);
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    setBoxWidth(el.clientWidth);
+    const observer = new ResizeObserver(() => setBoxWidth(el.clientWidth));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const scale = actualSize || !boxWidth ? 1 : Math.min(1, boxWidth / paperW);
 
   return (
-    <div
-      className="mx-auto rounded-md border border-ink-600 bg-white text-slate-900 shadow-xl overflow-hidden transition-all"
-      style={{
-        aspectRatio: design.pageSize === 'A5'
-          ? (design.landscape ? '210 / 148' : '148 / 210')
-          : design.pageSize === 'Letter'
-            ? (design.landscape ? '11 / 8.5' : '8.5 / 11')
-            : (design.landscape ? '297 / 210' : '210 / 297'),
-        maxWidth: '100%',
-      }}
-    >
-      <div className="relative h-full flex flex-col">
-        {/* Watermark */}
-        {design.watermark !== 'none' && (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2 text-[11px] text-ink-400">
+        <span>
+          {design.pageSize}
+          {design.landscape ? ' landscape' : ''} · first page · {Math.round(scale * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={() => setActualSize((v) => !v)}
+          className="rx-btn-ghost px-2 py-0.5 text-[11px]"
+        >
+          {actualSize ? 'Fit to width' : 'Actual size'}
+        </button>
+      </div>
+      <div ref={boxRef} className={cx(actualSize && 'overflow-auto max-h-[75vh] rounded-md')}>
+        {/* Reserves the scaled page's footprint; the page itself is scaled with a transform. */}
+        <div className="mx-auto" style={{ width: paperW * scale, height: paperH * scale }}>
           <div
-            className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
-            aria-hidden
-          >
-            <div
-              className="text-3xl sm:text-5xl font-extrabold tracking-widest opacity-10"
-              style={{ transform: 'rotate(-22deg)', color: design.accentColor }}
-            >
-              {design.watermark === 'confidential'
-                ? 'CONFIDENTIAL'
-                : design.watermark === 'hospital'
-                  ? hospital.name.toUpperCase()
-                  : 'DR. SAMPLE'}
-            </div>
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="relative px-4 py-3 flex items-start gap-3">
-          {design.showRxBadge && (
-            <div
-              className="h-10 w-10 rounded-full flex items-center justify-center font-extrabold text-white shrink-0"
-              style={{ background: design.accentColor }}
-            >
-              ℞
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="text-base font-bold text-slate-900 leading-tight">{design.headerTitle}</div>
-            {design.headerSubtitle && (
-              <div className="text-[10px] text-slate-500 mt-0.5">{design.headerSubtitle}</div>
-            )}
-          </div>
-          {design.headerRight && (
-            <div className="text-[10px] text-slate-500 text-right whitespace-pre-line max-w-[40%]">
-              {design.headerRight}
-            </div>
-          )}
-        </div>
-        {design.showAccentBand && (
-          <div className="h-1" style={{ background: design.accentColor }} />
-        )}
-
-        {/* Patient */}
-        <div className="px-4 pt-3 text-[11px] text-slate-700 flex flex-wrap gap-x-4 gap-y-1">
-          <div><span className="text-slate-400">Patient:</span> <span className="font-semibold text-slate-900">{patient.name}</span></div>
-          <div><span className="text-slate-400">Age/Sex:</span> {patient.age}{patient.sex}</div>
-          <div><span className="text-slate-400">Weight:</span> {patient.weightKg} kg</div>
-          <div><span className="text-slate-400">Date:</span> {new Date().toLocaleDateString()}</div>
-        </div>
-
-        {design.showAllergyBanner && patient.allergies.length > 0 && (
-          <div className="mx-4 mt-2 rounded border border-rose-300 bg-rose-50 text-rose-700 text-[10px] font-semibold px-2 py-1">
-            ⚠ ALLERGIES: {patient.allergies.join(', ')}
-          </div>
-        )}
-
-        {/* Diagnosis */}
-        <div className="px-4 mt-3">
-          <div className="text-[9px] uppercase tracking-wider text-slate-400">Diagnosis</div>
-          <div className="text-[12px] text-slate-900 font-semibold mt-0.5">
-            <span className="font-mono mr-1">I10</span> Essential (primary) hypertension
-          </div>
-        </div>
-
-        {/* Medications */}
-        <div className="px-4 mt-3 flex-1">
-          <div className="text-[9px] uppercase tracking-wider text-slate-400 mb-1">Rx</div>
-          <div className="space-y-1.5">
-            {meds.map((m, i) => (
-              <div key={i} className="flex items-start gap-2 text-[11px]">
-                <span
-                  className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"
-                  style={{ background: design.accentColor }}
-                />
-                <div>
-                  <span className="font-bold text-slate-900">{m.name}</span>{' '}
-                  <span className="text-slate-600">{m.dose} · {m.freq} · {m.days}d</span>
-                  {m.instr && <div className="text-slate-500 text-[10px]">{m.instr}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 pb-3 mt-2">
-          {design.showRefillLine && (
-            <div className="text-[10px] text-slate-600 mb-1">
-              Refills: <span className="font-semibold text-slate-900">{design.defaultRefills}</span>
-            </div>
-          )}
-          {design.showValidUntil && (
-            <div className="text-[10px] text-slate-600 mb-1">Valid until: <span className="font-semibold text-slate-900">{validUntil}</span></div>
-          )}
-          {design.showSignatureLine && (
-            <div className="mt-2 pt-2 border-t border-slate-200 flex items-end justify-between">
-              <div>
-                <div className="text-[10px] text-slate-500">Doctor</div>
-                <div className="text-[11px] font-semibold text-slate-900">Dr. Ayesha Khan</div>
-                <div className="text-[9px] text-slate-500 font-mono">PMDC-12345</div>
-              </div>
-              <div className="flex-1 ml-4 border-b border-slate-400 h-6" />
-            </div>
-          )}
-          {design.footerText && (
-            <div className="mt-2 text-[9px] text-slate-500 text-center border-t border-slate-100 pt-1">
-              {design.footerText}
-            </div>
-          )}
+            className="bg-white shadow-xl overflow-hidden"
+            style={{
+              width: paperW,
+              height: paperH,
+              padding: `${RX_PAGE_MARGIN_MM}mm`,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+            }}
+            // renderRxHtml escapes every value it inserts.
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         </div>
       </div>
     </div>

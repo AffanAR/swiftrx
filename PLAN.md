@@ -256,8 +256,11 @@ console errors.
       and data straight from `@swiftrx/shared`; both apps load
       `apps/shared/src/shared.css`; admin audit helpers live in
       `apps/admin/src/audit.ts`. Checked in the browser.)
-- [ ] Move the print template into `apps/shared` (`renderRxHtml`) and use it
-      for both real print and the admin preview.
+- [x] Move the print template into `apps/shared` (`renderRxHtml`) and use it
+      for both real print and the admin preview. (Done 2026-10-22: output
+      identical to the old template for all seeded Rx × designs × draft;
+      the accent color is now validated; the preview draws the true-size
+      page scaled to fit. Checked in the browser.)
 - [ ] Vitest unit tests for `safety.ts`, `search.ts`, `resolveSurface`, the
       print renderer and store actions.
 - [ ] ESLint and Prettier, plus GitHub Actions for typecheck, test and build
