@@ -1,6 +1,5 @@
+import { AnimatedNumber, LiveDot, cx } from '@swiftrx/shared';
 import { useApp, actions } from '../store';
-import { cx } from '../useHotkeys';
-import { LiveDot, AnimatedNumber } from './Fx';
 
 export function TopBar({ onSignOut }: { onSignOut: () => void }) {
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);

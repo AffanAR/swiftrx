@@ -1,10 +1,14 @@
 import React from 'react';
 import { useApp, actions } from '../store';
-import type { DoseUnit, Frequency, RxMedication } from '../types';
-import { findDrug } from '../safety';
-import { DRUGS } from '../data';
-import { evaluateMedication, severityRank } from '../safety';
-import { cx } from '../useHotkeys';
+import {
+  MOCK_DRUGS,
+  cx,
+  type DoseUnit,
+  type Frequency,
+  type RxMedication,
+  type Severity,
+} from '@swiftrx/shared';
+import { evaluateMedication, findDrug, severityRank } from '../safety';
 
 interface RowProps {
   med: RxMedication;
@@ -21,8 +25,8 @@ export function MedicationRow({ med, index }: RowProps) {
   const update = actions.updateMedication;
   const remove = actions.removeMedication;
 
-  const alerts = React.useMemo(() => evaluateMedication(med, patient, DRUGS), [med, patient]);
-  const worstSeverity = alerts.reduce<SafetyLevel | null>((acc, a) => {
+  const alerts = React.useMemo(() => evaluateMedication(med, patient, MOCK_DRUGS), [med, patient]);
+  const worstSeverity = alerts.reduce<Severity | null>((acc, a) => {
     const r = severityRank(a.severity);
     if (!acc || r > severityRank(acc)) return a.severity;
     return acc;
@@ -65,7 +69,7 @@ export function MedicationRow({ med, index }: RowProps) {
               <span className="text-xs text-ink-400">← {med.brandName}</span>
             )}
           </div>
-          <div className="text-[11px] text-ink-400 font-mono">{findDrug(med.drugId, DRUGS)?.therapeuticClass}</div>
+          <div className="text-[11px] text-ink-400 font-mono">{findDrug(med.drugId, MOCK_DRUGS)?.therapeuticClass}</div>
         </div>
 
         <NumberInput
@@ -146,8 +150,6 @@ export function MedicationRow({ med, index }: RowProps) {
     </div>
   );
 }
-
-type SafetyLevel = 'low' | 'moderate' | 'critical';
 
 function NumberInput({
   value, onChange, className, onKeyDown, ariaLabel,

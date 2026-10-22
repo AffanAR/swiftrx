@@ -1,10 +1,14 @@
 import React from 'react';
 import { useApp, actions } from '../store';
 import { fuzzySearch } from '../search';
-import { DIAGNOSES, INVESTIGATIONS } from '../data';
-import { cx } from '../useHotkeys';
-import type { Investigation } from '../types';
-import { LiveDot } from './Fx';
+import {
+  LiveDot,
+  MOCK_DIAGNOSES,
+  MOCK_INVESTIGATIONS,
+  cx,
+  type Diagnosis,
+  type Investigation,
+} from '@swiftrx/shared';
 
 interface Props {
   diagnosisRef: React.RefObject<HTMLInputElement>;
@@ -21,7 +25,7 @@ export function DiagnosisField({ diagnosisRef }: Props) {
 
   const results = React.useMemo(() => {
     return fuzzySearch(
-      DIAGNOSES,
+      MOCK_DIAGNOSES,
       query,
       (d) => [`${d.code} ${d.name}`, d.name, d.code, d.category],
       8,
@@ -30,7 +34,7 @@ export function DiagnosisField({ diagnosisRef }: Props) {
 
   React.useEffect(() => { setActiveIdx(0); }, [query]);
 
-  const choose = (d: typeof DIAGNOSES[number]) => {
+  const choose = (d: Diagnosis) => {
     setDiagnosis(d);
     setOpen(false);
     // Move focus to medication search
@@ -154,9 +158,9 @@ function InvestigationList({ selected }: { selected: Investigation[] }) {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const matches = React.useMemo(() => {
-    if (!draft.trim()) return INVESTIGATIONS;
+    if (!draft.trim()) return MOCK_INVESTIGATIONS;
     const q = draft.trim().toLowerCase();
-    return INVESTIGATIONS.filter(
+    return MOCK_INVESTIGATIONS.filter(
       (i) =>
         i.code.toLowerCase().includes(q) ||
         i.name.toLowerCase().includes(q),

@@ -251,8 +251,11 @@ console errors.
       `React.lazy`. Delete the bridge, `session.ts`, `check-bridge.mjs`, the
       gateway `/rx` rule and the nginx alias. (Done 2026-10-22; checked in the
       browser. The pad now shares the portal's session and in-memory data.)
-- [ ] Remove the duplicates and shims from §2.5. Use one CSS file plus the
-      shared Tailwind preset.
+- [x] Remove the duplicates and shims from §2.5. Use one CSS file plus the
+      shared Tailwind preset. (Done 2026-10-22: Rx code imports UI primitives
+      and data straight from `@swiftrx/shared`; both apps load
+      `apps/shared/src/shared.css`; admin audit helpers live in
+      `apps/admin/src/audit.ts`. Checked in the browser.)
 - [ ] Move the print template into `apps/shared` (`renderRxHtml`) and use it
       for both real print and the admin preview.
 - [ ] Vitest unit tests for `safety.ts`, `search.ts`, `resolveSurface`, the

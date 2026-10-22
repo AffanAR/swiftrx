@@ -1,10 +1,15 @@
 import React from 'react';
 import { useApp } from '../store';
-import { QUICK_PACKS, DRUGS } from '../data';
+import {
+  LiveDot,
+  MOCK_DRUGS,
+  MOCK_QUICK_PACKS,
+  ProgressBar,
+  cx,
+  type QuickPack,
+  type SignedRx,
+} from '@swiftrx/shared';
 import { evaluateMedication, severityRank } from '../safety';
-import { cx } from '../useHotkeys';
-import type { QuickPack, SignedRx } from '../types';
-import { LiveDot, ProgressBar } from './Fx';
 import { PreviousRx } from './PreviousRx';
 
 interface Props {
@@ -18,7 +23,7 @@ export function RightColumn({ onApply, onRepeat }: Props) {
 
   const packs = React.useMemo(() => {
     if (!diagnosis) return [];
-    return QUICK_PACKS.filter((p) => p.diagnosisCode === diagnosis.code)
+    return MOCK_QUICK_PACKS.filter((p) => p.diagnosisCode === diagnosis.code)
       .sort((a, b) => a.shortcutKey.localeCompare(b.shortcutKey))
       .slice(0, 3);
   }, [diagnosis]);
@@ -60,7 +65,7 @@ export function RightColumn({ onApply, onRepeat }: Props) {
                 instructions: m.instructions,
               },
               patient,
-              DRUGS,
+              MOCK_DRUGS,
             ),
           );
           const worst = alertsByMed.reduce<number>(

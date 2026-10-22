@@ -3,9 +3,8 @@ import { useApp, actions } from '../store';
 import { DiagnosisField } from './DiagnosisField';
 import { MedicationSearch } from './MedicationSearch';
 import { MedicationRow } from './MedicationRow';
-import { cx } from '../useHotkeys';
+import { AnimatedNumber, Kbd, LiveDot, TypingDots, cx } from '@swiftrx/shared';
 import { printCurrent, signAndPrint } from '../print';
-import { LiveDot, AnimatedNumber } from './Fx';
 
 export function CenterColumn({
   diagnosisRef,
@@ -70,7 +69,7 @@ export function CenterColumn({
             </p>
           </div>
           <div className="hidden md:flex items-center gap-1.5 text-xs text-ink-400">
-            <Badge>Tab</Badge> next · <Badge>⇧Tab</Badge> prev · <Badge>↵</Badge> accept · <Badge>⌘K</Badge> patient · <Badge>Esc</Badge> clear
+            <Kbd>Tab</Kbd> next · <Kbd>⇧Tab</Kbd> prev · <Kbd>↵</Kbd> accept · <Kbd>⌘K</Kbd> patient · <Kbd>Esc</Kbd> clear
           </div>
         </div>
 
@@ -193,23 +192,5 @@ function Connector({ on }: { on: boolean }) {
         on ? 'bg-rx-accent/60' : 'bg-ink-700',
       )}
     />
-  );
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-ink-200 border border-ink-600">
-      {children}
-    </span>
-  );
-}
-
-function TypingDots({ className }: { className?: string }) {
-  return (
-    <span className={cx('inline-flex items-center', className)} aria-hidden>
-      <span className="rx-typing-dot" />
-      <span className="rx-typing-dot" />
-      <span className="rx-typing-dot" />
-    </span>
   );
 }

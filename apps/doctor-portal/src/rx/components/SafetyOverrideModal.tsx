@@ -1,8 +1,7 @@
 import React from 'react';
-import { Kbd } from '@swiftrx/shared';
+import { Kbd, cx } from '@swiftrx/shared';
 import { useApp, actions, MIN_OVERRIDE_REASON } from '../store';
 import { signAndPrint } from '../print';
-import { cx } from '../useHotkeys';
 
 /**
  * Opens when Sign & Print hits critical safety alerts (allergies). The doctor

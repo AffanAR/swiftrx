@@ -11,6 +11,7 @@ import {
   HospitalBadge,
   cx,
 } from '@swiftrx/shared';
+import { auditColor, auditTitle } from '../audit';
 
 export function HospitalDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -194,20 +195,4 @@ function Empty({ text }: { text: string }) {
       {text}
     </div>
   );
-}
-
-function auditColor(kind: string) {
-  if (kind === 'sign_rx') return '#10b981';
-  if (kind === 'login') return '#3b82f6';
-  if (kind === 'create_patient') return '#f59e0b';
-  if (kind === 'create_hospital') return '#8b5cf6';
-  return '#5e6781';
-}
-function auditTitle(e: { kind: string; userEmail: string; [k: string]: any }) {
-  if (e.kind === 'login') return `${e.userEmail} signed in`;
-  if (e.kind === 'sign_rx') return `${e.userEmail} signed Rx ${e.rxId} for ${e.patientName}`;
-  if (e.kind === 'create_patient') return `${e.userEmail} created patient ${e.patientName}`;
-  if (e.kind === 'create_hospital') return `Provisioned hospital ${e.hospitalName}`;
-  if (e.kind === 'invite_user') return `Invited ${e.invitedEmail}`;
-  return 'event';
 }

@@ -1,6 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import type { Hospital, User } from '@swiftrx/shared';
+import {
+  cx,
+  MOCK_QUICK_PACKS,
+  type Hospital,
+  type QuickPack,
+  type SignedRx,
+  type User,
+} from '@swiftrx/shared';
 import {
   actions,
   getState,
@@ -10,15 +17,13 @@ import {
   resetWorkspace,
   type DoctorIdentity,
 } from './store';
-import { useHotkeys, cx } from './useHotkeys';
+import { useHotkeys } from './useHotkeys';
 import { TopBar } from './components/TopBar';
 import { LeftColumn } from './components/LeftColumn';
 import { CenterColumn } from './components/CenterColumn';
 import { RightColumn } from './components/RightColumn';
 import { NewPatientModal } from './components/NewPatientModal';
 import { SafetyOverrideModal } from './components/SafetyOverrideModal';
-import { QUICK_PACKS } from './data';
-import type { QuickPack, SignedRx } from './types';
 import { printCurrent, signAndPrint } from './print';
 import './rx.css';
 
@@ -90,7 +95,7 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
         actions.setBanner({ kind: 'warn', text: 'Select a diagnosis first.' });
         return;
       }
-      const packs = QUICK_PACKS.filter((p) => p.diagnosisCode === dx.code).sort(
+      const packs = MOCK_QUICK_PACKS.filter((p) => p.diagnosisCode === dx.code).sort(
         (a, b) => a.shortcutKey.localeCompare(b.shortcutKey),
       );
       if (packs[i]) applyPack(packs[i]);

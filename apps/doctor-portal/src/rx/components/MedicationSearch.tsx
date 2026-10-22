@@ -1,11 +1,8 @@
 import React from 'react';
 import { useApp, actions } from '../store';
-import type { Drug } from '../types';
-import { DRUGS } from '../data';
+import { LiveDot, MOCK_DRUGS, cx, type Drug } from '@swiftrx/shared';
 import { fuzzySearch, findBrandMatches } from '../search';
 import { findDrug, evaluateMedication, severityRank } from '../safety';
-import { cx } from '../useHotkeys';
-import { LiveDot } from './Fx';
 
 export function MedicationSearch() {
   // Search query is intentionally local — the draft is ephemeral and we don't
@@ -16,17 +13,17 @@ export function MedicationSearch() {
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
 
   const drugResults = React.useMemo(
-    () => fuzzySearch(DRUGS, q, (d) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass], 6),
+    () => fuzzySearch(MOCK_DRUGS, q, (d) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass], 6),
     [q],
   );
-  const brandHits = React.useMemo(() => findBrandMatches(q, DRUGS, 3), [q]);
+  const brandHits = React.useMemo(() => findBrandMatches(q, MOCK_DRUGS, 3), [q]);
 
   // Build a unified list, brand suggestions first (they have higher substitution priority)
   const suggestions = React.useMemo(() => {
     const out: Array<{ kind: 'brand' | 'drug'; drug: Drug; brandName?: string }> = [];
     const seen = new Set<string>();
     for (const b of brandHits) {
-      const drug = findDrug(b.drugId, DRUGS);
+      const drug = findDrug(b.drugId, MOCK_DRUGS);
       if (drug && !seen.has(drug.id)) {
         out.push({ kind: 'brand', drug, brandName: b.brandName });
         seen.add(drug.id);
@@ -92,7 +89,7 @@ export function MedicationSearch() {
           instructions: 'As directed',
         },
         patient,
-        DRUGS,
+        MOCK_DRUGS,
       )
     : [];
   const worstPreview = preview.reduce<null | ReturnType<typeof severityRank>>((acc, a) => {
@@ -169,7 +166,7 @@ export function MedicationSearch() {
                     instructions: '',
                   },
                   patient,
-                  DRUGS,
+                  MOCK_DRUGS,
                 );
                 const worst = sev.reduce<number>((acc, a) => Math.max(acc, severityRank(a.severity)), 0);
                 return (

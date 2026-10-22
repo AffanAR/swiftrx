@@ -160,6 +160,8 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/shared/src/auth.ts`                     | `login` + session storage helpers                  |
 | `apps/shared/src/tenant.ts`                   | `resolveSurface()` — host / query → admin / hospital |
 | `apps/shared/src/components.tsx`              | Reusable form + identity components                |
+| `apps/shared/src/ui.tsx`                      | UI primitives (`cx`, `LiveDot`, `Kbd`, …) for every app |
+| `apps/shared/src/shared.css`                  | The one stylesheet (Tailwind entry + `rx-*` classes) |
 | `apps/shared/tailwind-preset.js`              | Shared Tailwind theme (colors, keyframes)          |
 | `apps/doctor-portal/src/App.tsx`              | Portal routes, incl. the lazy `/rx` route          |
 | `apps/doctor-portal/src/auth.ts`              | Portal session + `canPrescribe()`                  |

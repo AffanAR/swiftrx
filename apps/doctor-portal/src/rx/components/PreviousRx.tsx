@@ -1,7 +1,6 @@
 import React from 'react';
 import { useApp, previousRxForPatient } from '../store';
-import type { SignedRx } from '../types';
-import { LiveDot } from './Fx';
+import { LiveDot, type SignedRx } from '@swiftrx/shared';
 
 const MAX_SHOWN = 5;
 

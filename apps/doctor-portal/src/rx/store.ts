@@ -1,21 +1,19 @@
 import React from 'react';
-import type {
-  Diagnosis,
-  Investigation,
-  Patient,
-  RxMedication,
-  SafetyAlert,
-  SignedRx,
-} from './types';
-import { DRUGS } from './data';
-import { evaluateAllMedications, findDrug } from './safety';
 import {
+  MOCK_DRUGS,
   MOCK_PATIENTS,
   listPatientsForHospital,
   listSignedRxForHospital,
   appendSignedRx,
   appendAudit,
-} from './shared-bridge';
+  type Diagnosis,
+  type Investigation,
+  type Patient,
+  type RxMedication,
+  type SafetyAlert,
+  type SignedRx,
+} from '@swiftrx/shared';
+import { evaluateAllMedications, findDrug } from './safety';
 
 /** The signed-in doctor the pad prescribes as, taken from the portal session. */
 export interface DoctorIdentity {
@@ -206,7 +204,7 @@ class Store {
         });
       },
       addMedication: (drugId: string, brandName?: string) => {
-        const drug = findDrug(drugId, DRUGS);
+        const drug = findDrug(drugId, MOCK_DRUGS);
         if (!drug) return;
         const med: RxMedication = {
           rowId: newRowId(),
@@ -279,7 +277,7 @@ class Store {
         }
         // Critical alerts (allergies) block signing until the doctor records
         // why they are overriding them.
-        const critical = [...evaluateAllMedications(s.medications, patient, DRUGS).values()]
+        const critical = [...evaluateAllMedications(s.medications, patient, MOCK_DRUGS).values()]
           .flat()
           .filter((a) => a.severity === 'critical');
         const reason = overrideReason?.trim() ?? '';

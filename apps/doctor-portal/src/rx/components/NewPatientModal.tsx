@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp, actions } from '../store';
-import { cx } from '../useHotkeys';
+import { Kbd, cx } from '@swiftrx/shared';
 
 type FieldKey = 'name' | 'age' | 'sex' | 'weightKg' | 'contact' | 'allergy' | 'problem';
 
@@ -330,20 +330,5 @@ function inputCls(active: boolean, valid: boolean) {
     'w-full h-9 rounded-md border bg-ink-900/40 px-3 text-sm text-ink-100 outline-none transition-colors',
     active ? 'border-rx-focus ring-1 ring-rx-focus/40' : 'border-ink-700',
     valid ? '' : 'border-rx-warn/60',
-  );
-}
-
-function Kbd({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
-  return (
-    <span
-      className={cx(
-        'font-mono text-[10px] px-1.5 py-0.5 rounded border',
-        dark
-          ? 'bg-ink-900/40 text-ink-100 border-ink-900/40'
-          : 'bg-ink-700 text-ink-200 border-ink-600',
-      )}
-    >
-      {children}
-    </span>
   );
 }

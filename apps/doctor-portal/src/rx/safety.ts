@@ -1,4 +1,4 @@
-import type { Drug, Patient, RxMedication, SafetyAlert } from './types';
+import type { Drug, Patient, RxMedication, SafetyAlert } from '@swiftrx/shared';
 
 // Normalize for comparison
 const norm = (s: string) => s.trim().toLowerCase();

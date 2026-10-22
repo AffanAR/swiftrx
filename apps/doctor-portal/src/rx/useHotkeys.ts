@@ -49,7 +49,3 @@ export function useHotkeys(hotkeys: Hotkey[], enabled = true) {
     return () => window.removeEventListener('keydown', onKey);
   }, [hotkeys, enabled]);
 }
-
-// Tiny classnames helper
-export const cx = (...parts: (string | false | null | undefined)[]) =>
-  parts.filter(Boolean).join(' ');

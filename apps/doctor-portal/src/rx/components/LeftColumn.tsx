@@ -1,8 +1,7 @@
 import React from 'react';
 import { useApp, actions } from '../store';
 import { fuzzySearch } from '../search';
-import { cx } from '../useHotkeys';
-import { LiveDot, StaggeredList } from './Fx';
+import { LiveDot, StaggeredList, cx } from '@swiftrx/shared';
 
 export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefObject<HTMLInputElement> }) {
   const patients = useApp((s) => s.patients);

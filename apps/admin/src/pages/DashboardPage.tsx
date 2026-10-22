@@ -10,6 +10,7 @@ import {
   ProgressBar,
   cx,
 } from '@swiftrx/shared';
+import { auditColor, auditTitle } from '../audit';
 
 export function DashboardPage() {
   const totalHospitals = MOCK_HOSPITALS.length;
@@ -166,20 +167,4 @@ function StatusBadge({ status }: { status: 'active' | 'suspended' | 'trial' }) {
       {status}
     </span>
   );
-}
-
-function auditColor(kind: string) {
-  if (kind === 'sign_rx') return '#10b981';
-  if (kind === 'login') return '#3b82f6';
-  if (kind === 'create_patient') return '#f59e0b';
-  if (kind === 'create_hospital') return '#8b5cf6';
-  return '#5e6781';
-}
-function auditTitle(e: typeof MOCK_AUDIT[number]) {
-  if (e.kind === 'login') return `${e.userEmail} signed in`;
-  if (e.kind === 'sign_rx') return `${e.userEmail} signed Rx ${e.rxId} for ${e.patientName}`;
-  if (e.kind === 'create_patient') return `${e.userEmail} created patient ${e.patientName}`;
-  if (e.kind === 'create_hospital') return `Provisioned hospital ${e.hospitalName}`;
-  if (e.kind === 'invite_user') return `Invited ${e.invitedEmail}`;
-  return 'event';
 }

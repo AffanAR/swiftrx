@@ -123,6 +123,41 @@ export function ProgressBar({
   );
 }
 
+/**
+ * StaggeredList — animates its direct children in with a small per-item delay,
+ * so the first appears immediately and the rest follow in `stepMs` steps.
+ */
+export function StaggeredList({
+  children,
+  stepMs = 40,
+  initialMs = 0,
+  className,
+  itemClassName,
+  as: As = 'div',
+}: {
+  children: React.ReactNode;
+  stepMs?: number;
+  initialMs?: number;
+  className?: string;
+  itemClassName?: string;
+  as?: keyof JSX.IntrinsicElements;
+}) {
+  const arr = React.Children.toArray(children);
+  return (
+    <As className={className}>
+      {arr.map((child, i) => (
+        <div
+          key={(child as any)?.key ?? i}
+          className={cx('animate-fadeIn will-change-transform', itemClassName)}
+          style={{ animationDelay: `${initialMs + i * stepMs}ms` }}
+        >
+          {child}
+        </div>
+      ))}
+    </As>
+  );
+}
+
 export function Kbd({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
   return (
     <span

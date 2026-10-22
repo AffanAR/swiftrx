@@ -1,6 +1,5 @@
-import type { SignedRx } from './types';
 import { actions, getState } from './store';
-import { DEFAULT_RX_DESIGN, getRxDesign, type RxDesign } from '@swiftrx/shared';
+import { DEFAULT_RX_DESIGN, getRxDesign, type RxDesign, type SignedRx } from '@swiftrx/shared';
 
 // Render a prescription into the #print-area for the browser print dialog.
 // `draft` marks an unsigned pad: DRAFT watermark, no signature verification.
