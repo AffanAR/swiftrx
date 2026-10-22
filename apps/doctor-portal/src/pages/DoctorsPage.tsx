@@ -1,4 +1,11 @@
-import { LiveDot, Card, cx, listDoctorsForHospital, type Hospital, type User } from '@swiftrx/shared';
+import {
+  LiveDot,
+  Card,
+  cx,
+  listDoctorsForHospital,
+  type Hospital,
+  type User,
+} from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
@@ -19,9 +26,7 @@ export function DoctorsPage({ hospital, user }: Props) {
             {doctors.length} doctor{doctors.length === 1 ? '' : 's'} registered to {hospital.name}
           </p>
         </div>
-        {isAdmin && (
-          <button className="rx-shine rx-btn-primary">+ Invite doctor</button>
-        )}
+        {isAdmin && <button className="rx-shine rx-btn-primary">+ Invite doctor</button>}
       </header>
 
       {doctors.length === 0 ? (
@@ -49,7 +54,14 @@ export function DoctorsPage({ hospital, user }: Props) {
                   </div>
                   <div className="mt-1 text-[11px] text-ink-500">{d.email}</div>
                 </div>
-                <span className={cx('text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border', d.status === 'active' ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30' : 'bg-ink-700 text-ink-300 border-ink-600')}>
+                <span
+                  className={cx(
+                    'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border',
+                    d.status === 'active'
+                      ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30'
+                      : 'bg-ink-700 text-ink-300 border-ink-600',
+                  )}
+                >
                   {d.status}
                 </span>
               </div>

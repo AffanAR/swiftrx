@@ -1,7 +1,12 @@
 // Re-export shared tenant resolution for the React hook. Each app owns the
 // hook so it can live next to its React tree; the logic itself is in shared.
 import { useEffect, useState } from 'react';
-import { getHospital, type Hospital, type ResolvedTenant, resolveFromBrowser } from '@swiftrx/shared';
+import {
+  getHospital,
+  type Hospital,
+  type ResolvedTenant,
+  resolveFromBrowser,
+} from '@swiftrx/shared';
 
 export type TenantInfo =
   | { status: 'resolved'; hospital: Hospital; source: ResolvedTenant['source'] }

@@ -42,9 +42,18 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
       <div className="hidden lg:flex relative flex-col justify-between p-12 border-r border-ink-700">
         <div className="flex items-center gap-3 animate-fadeIn">
           <div className="relative h-10 w-10 rounded-lg bg-rx-accent/15 border border-rx-accent/30 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="h-6 w-6 text-rx-accent animate-float" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-6 w-6 text-rx-accent animate-float"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M9 11l3 3L22 4" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" strokeLinecap="round" />
+              <path
+                d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+                strokeLinecap="round"
+              />
             </svg>
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-rx-accent animate-breathe" />
           </div>
@@ -56,9 +65,8 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
             Welcome to <span className="text-rx-accent">{hospital.name}</span>.
           </h2>
           <p className="mt-4 text-ink-400 leading-relaxed">
-            This is your hospital's SwiftRx workspace. Sign in to access the
-            prescription pad, your patient roster, and the {hospital.plan}-plan
-            sign-and-print tools.
+            This is your hospital's SwiftRx workspace. Sign in to access the prescription pad, your
+            patient roster, and the {hospital.plan}-plan sign-and-print tools.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-3 text-xs text-ink-400">
             <Stat label="Drugs" value="1,500+" delay={220} />
@@ -67,7 +75,10 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
           </div>
         </div>
 
-        <div className="text-xs text-ink-500 flex items-center gap-1.5 animate-fadeIn" style={{ animationDelay: '420ms' }}>
+        <div
+          className="text-xs text-ink-500 flex items-center gap-1.5 animate-fadeIn"
+          style={{ animationDelay: '420ms' }}
+        >
           <LiveDot color="bg-rx-accent" />
           <span>© SwiftRx · Tenant-isolated · audit on every sign</span>
         </div>
@@ -79,10 +90,16 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
             <HospitalBadge hospital={hospital} />
           </div>
 
-          <h1 className="text-2xl font-semibold text-ink-100 animate-fadeIn" style={{ animationDelay: '60ms' }}>
+          <h1
+            className="text-2xl font-semibold text-ink-100 animate-fadeIn"
+            style={{ animationDelay: '60ms' }}
+          >
             Sign in
           </h1>
-          <p className="mt-1 text-sm text-ink-400 animate-fadeIn" style={{ animationDelay: '120ms' }}>
+          <p
+            className="mt-1 text-sm text-ink-400 animate-fadeIn"
+            style={{ animationDelay: '120ms' }}
+          >
             Use your hospital-issued credentials.
           </p>
 
@@ -136,10 +153,19 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
               className="rx-shine rx-btn-primary w-full justify-center animate-fadeIn disabled:animate-none"
               style={{ animationDelay: '300ms' }}
             >
-              {busy ? <><Spinner /> Signing in…</> : `Sign in to ${hospital.name}`}
+              {busy ? (
+                <>
+                  <Spinner /> Signing in…
+                </>
+              ) : (
+                `Sign in to ${hospital.name}`
+              )}
             </button>
 
-            <details className="mt-6 text-xs text-ink-500 animate-fadeIn" style={{ animationDelay: '380ms' }}>
+            <details
+              className="mt-6 text-xs text-ink-500 animate-fadeIn"
+              style={{ animationDelay: '380ms' }}
+            >
               <summary className="cursor-pointer text-ink-400 hover:text-ink-300 select-none transition-colors">
                 Demo credentials
               </summary>
@@ -158,20 +184,37 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
 
 function Stat({ label, value, delay }: { label: string; value: string; delay: number }) {
   return (
-    <div className="rx-card rx-hover-lift px-3 py-2 animate-fadeIn" style={{ animationDelay: `${delay}ms` }}>
+    <div
+      className="rx-card rx-hover-lift px-3 py-2 animate-fadeIn"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className="font-mono text-rx-accent text-base">{value}</div>
       <div className="mt-0.5 text-ink-500">{label}</div>
     </div>
   );
 }
 
-function reasonToMessage(r: 'no-hospital' | 'unknown-user' | 'wrong-password' | 'wrong-hospital' | 'wrong-role' | 'disabled'): string {
+function reasonToMessage(
+  r:
+    | 'no-hospital'
+    | 'unknown-user'
+    | 'wrong-password'
+    | 'wrong-hospital'
+    | 'wrong-role'
+    | 'disabled',
+): string {
   switch (r) {
-    case 'no-hospital': return 'Hospital context missing. Reload the page.';
-    case 'unknown-user': return 'No account found for that email.';
-    case 'wrong-password': return 'Incorrect password.';
-    case 'wrong-hospital': return "This account isn't registered with this hospital.";
-    case 'wrong-role': return 'This account does not have doctor or admin access.';
-    case 'disabled': return 'This account is disabled.';
+    case 'no-hospital':
+      return 'Hospital context missing. Reload the page.';
+    case 'unknown-user':
+      return 'No account found for that email.';
+    case 'wrong-password':
+      return 'Incorrect password.';
+    case 'wrong-hospital':
+      return "This account isn't registered with this hospital.";
+    case 'wrong-role':
+      return 'This account does not have doctor or admin access.';
+    case 'disabled':
+      return 'This account is disabled.';
   }
 }

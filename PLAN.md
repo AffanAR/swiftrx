@@ -261,13 +261,17 @@ console errors.
       identical to the old template for all seeded Rx × designs × draft;
       the accent color is now validated; the preview draws the true-size
       page scaled to fit. Checked in the browser.)
-- [ ] Vitest unit tests for `safety.ts`, `search.ts`, `resolveSurface`, the
-      print renderer and store actions.
-- [ ] ESLint and Prettier, plus GitHub Actions for typecheck, test and build
-      on every push.
+- [x] Vitest unit tests for `safety.ts`, `search.ts`, `resolveSurface`, the
+      print renderer and store actions. (Done 2026-10-22: 55 tests. Two
+      `it.fails` tests track the §2.2 safety gaps. The tests found that
+      `127.0.0.1` resolved to a hospital named "127", now fixed.)
+- [x] ESLint and Prettier, plus GitHub Actions for typecheck, test and build
+      on every push. (Done 2026-10-22: `.github/workflows/ci.yml`; the same
+      steps run locally with `npm run check`. Not yet run on GitHub — the repo
+      has no remote.)
 
 **Exit:** two apps (admin; portal + Rx), CI green, and pure logic covered by
-tests.
+tests. (Met locally; CI goes green on GitHub once the repo is pushed.)
 
 #### Phase 2: Backend MVP (≈3–4 weeks)
 

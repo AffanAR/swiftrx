@@ -13,8 +13,7 @@ export function NewPatientModal() {
   const [contact, setContact] = React.useState('');
   const [allergies, setAllergies] = React.useState<string[]>([]);
   const [problems, setProblems] = React.useState<string[]>([]);
-  const [activeField, setActiveField] =
-    React.useState<FieldKey>('name');
+  const [activeField, setActiveField] = React.useState<FieldKey>('name');
 
   const nameRef = React.useRef<HTMLInputElement>(null);
 
@@ -116,7 +115,8 @@ export function NewPatientModal() {
           <div>
             <h3 className="text-base font-semibold tracking-tight">New Patient</h3>
             <p className="text-xs text-ink-400">
-              Required: name · age · weight &nbsp;·&nbsp; <Kbd>Esc</Kbd> to close, <Kbd>⌘↵</Kbd> to save
+              Required: name · age · weight &nbsp;·&nbsp; <Kbd>Esc</Kbd> to close, <Kbd>⌘↵</Kbd> to
+              save
             </p>
           </div>
           <button

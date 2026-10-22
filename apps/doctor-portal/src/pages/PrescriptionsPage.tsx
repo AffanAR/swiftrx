@@ -1,4 +1,11 @@
-import { LiveDot, Card, cx, listSignedRxForHospital, type Hospital, type User } from '@swiftrx/shared';
+import {
+  LiveDot,
+  Card,
+  cx,
+  listSignedRxForHospital,
+  type Hospital,
+  type User,
+} from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
@@ -36,7 +43,10 @@ export function PrescriptionsPage({ hospital }: Props) {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-ink-100">{r.patient.name}</span>
-                    <span className="text-xs text-ink-500 font-mono">· {r.patient.age}{r.patient.sex} · {r.patient.weightKg}kg</span>
+                    <span className="text-xs text-ink-500 font-mono">
+                      · {r.patient.age}
+                      {r.patient.sex} · {r.patient.weightKg}kg
+                    </span>
                     {r.patient.allergies.length > 0 && (
                       <span className="text-[10px] font-semibold text-rx-danger bg-rx-danger/15 border border-rx-danger/30 rounded px-1.5 py-0.5">
                         ⚠ {r.patient.allergies.join(', ')}
@@ -44,7 +54,8 @@ export function PrescriptionsPage({ hospital }: Props) {
                     )}
                   </div>
                   <div className="mt-1 text-xs text-ink-400">
-                    <span className="font-mono text-ink-300">{r.diagnosis.code}</span> {r.diagnosis.name}
+                    <span className="font-mono text-ink-300">{r.diagnosis.code}</span>{' '}
+                    {r.diagnosis.name}
                   </div>
                 </div>
                 <div className="text-right">
@@ -65,13 +76,18 @@ export function PrescriptionsPage({ hospital }: Props) {
                   >
                     <span className="font-semibold text-ink-100">{m.genericName}</span>
                     {m.brandName && <span className="text-ink-400"> ({m.brandName})</span>}
-                    <span className="text-ink-400"> · {m.dosage.value}{m.dosage.unit} {m.frequency} × {m.durationDays}d</span>
+                    <span className="text-ink-400">
+                      {' '}
+                      · {m.dosage.value}
+                      {m.dosage.unit} {m.frequency} × {m.durationDays}d
+                    </span>
                   </li>
                 ))}
               </ul>
               {r.investigations.length > 0 && (
                 <div className="mt-3 text-[11px] text-ink-400">
-                  <span className="text-ink-500">Investigations:</span> {r.investigations.map((i) => i.code).join(', ')}
+                  <span className="text-ink-500">Investigations:</span>{' '}
+                  {r.investigations.map((i) => i.code).join(', ')}
                 </div>
               )}
               <div className="mt-3 text-[11px] text-ink-500 border-t border-ink-800 pt-2">

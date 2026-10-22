@@ -86,7 +86,9 @@ export function SafetyOverrideModal() {
           </ul>
 
           <label className="block">
-            <span className="block text-[11px] uppercase tracking-wider text-ink-400 mb-1">Reason for override</span>
+            <span className="block text-[11px] uppercase tracking-wider text-ink-400 mb-1">
+              Reason for override
+            </span>
             <textarea
               ref={reasonRef}
               value={reason}
@@ -96,7 +98,9 @@ export function SafetyOverrideModal() {
               className="w-full rounded-md border border-ink-700 bg-ink-900/40 px-3 py-2 text-sm text-ink-100 outline-none focus:border-rx-focus resize-y"
             />
           </label>
-          <p className="text-xs text-ink-500">Saved on the prescription and in the audit log under your name.</p>
+          <p className="text-xs text-ink-500">
+            Saved on the prescription and in the audit log under your name.
+          </p>
         </div>
 
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-ink-700 bg-ink-900/40">

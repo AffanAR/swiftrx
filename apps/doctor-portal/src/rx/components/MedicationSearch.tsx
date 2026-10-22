@@ -13,7 +13,13 @@ export function MedicationSearch() {
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
 
   const drugResults = React.useMemo(
-    () => fuzzySearch(MOCK_DRUGS, q, (d) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass], 6),
+    () =>
+      fuzzySearch(
+        MOCK_DRUGS,
+        q,
+        (d) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass],
+        6,
+      ),
     [q],
   );
   const brandHits = React.useMemo(() => findBrandMatches(q, MOCK_DRUGS, 3), [q]);
@@ -38,9 +44,11 @@ export function MedicationSearch() {
     return out;
   }, [drugResults, brandHits]);
 
-  React.useEffect(() => { setIdx(0); }, [q]);
+  React.useEffect(() => {
+    setIdx(0);
+  }, [q]);
 
-  const add = (s: typeof suggestions[number]) => {
+  const add = (s: (typeof suggestions)[number]) => {
     actions.addMedication(s.drug.id, s.kind === 'brand' ? s.brandName : undefined);
     setQ('');
     setOpen(false);
@@ -145,10 +153,10 @@ export function MedicationSearch() {
                 {worstPreview === 3
                   ? 'allergy'
                   : worstPreview === 2
-                  ? 'interact'
-                  : worstPreview === 1
-                  ? 'dup'
-                  : 'ok'}
+                    ? 'interact'
+                    : worstPreview === 1
+                      ? 'dup'
+                      : 'ok'}
               </span>
             </span>
           )}
@@ -168,7 +176,10 @@ export function MedicationSearch() {
                   patient,
                   MOCK_DRUGS,
                 );
-                const worst = sev.reduce<number>((acc, a) => Math.max(acc, severityRank(a.severity)), 0);
+                const worst = sev.reduce<number>(
+                  (acc, a) => Math.max(acc, severityRank(a.severity)),
+                  0,
+                );
                 return (
                   <li
                     key={`${s.kind}-${s.drug.id}`}
@@ -179,13 +190,14 @@ export function MedicationSearch() {
                       type="button"
                       className={cx(
                         'group w-full text-left px-3 py-1.5 text-sm flex justify-between items-center gap-2 transition-colors',
-                        i === idx
-                          ? 'bg-rx-focus/15 text-rx-focus'
-                          : 'hover:bg-ink-700/60',
+                        i === idx ? 'bg-rx-focus/15 text-rx-focus' : 'hover:bg-ink-700/60',
                         worst >= 3 && 'bg-rx-danger/5',
                         worst === 2 && 'bg-rx-warn/5',
                       )}
-                      onMouseDown={(e) => { e.preventDefault(); add(s); }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        add(s);
+                      }}
                       onMouseEnter={() => setIdx(i)}
                     >
                       <div className="min-w-0">
@@ -195,20 +207,33 @@ export function MedicationSearch() {
                               <span className="font-mono text-ink-300">{s.brandName}</span>
                               <span className="mx-1.5 text-ink-400">→</span>
                               <span className="text-rx-accent">{s.drug.genericName}</span>
-                              <span className="ml-2 text-[10px] text-ink-400 uppercase tracking-wider">brand→generic</span>
+                              <span className="ml-2 text-[10px] text-ink-400 uppercase tracking-wider">
+                                brand→generic
+                              </span>
                             </>
                           ) : (
                             <span>{s.drug.genericName}</span>
                           )}
                         </div>
-                        <div className="text-[11px] text-ink-400 truncate">{s.drug.therapeuticClass}</div>
+                        <div className="text-[11px] text-ink-400 truncate">
+                          {s.drug.therapeuticClass}
+                        </div>
                       </div>
                       <div className="text-right shrink-0">
                         <div className="text-[11px] font-mono text-ink-300">
-                          {s.drug.defaultDosage.value}{s.drug.defaultDosage.unit} · {s.drug.defaultFrequency}
+                          {s.drug.defaultDosage.value}
+                          {s.drug.defaultDosage.unit} · {s.drug.defaultFrequency}
                         </div>
-                        {worst >= 3 && <div className="text-[10px] text-rx-danger font-semibold animate-breathe">⚠ ALLERGY</div>}
-                        {worst === 2 && <div className="text-[10px] text-rx-warn font-semibold">⚠ INTERACTION</div>}
+                        {worst >= 3 && (
+                          <div className="text-[10px] text-rx-danger font-semibold animate-breathe">
+                            ⚠ ALLERGY
+                          </div>
+                        )}
+                        {worst === 2 && (
+                          <div className="text-[10px] text-rx-warn font-semibold">
+                            ⚠ INTERACTION
+                          </div>
+                        )}
                       </div>
                     </button>
                   </li>
@@ -221,7 +246,9 @@ export function MedicationSearch() {
           )}
         </div>
         <button
-          onClick={() => { setQ(''); }}
+          onClick={() => {
+            setQ('');
+          }}
           className="px-2.5 py-2 text-xs rounded border border-ink-700 text-ink-400 hover:bg-ink-700/40 transition-colors"
           title="Clear medication search"
         >

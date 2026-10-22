@@ -1,0 +1,13 @@
+# Generated / installed
+node_modules/
+dist/
+coverage/
+package-lock.json
+*.tsbuildinfo
+
+# Docs keep their hand-aligned tables
+*.md
+
+# Editor / tool state
+.puku/
+.claude/

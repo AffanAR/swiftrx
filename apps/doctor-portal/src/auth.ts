@@ -21,9 +21,22 @@ const SESSION_KEY = 'swiftrx.portal.session';
 
 export type LoginResult =
   | { ok: true; session: SessionPayload; user: User }
-  | { ok: false; reason: 'no-hospital' | 'unknown-user' | 'wrong-password' | 'wrong-hospital' | 'wrong-role' | 'disabled' };
+  | {
+      ok: false;
+      reason:
+        | 'no-hospital'
+        | 'unknown-user'
+        | 'wrong-password'
+        | 'wrong-hospital'
+        | 'wrong-role'
+        | 'disabled';
+    };
 
-export function login(opts: { email: string; password: string; hospitalSlug: string }): LoginResult {
+export function login(opts: {
+  email: string;
+  password: string;
+  hospitalSlug: string;
+}): LoginResult {
   if (!opts.hospitalSlug) return { ok: false, reason: 'no-hospital' };
   const r = sharedLogin({
     email: opts.email,
@@ -31,7 +44,7 @@ export function login(opts: { email: string; password: string; hospitalSlug: str
     expectedRole: 'any', // could be 'doctor' or 'hospital_admin' — accept either
     hospitalSlug: opts.hospitalSlug,
   });
-  if (!r.ok) return { ok: false, reason: r.reason as any };
+  if (!r.ok) return { ok: false, reason: r.reason };
 
   writeSessionToStorage(SESSION_KEY, r.session);
   return { ok: true, session: r.session, user: r.user };

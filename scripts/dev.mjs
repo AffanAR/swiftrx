@@ -16,7 +16,8 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import httpProxyModule from 'http-proxy-middleware';
 // CJS interop: prefer .default, fall back to the namespace itself.
-const httpProxy = httpProxyModule.createProxyMiddleware || httpProxyModule.default || httpProxyModule;
+const httpProxy =
+  httpProxyModule.createProxyMiddleware || httpProxyModule.default || httpProxyModule;
 
 const PORTAL_PORT = 5174;
 const ADMIN_PORT = 5175;
@@ -45,10 +46,22 @@ function spawnOne(name, color, cwd, args, env = {}) {
   });
   const tag = `${color}[${name}]${COLOR.reset}`;
   child.stdout.on('data', (b) => {
-    process.stdout.write(b.toString().split('\n').map((l) => l ? `${tag} ${l}` : '').join('\n') + '\n');
+    process.stdout.write(
+      b
+        .toString()
+        .split('\n')
+        .map((l) => (l ? `${tag} ${l}` : ''))
+        .join('\n') + '\n',
+    );
   });
   child.stderr.on('data', (b) => {
-    process.stderr.write(b.toString().split('\n').map((l) => l ? `${tag} ${l}` : '').join('\n') + '\n');
+    process.stderr.write(
+      b
+        .toString()
+        .split('\n')
+        .map((l) => (l ? `${tag} ${l}` : ''))
+        .join('\n') + '\n',
+    );
   });
   child.on('exit', (code) => log(name, `exited with code ${code}`));
   return child;
@@ -65,8 +78,16 @@ function pickTargets() {
 const targets = pickTargets();
 
 if (targets.gateway) {
-  const proxyToAdmin = httpProxy({ target: `http://127.0.0.1:${ADMIN_PORT}`, changeOrigin: true, ws: true });
-  const proxyToPortal = httpProxy({ target: `http://127.0.0.1:${PORTAL_PORT}`, changeOrigin: true, ws: true });
+  const proxyToAdmin = httpProxy({
+    target: `http://127.0.0.1:${ADMIN_PORT}`,
+    changeOrigin: true,
+    ws: true,
+  });
+  const proxyToPortal = httpProxy({
+    target: `http://127.0.0.1:${PORTAL_PORT}`,
+    changeOrigin: true,
+    ws: true,
+  });
 
   const server = createServer((req, res) => {
     const host = (req.headers.host || '').toLowerCase();
@@ -93,7 +114,8 @@ if (targets.gateway) {
   server.on('upgrade', (req, socket, head) => {
     const host = (req.headers.host || '').toLowerCase();
     const sub = host.split('.')[0];
-    if (sub === 'admin' || host.startsWith('admin.')) return proxyToAdmin.upgrade(req, socket, head);
+    if (sub === 'admin' || host.startsWith('admin.'))
+      return proxyToAdmin.upgrade(req, socket, head);
     return proxyToPortal.upgrade(req, socket, head);
   });
 
@@ -121,11 +143,18 @@ if (targets.gateway) {
 }
 
 const children = [];
-if (targets.portal) children.push(spawnOne('portal', COLOR.cyan, 'apps/doctor-portal', ['run', 'dev']));
+if (targets.portal)
+  children.push(spawnOne('portal', COLOR.cyan, 'apps/doctor-portal', ['run', 'dev']));
 if (targets.admin) children.push(spawnOne('admin', COLOR.magenta, 'apps/admin', ['run', 'dev']));
 
 function shutdown() {
-  children.forEach((c) => { try { c.kill('SIGINT'); } catch {} });
+  children.forEach((c) => {
+    try {
+      c.kill('SIGINT');
+    } catch {
+      // Already exited; nothing to stop.
+    }
+  });
   process.exit(0);
 }
 process.on('SIGINT', shutdown);

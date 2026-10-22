@@ -18,12 +18,11 @@ export function HospitalsListPage() {
             <span>Hospitals</span>
           </div>
           <h1 className="mt-1 text-2xl font-semibold text-ink-100">All tenants</h1>
-          <p className="text-sm text-ink-400">Provision, suspend, or inspect any hospital on SwiftRx.</p>
+          <p className="text-sm text-ink-400">
+            Provision, suspend, or inspect any hospital on SwiftRx.
+          </p>
         </div>
-        <Link
-          to="/hospitals/new"
-          className="rx-shine rx-btn-primary"
-        >
+        <Link to="/hospitals/new" className="rx-shine rx-btn-primary">
           + New hospital
         </Link>
       </header>
@@ -72,11 +71,18 @@ export function HospitalsListPage() {
 
 function StatusPill({ status }: { status: 'active' | 'suspended' | 'trial' }) {
   const tone =
-    status === 'active' ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30'
-    : status === 'trial' ? 'bg-rx-warn/15 text-rx-warn border-rx-warn/30'
-    : 'bg-rx-danger/15 text-rx-danger border-rx-danger/30';
+    status === 'active'
+      ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30'
+      : status === 'trial'
+        ? 'bg-rx-warn/15 text-rx-warn border-rx-warn/30'
+        : 'bg-rx-danger/15 text-rx-danger border-rx-danger/30';
   return (
-    <span className={cx('inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider border', tone)}>
+    <span
+      className={cx(
+        'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider border',
+        tone,
+      )}
+    >
       {status === 'active' && <LiveDot color="bg-rx-accent" />}
       {status}
     </span>

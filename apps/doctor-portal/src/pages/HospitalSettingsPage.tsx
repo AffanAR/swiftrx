@@ -13,7 +13,9 @@ export function HospitalSettingsPage({ hospital, user }: Props) {
         </div>
         <h1 className="mt-1 text-2xl font-semibold text-ink-100">{hospital.name}</h1>
         <p className="text-sm text-ink-400">
-          {isAdmin ? 'You can edit these details. They sync to SwiftRx platform.' : 'Read-only — only hospital admins can change these.'}
+          {isAdmin
+            ? 'You can edit these details. They sync to SwiftRx platform.'
+            : 'Read-only — only hospital admins can change these.'}
         </p>
       </div>
 
@@ -22,7 +24,10 @@ export function HospitalSettingsPage({ hospital, user }: Props) {
           <Field label="Name" value={hospital.name} />
           <Field label="Slug" value={<code className="font-mono">{hospital.slug}</code>} />
           <Field label="City" value={`${hospital.city}, ${hospital.country}`} />
-          <Field label="Contact" value={<code className="font-mono">{hospital.contactEmail}</code>} />
+          <Field
+            label="Contact"
+            value={<code className="font-mono">{hospital.contactEmail}</code>}
+          />
         </div>
       </Card>
 
@@ -30,8 +35,14 @@ export function HospitalSettingsPage({ hospital, user }: Props) {
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Plan" value={<span className="capitalize">{hospital.plan}</span>} />
           <Field label="Status" value={<span className="capitalize">{hospital.status}</span>} />
-          <Field label="Monthly cap" value={<span className="font-mono">{hospital.monthlyRxCap.toLocaleString()} Rx</span>} />
-          <Field label="Used this month" value={<span className="font-mono">{hospital.monthlyRxUsed.toLocaleString()}</span>} />
+          <Field
+            label="Monthly cap"
+            value={<span className="font-mono">{hospital.monthlyRxCap.toLocaleString()} Rx</span>}
+          />
+          <Field
+            label="Used this month"
+            value={<span className="font-mono">{hospital.monthlyRxUsed.toLocaleString()}</span>}
+          />
         </div>
       </Card>
 
@@ -39,7 +50,11 @@ export function HospitalSettingsPage({ hospital, user }: Props) {
         <div className="space-y-3">
           <Toggle checked={true} onChange={() => {}} label="Require strong passwords" />
           <Toggle checked={true} onChange={() => {}} label="Auto-expire sessions after 12h" />
-          <Toggle checked={isAdmin} onChange={() => {}} label="Allow doctors to invite other doctors" />
+          <Toggle
+            checked={isAdmin}
+            onChange={() => {}}
+            label="Allow doctors to invite other doctors"
+          />
           <Toggle checked={true} onChange={() => {}} label="Audit every signed prescription" />
         </div>
       </Card>
@@ -48,7 +63,10 @@ export function HospitalSettingsPage({ hospital, user }: Props) {
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Name" value={user.name} />
           <Field label="Email" value={<code className="font-mono">{user.email}</code>} />
-          <Field label="Role" value={<span className="capitalize">{user.role.replace('_', ' ')}</span>} />
+          <Field
+            label="Role"
+            value={<span className="capitalize">{user.role.replace('_', ' ')}</span>}
+          />
           <Field label="Specialty" value={user.specialty ?? '—'} />
         </div>
       </Card>

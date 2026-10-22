@@ -87,11 +87,17 @@ function sendFile(req, res, { file, size }, cacheControl) {
     'Cache-Control': cacheControl,
   });
   if (req.method === 'HEAD') return res.end();
-  createReadStream(file).on('error', () => res.destroy()).pipe(res);
+  createReadStream(file)
+    .on('error', () => res.destroy())
+    .pipe(res);
 }
 
 function sendText(res, status, text, headers = {}) {
-  res.writeHead(status, { ...BASE_HEADERS, 'Content-Type': 'text/plain; charset=utf-8', ...headers });
+  res.writeHead(status, {
+    ...BASE_HEADERS,
+    'Content-Type': 'text/plain; charset=utf-8',
+    ...headers,
+  });
   res.end(text);
 }
 
@@ -121,7 +127,9 @@ const server = createServer(async (req, res) => {
   const hit = await fileAt(root, urlPath);
   if (hit) {
     // Vite fingerprints everything under /assets/, so those never change.
-    const cache = urlPath.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache';
+    const cache = urlPath.startsWith('/assets/')
+      ? 'public, max-age=31536000, immutable'
+      : 'no-cache';
     return sendFile(req, res, hit, cache);
   }
   // A missing file is a real 404; answering a missing script with index.html

@@ -42,11 +42,16 @@ export function PreviousRx({ onRepeat }: { onRepeat: (rx: SignedRx) => void }) {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-[11px] text-ink-400 flex items-center gap-1.5 min-w-0">
-                    <span className="font-mono shrink-0">{new Date(rx.signedAt).toLocaleDateString()}</span>
+                    <span className="font-mono shrink-0">
+                      {new Date(rx.signedAt).toLocaleDateString()}
+                    </span>
                     <span className="text-ink-600">·</span>
                     <span className="truncate">{rx.doctorName}</span>
                   </div>
-                  <div className="text-sm font-semibold text-ink-100 truncate" title={rx.diagnosis.name}>
+                  <div
+                    className="text-sm font-semibold text-ink-100 truncate"
+                    title={rx.diagnosis.name}
+                  >
                     <span className="font-mono text-rx-focus mr-1.5">{rx.diagnosis.code}</span>
                     {rx.diagnosis.name}
                   </div>
@@ -63,10 +68,14 @@ export function PreviousRx({ onRepeat }: { onRepeat: (rx: SignedRx) => void }) {
 
               <ul className="mt-2 space-y-0.5">
                 {rx.medications.map((m) => (
-                  <li key={m.rowId} className="text-[11px] font-mono text-ink-300 flex justify-between gap-2">
+                  <li
+                    key={m.rowId}
+                    className="text-[11px] font-mono text-ink-300 flex justify-between gap-2"
+                  >
                     <span className="truncate">· {m.genericName}</span>
                     <span className="text-ink-400 shrink-0">
-                      {m.dosage.value}{m.dosage.unit} · {m.frequency} · {m.durationDays}d
+                      {m.dosage.value}
+                      {m.dosage.unit} · {m.frequency} · {m.durationDays}d
                     </span>
                   </li>
                 ))}
@@ -75,7 +84,8 @@ export function PreviousRx({ onRepeat }: { onRepeat: (rx: SignedRx) => void }) {
           ))}
           {history.length > MAX_SHOWN && (
             <li className="text-[11px] text-ink-500 px-1">
-              +{history.length - MAX_SHOWN} older prescription{history.length - MAX_SHOWN === 1 ? '' : 's'}
+              +{history.length - MAX_SHOWN} older prescription
+              {history.length - MAX_SHOWN === 1 ? '' : 's'}
             </li>
           )}
         </ul>

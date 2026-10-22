@@ -172,9 +172,7 @@ export function Card({
             {subtitle && (
               <div className="text-[10px] uppercase tracking-wider text-ink-400">{subtitle}</div>
             )}
-            {title && (
-              <div className="mt-0.5 text-base font-semibold text-ink-100">{title}</div>
-            )}
+            {title && <div className="mt-0.5 text-base font-semibold text-ink-100">{title}</div>}
           </div>
           {right}
         </div>
@@ -198,15 +196,21 @@ export function StatTile({
   trend?: { delta: number; label: string };
 }) {
   const colorClass =
-    tone === 'focus' ? 'text-rx-focus'
-    : tone === 'warn' ? 'text-rx-warn'
-    : tone === 'danger' ? 'text-rx-danger'
-    : 'text-rx-accent';
+    tone === 'focus'
+      ? 'text-rx-focus'
+      : tone === 'warn'
+        ? 'text-rx-warn'
+        : tone === 'danger'
+          ? 'text-rx-danger'
+          : 'text-rx-accent';
   return (
     <div className="rx-card rx-hover-lift p-4">
       <div className="text-[10px] uppercase tracking-wider text-ink-400">{label}</div>
       <div className={cx('mt-1 text-2xl font-semibold font-mono', colorClass)}>
-        <AnimatedNumber value={typeof value === 'number' ? value : 0} format={() => String(value)} />
+        <AnimatedNumber
+          value={typeof value === 'number' ? value : 0}
+          format={() => String(value)}
+        />
       </div>
       <div className="mt-1 text-[11px] text-ink-500 flex items-center justify-between">
         <span>{hint}</span>
@@ -230,7 +234,11 @@ export function HospitalBadge({ hospital }: { hospital: Hospital }) {
     <div className="flex items-center gap-3">
       <div
         className="relative h-9 w-9 rounded-lg bg-rx-accent/15 border border-rx-accent/30 flex items-center justify-center"
-        style={hospital.primaryColor ? { boxShadow: `inset 0 0 0 1px ${hospital.primaryColor}30` } : undefined}
+        style={
+          hospital.primaryColor
+            ? { boxShadow: `inset 0 0 0 1px ${hospital.primaryColor}30` }
+            : undefined
+        }
       >
         <svg
           viewBox="0 0 24 24"
@@ -267,8 +275,8 @@ export function DemoFrame({ children }: { children: React.ReactNode }) {
         role="note"
         className="shrink-0 px-3 py-1.5 text-center text-xs text-amber-200 bg-amber-500/15 border-b border-amber-500/30"
       >
-        <span className="font-semibold">Demo</span> · Nothing is saved to a server and most
-        changes reset on reload. Don't enter real patient details.
+        <span className="font-semibold">Demo</span> · Nothing is saved to a server and most changes
+        reset on reload. Don't enter real patient details.
       </div>
       <div className="flex-1 min-h-0">{children}</div>
     </div>

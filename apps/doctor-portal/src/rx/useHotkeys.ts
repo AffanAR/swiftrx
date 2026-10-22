@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
 export type Hotkey = {
-  key: string;             // e.g. 'k', '1', 'Enter', 'Escape'
-  code?: string;           // physical key, e.g. 'Digit1' — matched instead of `key` when set
-  meta?: boolean;          // Cmd/Ctrl
+  key: string; // e.g. 'k', '1', 'Enter', 'Escape'
+  code?: string; // physical key, e.g. 'Digit1' — matched instead of `key` when set
+  meta?: boolean; // Cmd/Ctrl
   shift?: boolean;
   alt?: boolean;
   description?: string;
@@ -33,9 +33,7 @@ export function useHotkeys(hotkeys: Hotkey[], enabled = true) {
       const target = e.target as HTMLElement | null;
       const inEditable =
         !!target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
       for (const h of hotkeys) {
         if (!matches(e, h)) continue;
         if (inEditable && !h.allowInInputs) continue;

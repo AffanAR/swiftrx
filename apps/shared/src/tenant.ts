@@ -68,8 +68,9 @@ export function resolveSurface(
   const parts = h.split('.');
   const last = parts[parts.length - 1];
   let sub: string | null;
-  if (parts.length < 2 || h === '127.0.0.1') {
-    // Bare `localhost`, another single-label host, or 127.0.0.1: no subdomain.
+  if (parts.length < 2 || /^\d{1,3}(\.\d{1,3}){3}$/.test(h)) {
+    // Bare `localhost`, another single-label host, or an IP address (whose
+    // first octet would otherwise be read as a hospital slug): no subdomain.
     sub = null;
   } else if (last === 'localhost' || last === 'local') {
     // Dev root (Chrome/FF resolve *.localhost → 127.0.0.1).
@@ -82,8 +83,10 @@ export function resolveSurface(
     return { surface: 'unknown', subdomain: null, hospitalSlug: null, source: 'none' };
   }
 
-  if (!sub || sub === 'www') return { surface: 'admin', subdomain: null, hospitalSlug: null, source: 'domain' };
-  if (sub === 'admin') return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'domain' };
+  if (!sub || sub === 'www')
+    return { surface: 'admin', subdomain: null, hospitalSlug: null, source: 'domain' };
+  if (sub === 'admin')
+    return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'domain' };
   if (pathname.startsWith('/rx') || sub === 'rx') {
     return { surface: 'rx', subdomain: sub, hospitalSlug: sub, source: 'domain' };
   }

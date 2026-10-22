@@ -1,8 +1,16 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  TextField, Select, Card, LiveDot, Spinner, normalizeSlug, appendAudit,
-  DEFAULT_HOSPITAL_FEATURES, DEFAULT_RX_DESIGN, ROOT_DOMAIN,
+  TextField,
+  Select,
+  Card,
+  LiveDot,
+  Spinner,
+  normalizeSlug,
+  appendAudit,
+  DEFAULT_HOSPITAL_FEATURES,
+  DEFAULT_RX_DESIGN,
+  ROOT_DOMAIN,
 } from '@swiftrx/shared';
 import { MOCK_HOSPITALS } from '@swiftrx/shared';
 
@@ -67,8 +75,11 @@ export function NewHospitalPage() {
         </div>
         <h1 className="mt-1 text-2xl font-semibold text-ink-100">Provision a new hospital</h1>
         <p className="text-sm text-ink-400">
-          The hospital will get a fresh subdomain (e.g. <span className="font-mono text-ink-300">{normalizeSlug(name) || 'slug'}.{ROOT_DOMAIN}</span>),
-          a default plan, and a hospital admin invite.
+          The hospital will get a fresh subdomain (e.g.{' '}
+          <span className="font-mono text-ink-300">
+            {normalizeSlug(name) || 'slug'}.{ROOT_DOMAIN}
+          </span>
+          ), a default plan, and a hospital admin invite.
         </p>
       </div>
 
@@ -86,11 +97,17 @@ export function NewHospitalPage() {
             />
           </div>
           <TextField label="City" value={city} onChange={setCity} placeholder="Karachi" required />
-          <TextField label="Country (ISO)" value={country} onChange={setCountry} placeholder="PK" required />
+          <TextField
+            label="Country (ISO)"
+            value={country}
+            onChange={setCountry}
+            placeholder="PK"
+            required
+          />
           <Select
             label="Plan"
             value={plan}
-            onChange={(v) => setPlan(v as any)}
+            onChange={setPlan}
             options={[
               { value: 'starter', label: 'Starter — 200 Rx / month' },
               { value: 'clinic', label: 'Clinic — 1,500 Rx / month' },
@@ -122,9 +139,17 @@ export function NewHospitalPage() {
           )}
 
           <div className="sm:col-span-2 flex items-center justify-end gap-2 pt-2">
-            <button type="button" className="rx-btn-ghost" onClick={() => navigate(-1)}>Cancel</button>
+            <button type="button" className="rx-btn-ghost" onClick={() => navigate(-1)}>
+              Cancel
+            </button>
             <button type="submit" className="rx-shine rx-btn-primary" disabled={busy}>
-              {busy ? <><Spinner /> Provisioning…</> : 'Create hospital'}
+              {busy ? (
+                <>
+                  <Spinner /> Provisioning…
+                </>
+              ) : (
+                'Create hospital'
+              )}
             </button>
           </div>
         </form>

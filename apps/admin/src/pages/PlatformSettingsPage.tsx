@@ -14,8 +14,16 @@ export function PlatformSettingsPage() {
 
       <Card title="Sign-in & security" subtitle="Affect every tenant by default">
         <div className="space-y-3">
-          <Toggle checked={true} onChange={() => {}} label="Require strong passwords (8+ chars, mixed)" />
-          <Toggle checked={true} onChange={() => {}} label="Auto-expire sessions after 12h of inactivity" />
+          <Toggle
+            checked={true}
+            onChange={() => {}}
+            label="Require strong passwords (8+ chars, mixed)"
+          />
+          <Toggle
+            checked={true}
+            onChange={() => {}}
+            label="Auto-expire sessions after 12h of inactivity"
+          />
           <Toggle checked={false} onChange={() => {}} label="Allow doctors to self-register" />
           <Toggle checked={true} onChange={() => {}} label="Audit every signed prescription" />
         </div>

@@ -16,13 +16,16 @@ import { DEFAULT_RX_DESIGN, type RxDesign, type SignedRx } from './types';
 export const RX_PAGE_MARGIN_MM = 14;
 
 /** Paper size in millimetres for a design, with landscape applied. */
-export function rxPageSizeMm(
-  design: Pick<RxDesign, 'pageSize' | 'landscape'>,
-): { widthMm: number; heightMm: number } {
+export function rxPageSizeMm(design: Pick<RxDesign, 'pageSize' | 'landscape'>): {
+  widthMm: number;
+  heightMm: number;
+} {
   const [w, h] =
-    design.pageSize === 'A5' ? [148, 210] :
-    design.pageSize === 'Letter' ? [215.9, 279.4] :
-    [210, 297];
+    design.pageSize === 'A5'
+      ? [148, 210]
+      : design.pageSize === 'Letter'
+        ? [215.9, 279.4]
+        : [210, 297];
   return design.landscape ? { widthMm: h, heightMm: w } : { widthMm: w, heightMm: h };
 }
 

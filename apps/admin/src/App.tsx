@@ -15,9 +15,7 @@ export default function App() {
 
   if (session.status === 'loading') {
     return (
-      <div className="h-full flex items-center justify-center text-ink-400 text-sm">
-        Loading…
-      </div>
+      <div className="h-full flex items-center justify-center text-ink-400 text-sm">Loading…</div>
     );
   }
 

@@ -15,16 +15,25 @@ import {
 type Props = { hospital: Hospital; user: User };
 
 export function PatientsPage({ hospital, user }: Props) {
-  const [patients, setPatients] = React.useState<Patient[]>(() => listPatientsForHospital(hospital.slug));
+  const [patients, setPatients] = React.useState<Patient[]>(() =>
+    listPatientsForHospital(hospital.slug),
+  );
   const [query, setQuery] = React.useState('');
   const [adding, setAdding] = React.useState(false);
-  const [form, setForm] = React.useState({ name: '', age: '', sex: 'M' as 'M' | 'F', weight: '', contact: '' });
+  const [form, setForm] = React.useState({
+    name: '',
+    age: '',
+    sex: 'M' as 'M' | 'F',
+    weight: '',
+    contact: '',
+  });
 
-  const filtered = patients.filter((p) =>
-    !query.trim() ||
-    p.name.toLowerCase().includes(query.toLowerCase()) ||
-    p.contact.toLowerCase().includes(query.toLowerCase()) ||
-    p.activeProblems.some((ap) => ap.toLowerCase().includes(query.toLowerCase())),
+  const filtered = patients.filter(
+    (p) =>
+      !query.trim() ||
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.contact.toLowerCase().includes(query.toLowerCase()) ||
+      p.activeProblems.some((ap) => ap.toLowerCase().includes(query.toLowerCase())),
   );
 
   const submit = (e: React.FormEvent) => {
@@ -76,7 +85,9 @@ export function PatientsPage({ hospital, user }: Props) {
             <span>Patients</span>
           </div>
           <h1 className="mt-1 text-2xl font-semibold text-ink-100">Roster</h1>
-          <p className="text-sm text-ink-400">{patients.length} patient{patients.length === 1 ? '' : 's'} on file</p>
+          <p className="text-sm text-ink-400">
+            {patients.length} patient{patients.length === 1 ? '' : 's'} on file
+          </p>
         </div>
         <button onClick={() => setAdding(true)} className="rx-shine rx-btn-primary">
           + Add patient
@@ -106,7 +117,8 @@ export function PatientsPage({ hospital, user }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-ink-100">{p.name}</div>
                 <div className="text-[11px] text-ink-400 font-mono">
-                  {p.age}{p.sex} · {p.weightKg}kg · {p.contact}
+                  {p.age}
+                  {p.sex} · {p.weightKg}kg · {p.contact}
                 </div>
                 {p.activeProblems.length > 0 && (
                   <div className="mt-1 text-[11px] text-ink-300">
@@ -134,7 +146,9 @@ export function PatientsPage({ hospital, user }: Props) {
       {adding && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) setAdding(false); }}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setAdding(false);
+          }}
         >
           <form
             onSubmit={submit}
@@ -146,9 +160,21 @@ export function PatientsPage({ hospital, user }: Props) {
             </div>
             <div className="p-5 grid sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2">
-                <TextField label="Full name" value={form.name} onChange={(v: string) => setForm((f) => ({ ...f, name: v }))} required autoFocus />
+                <TextField
+                  label="Full name"
+                  value={form.name}
+                  onChange={(v: string) => setForm((f) => ({ ...f, name: v }))}
+                  required
+                  autoFocus
+                />
               </div>
-              <TextField label="Age" type="number" value={form.age} onChange={(v: string) => setForm((f) => ({ ...f, age: v }))} required />
+              <TextField
+                label="Age"
+                type="number"
+                value={form.age}
+                onChange={(v: string) => setForm((f) => ({ ...f, age: v }))}
+                required
+              />
               <div>
                 <span className="rx-label">Sex</span>
                 <div className="flex gap-1">
@@ -169,14 +195,29 @@ export function PatientsPage({ hospital, user }: Props) {
                   ))}
                 </div>
               </div>
-              <TextField label="Weight (kg)" type="number" value={form.weight} onChange={(v: string) => setForm((f) => ({ ...f, weight: v }))} required />
+              <TextField
+                label="Weight (kg)"
+                type="number"
+                value={form.weight}
+                onChange={(v: string) => setForm((f) => ({ ...f, weight: v }))}
+                required
+              />
               <div className="sm:col-span-2">
-                <TextField label="Contact" value={form.contact} onChange={(v: string) => setForm((f) => ({ ...f, contact: v }))} placeholder="Phone or MRN" />
+                <TextField
+                  label="Contact"
+                  value={form.contact}
+                  onChange={(v: string) => setForm((f) => ({ ...f, contact: v }))}
+                  placeholder="Phone or MRN"
+                />
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-ink-700 bg-ink-900/40">
-              <button type="button" className="rx-btn-ghost" onClick={() => setAdding(false)}>Cancel</button>
-              <button type="submit" className="rx-shine rx-btn-primary">Create patient</button>
+              <button type="button" className="rx-btn-ghost" onClick={() => setAdding(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="rx-shine rx-btn-primary">
+                Create patient
+              </button>
             </div>
           </form>
         </div>

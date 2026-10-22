@@ -95,8 +95,8 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
         actions.setBanner({ kind: 'warn', text: 'Select a diagnosis first.' });
         return;
       }
-      const packs = MOCK_QUICK_PACKS.filter((p) => p.diagnosisCode === dx.code).sort(
-        (a, b) => a.shortcutKey.localeCompare(b.shortcutKey),
+      const packs = MOCK_QUICK_PACKS.filter((p) => p.diagnosisCode === dx.code).sort((a, b) =>
+        a.shortcutKey.localeCompare(b.shortcutKey),
       );
       if (packs[i]) applyPack(packs[i]);
       else actions.setBanner({ kind: 'info', text: `No pack #${i + 1} for ${dx.code}.` });
@@ -119,104 +119,111 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
 
   const onPrint = React.useCallback(() => {
     if (!printCurrent()) {
-      actions.setBanner({ kind: 'info', text: 'Nothing to print yet: add a diagnosis and at least one medication.' });
+      actions.setBanner({
+        kind: 'info',
+        text: 'Nothing to print yet: add a diagnosis and at least one medication.',
+      });
     }
   }, []);
 
-  useHotkeys([
-    {
-      key: 'k',
-      meta: true,
-      description: 'Jump to patient search',
-      handler: () => patientSearchRef.current?.focus(),
-      allowInInputs: true,
-    },
-    // Alt (not Ctrl/Cmd) for N and 1/2/3: browsers reserve Ctrl/Cmd+N for a
-    // new window and Ctrl/Cmd+1–8 for tab switching, and won't let pages
-    // override them.
-    {
-      key: 'n',
-      code: 'KeyN',
-      alt: true,
-      description: 'New patient',
-      handler: () => actions.openNewPatient(),
-      allowInInputs: true,
-    },
-    {
-      key: 'Enter',
-      meta: true,
-      description: 'Sign & Print',
-      handler: onSign,
-      allowInInputs: true,
-    },
-    {
-      key: 's',
-      meta: true,
-      description: 'Sign & Print',
-      handler: onSign,
-      allowInInputs: true,
-    },
-    {
-      key: 'p',
-      meta: true,
-      description: 'Print a DRAFT of the current pad',
-      handler: onPrint,
-      // Also inside inputs: otherwise the browser's own print runs and shows
-      // whatever is left in #print-area.
-      allowInInputs: true,
-    },
-    {
-      key: 'Escape',
-      description: 'Clear workspace',
-      handler: () => actions.clearAll(),
-    },
-    {
-      key: '1',
-      code: 'Digit1',
-      alt: true,
-      description: 'Apply Quick Pack 1',
-      handler: () => applyPackByIndex(0),
-      allowInInputs: true,
-    },
-    {
-      key: '2',
-      code: 'Digit2',
-      alt: true,
-      description: 'Apply Quick Pack 2',
-      handler: () => applyPackByIndex(1),
-      allowInInputs: true,
-    },
-    {
-      key: '3',
-      code: 'Digit3',
-      alt: true,
-      description: 'Apply Quick Pack 3',
-      handler: () => applyPackByIndex(2),
-      allowInInputs: true,
-    },
-    {
-      key: 'r',
-      code: 'KeyR',
-      alt: true,
-      description: "Repeat the patient's last prescription",
-      handler: () => {
-        const s = getState();
-        const last = previousRxForPatient(s.signed, s.patientId)[0];
-        if (last) repeatPrescription(last);
-        else actions.setBanner({ kind: 'info', text: 'No previous prescription for this patient.' });
+  useHotkeys(
+    [
+      {
+        key: 'k',
+        meta: true,
+        description: 'Jump to patient search',
+        handler: () => patientSearchRef.current?.focus(),
+        allowInInputs: true,
       },
-      allowInInputs: true,
-    },
-    {
-      key: '/',
-      description: 'Focus diagnosis search',
-      handler: () => {
-        const el = document.querySelector<HTMLInputElement>('[data-zone="diagnosis"]');
-        el?.focus();
-        actions.setFocusZone('diagnosis');
+      // Alt (not Ctrl/Cmd) for N and 1/2/3: browsers reserve Ctrl/Cmd+N for a
+      // new window and Ctrl/Cmd+1–8 for tab switching, and won't let pages
+      // override them.
+      {
+        key: 'n',
+        code: 'KeyN',
+        alt: true,
+        description: 'New patient',
+        handler: () => actions.openNewPatient(),
+        allowInInputs: true,
       },
-    },
-  ], !showNewPatient && !overrideOpen); // off while a modal is open
+      {
+        key: 'Enter',
+        meta: true,
+        description: 'Sign & Print',
+        handler: onSign,
+        allowInInputs: true,
+      },
+      {
+        key: 's',
+        meta: true,
+        description: 'Sign & Print',
+        handler: onSign,
+        allowInInputs: true,
+      },
+      {
+        key: 'p',
+        meta: true,
+        description: 'Print a DRAFT of the current pad',
+        handler: onPrint,
+        // Also inside inputs: otherwise the browser's own print runs and shows
+        // whatever is left in #print-area.
+        allowInInputs: true,
+      },
+      {
+        key: 'Escape',
+        description: 'Clear workspace',
+        handler: () => actions.clearAll(),
+      },
+      {
+        key: '1',
+        code: 'Digit1',
+        alt: true,
+        description: 'Apply Quick Pack 1',
+        handler: () => applyPackByIndex(0),
+        allowInInputs: true,
+      },
+      {
+        key: '2',
+        code: 'Digit2',
+        alt: true,
+        description: 'Apply Quick Pack 2',
+        handler: () => applyPackByIndex(1),
+        allowInInputs: true,
+      },
+      {
+        key: '3',
+        code: 'Digit3',
+        alt: true,
+        description: 'Apply Quick Pack 3',
+        handler: () => applyPackByIndex(2),
+        allowInInputs: true,
+      },
+      {
+        key: 'r',
+        code: 'KeyR',
+        alt: true,
+        description: "Repeat the patient's last prescription",
+        handler: () => {
+          const s = getState();
+          const last = previousRxForPatient(s.signed, s.patientId)[0];
+          if (last) repeatPrescription(last);
+          else
+            actions.setBanner({ kind: 'info', text: 'No previous prescription for this patient.' });
+        },
+        allowInInputs: true,
+      },
+      {
+        key: '/',
+        description: 'Focus diagnosis search',
+        handler: () => {
+          const el = document.querySelector<HTMLInputElement>('[data-zone="diagnosis"]');
+          el?.focus();
+          actions.setFocusZone('diagnosis');
+        },
+      },
+    ],
+    !showNewPatient && !overrideOpen,
+  ); // off while a modal is open
 
   return (
     <SignedInShell doctor={doctor} onSignOut={onSignOut}>
@@ -297,10 +304,7 @@ function SignedInShell({
             <span className="hidden sm:inline">{doctor.licenseNo}</span>
           </span>
         </span>
-        <button
-          onClick={onSignOut}
-          className="text-rx-accent hover:underline transition-colors"
-        >
+        <button onClick={onSignOut} className="text-rx-accent hover:underline transition-colors">
           Sign out
         </button>
       </div>

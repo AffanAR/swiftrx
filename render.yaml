@@ -15,4 +15,4 @@ services:
       - key: VITE_ROOT_DOMAIN
         value: thesyndicate.bond
       - key: NODE_VERSION
-        value: "22"
+        value: '22'

@@ -11,11 +11,10 @@ function readEnv(name: string, fallback: string): string {
   // Vite injects env at build time under import.meta.env. We also peek
   // process.env so the Node-side scripts (the dev gateway) can use the
   // same module.
-  const fromVite =
-    typeof import.meta !== 'undefined' && (import.meta as any).env?.[name];
-  const fromProcess =
-    typeof process !== 'undefined' && (process as any).env?.[name];
-  const raw = (fromVite || fromProcess || fallback) as string;
+  type Env = Record<string, string | undefined>;
+  const fromVite = (import.meta as { env?: Env }).env?.[name];
+  const fromProcess = (globalThis as { process?: { env?: Env } }).process?.env?.[name];
+  const raw = fromVite || fromProcess || fallback;
   return raw.replace(/\/+$/, '');
 }
 
@@ -30,7 +29,6 @@ export const ROOT_DOMAIN: string = readEnv('VITE_ROOT_DOMAIN', 'swiftrx.com').to
 // on every print. There is no backend yet, so it's on for every production
 // build (anything built is something someone might host) and off under
 // `vite dev`. VITE_DEMO_MODE=true|false overrides either way.
-const isProdBuild =
-  typeof import.meta !== 'undefined' && !!(import.meta as any).env?.PROD;
+const isProdBuild = !!(import.meta as { env?: { PROD?: boolean } }).env?.PROD;
 export const DEMO_MODE: boolean =
   readEnv('VITE_DEMO_MODE', isProdBuild ? 'true' : 'false') !== 'false';
