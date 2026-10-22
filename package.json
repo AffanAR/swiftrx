@@ -14,6 +14,7 @@
     "build:portal": "npm run build -w @swiftrx/doctor-portal",
     "build:admin": "npm run build -w @swiftrx/admin",
     "build": "npm run build:portal && npm run build:admin",
+    "start": "node scripts/serve.mjs",
     "preview:portal": "npm run preview -w @swiftrx/doctor-portal",
     "preview:admin": "npm run preview -w @swiftrx/admin"
   },

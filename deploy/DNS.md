@@ -5,28 +5,31 @@ for local development and production.
 
 ## App layout
 
-| App              | Code path                     | Planned production host    | Dev port |
-|------------------|-------------------------------|----------------------------|----------|
-| Admin panel      | `apps/admin/`                 | `admin.swiftrx.com`        | 5175     |
-| Hospital portal  | `apps/doctor-portal/`         | `<slug>.swiftrx.com`       | 5174     |
-| ↳ Rx pad         | `apps/doctor-portal/src/rx/`  | `<slug>.swiftrx.com/rx`    | (portal) |
-| Dev gateway      | `scripts/dev.mjs`             | — (dev only)               | 5172     |
+| App               | Code path                     | Production host            | Local port |
+|-------------------|-------------------------------|----------------------------|------------|
+| Admin panel       | `apps/admin/`                 | `<root>`, `admin.<root>`   | 5175       |
+| Hospital portal   | `apps/doctor-portal/`         | `<slug>.<root>`            | 5174       |
+| ↳ Rx pad          | `apps/doctor-portal/src/rx/`  | `<slug>.<root>/rx`         | (portal)   |
+| Dev gateway       | `scripts/dev.mjs`             | — (dev only)               | 5172       |
+| Production server | `scripts/serve.mjs`           | all of the above           | 8080       |
+
+`<root>` is `VITE_ROOT_DOMAIN`, set at build time (default `swiftrx.com`).
+The hosted demo uses `thesyndicate.bond`.
 
 ## Production
 
-> Nothing is hosted yet. See [`ONLINE.md`](ONLINE.md) for what has to
-> happen first.
+The hosted demo runs on Render behind Cloudflare. [`ONLINE.md`](ONLINE.md)
+has the steps and what the demo can't do. In short:
 
-1. Add DNS records:
-   - `A swiftrx.com        → <lb ip>`
-   - `A *.swiftrx.com      → <lb ip>` (wildcard)
-   - `A admin.swiftrx.com  → <lb ip>` (covered by the wildcard, but explicit
-     makes intent obvious)
-2. Point the wildcard at a load balancer that terminates TLS and forwards
-   to your app servers.
-3. Use the example nginx config in `deploy/nginx.swiftrx.com.conf` to map
-   hostnames to bundles, or replicate the routing in your cloud LB. The Rx
-   pad is the portal's `/rx` route, so the portal's SPA fallback serves it.
+1. Build with `VITE_ROOT_DOMAIN=<root>` and run `npm start`
+   (`scripts/serve.mjs`). It serves both builds and picks the app by
+   hostname: `<root>`, `www.<root>` and `admin.<root>` get the admin panel;
+   any other `<slug>.<root>` gets the portal, whose SPA fallback also serves
+   `/rx`.
+2. Point DNS for `<root>` and `*.<root>` at the server, with TLS for both
+   (a wildcard certificate, or a proxy such as Cloudflare in front).
+3. Or skip `serve.mjs` and use the example nginx config in
+   `deploy/nginx.swiftrx.com.conf`, which does the same mapping.
 4. The admin panel and each hospital portal live at different hostnames, so
    cookies and localStorage are isolated per app and per hospital. The Rx
    pad shares its hospital portal's origin and session.
@@ -90,7 +93,8 @@ right hospital subdomain for each account.
 ## Build all apps
 
 ```
-npm run build
+npm run build      # add VITE_ROOT_DOMAIN=<root> for a real domain
+npm start          # serve both builds on :8080 (scripts/serve.mjs)
 ```
 
 Produces:

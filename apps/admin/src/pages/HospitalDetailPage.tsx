@@ -10,6 +10,7 @@ import {
   StatTile,
   HospitalBadge,
   cx,
+  hospitalPortalUrl,
 } from '@swiftrx/shared';
 import { auditColor, auditTitle } from '../audit';
 
@@ -52,7 +53,7 @@ export function HospitalDetailPage() {
           <button className="rx-btn-ghost">Suspend</button>
           <a
             className="rx-btn-primary"
-            href={`http://${hospital.slug}.localhost:5172`}
+            href={hospitalPortalUrl(hospital.slug)}
             target="_blank"
             rel="noopener noreferrer"
           >

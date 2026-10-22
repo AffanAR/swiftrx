@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TextField, Select, Card, LiveDot, Spinner, normalizeSlug, appendAudit,
-  DEFAULT_HOSPITAL_FEATURES, DEFAULT_RX_DESIGN,
+  DEFAULT_HOSPITAL_FEATURES, DEFAULT_RX_DESIGN, ROOT_DOMAIN,
 } from '@swiftrx/shared';
 import { MOCK_HOSPITALS } from '@swiftrx/shared';
 
@@ -67,7 +67,7 @@ export function NewHospitalPage() {
         </div>
         <h1 className="mt-1 text-2xl font-semibold text-ink-100">Provision a new hospital</h1>
         <p className="text-sm text-ink-400">
-          The hospital will get a fresh subdomain (e.g. <span className="font-mono text-ink-300">{normalizeSlug(name) || 'slug'}.swiftrx.com</span>),
+          The hospital will get a fresh subdomain (e.g. <span className="font-mono text-ink-300">{normalizeSlug(name) || 'slug'}.{ROOT_DOMAIN}</span>),
           a default plan, and a hospital admin invite.
         </p>
       </div>
@@ -82,7 +82,7 @@ export function NewHospitalPage() {
               placeholder="e.g. Riverside Clinic"
               required
               autoFocus
-              hint={`Subdomain: ${normalizeSlug(name) || '—'}.swiftrx.com`}
+              hint={`Subdomain: ${normalizeSlug(name) || '—'}.${ROOT_DOMAIN}`}
             />
           </div>
           <TextField label="City" value={city} onChange={setCity} placeholder="Karachi" required />
