@@ -22,9 +22,3 @@ export {
   appendAudit,
   appendSignedRx,
 } from '@swiftrx/shared';
-
-// `loadBridge` / `saveBridge` / `clearBridge` / `BRIDGE_KEY` / `BridgeSession`
-// live in `./session` (the Rx app owns the storage key), so callers should
-// import them from there.
-export { loadBridge, saveBridge, clearBridge, BRIDGE_KEY } from './session';
-export type { BridgeSession } from './session';

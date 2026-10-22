@@ -3,8 +3,8 @@
 Per-hospital sign-in portal, planned for `<hospital-slug>.swiftrx.com`.
 Doctors and hospital admins sign in with their hospital-issued email,
 sessions are scoped to that hospital, and every page shows the hospital's
-identity. Doctors open the Rx pad from their dashboard; hospital admins
-can't prescribe.
+identity. The Rx pad is this portal's `/rx` route; doctors open it from
+their dashboard or the nav, and hospital admins can't prescribe.
 
 > Mock build — sign-in runs in the browser against
 > `apps/shared/src/mockDb.ts` and sessions live in localStorage. See the
@@ -39,13 +39,18 @@ Then visit:
 
 Demo accounts are listed in the [root README](../../README.md#demo-credentials).
 
-## Rx pad hand-off
+## Rx pad
 
-When a doctor signs in, `src/auth.ts` saves a small "bridge" session to
-localStorage. The dashboard's **Start a new prescription** link passes it to
-the Rx pad as `?session=<token>`; the link target comes from
-`VITE_RX_APP_URL` (default `http://localhost:5173`). Hospital admins get no
-bridge, and any left over on the browser is cleared when they sign in.
+The Rx pad lives in `src/rx/` and is lazy-loaded at `/rx` (see `src/App.tsx`),
+so its code only downloads when a doctor opens it. The route only renders for
+users who pass `canPrescribe()` in `src/auth.ts` (active, licensed doctors of
+this hospital); signed-out visitors go to the login page and everyone else to
+the dashboard.
+
+`src/rx/RxPad.tsx` passes the signed-in doctor to `loadWorkspace()` in
+`src/rx/store.ts`, which reads the hospital's patients and signed Rx from the
+same in-memory mock db as the portal pages. Prescriptions signed in the pad
+show up in the portal, and patients added in the portal show up in the pad.
 
 ## Replacing the mock backend
 

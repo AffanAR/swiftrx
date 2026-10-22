@@ -34,6 +34,10 @@ shows up for the hospital and the platform) can't work end to end yet.
 
 ## 2. Findings
 
+> Paths below are as of the review. Since then the Rx pad has moved from
+> root `src/` to `apps/doctor-portal/src/rx/` (Phase 1), and the bridge
+> session (`src/session.ts`) is gone.
+
 ### 2.1 Broken core flows (P0)
 
 | # | Problem | Where | Effect |
@@ -243,9 +247,10 @@ console errors.
 
 #### Phase 1: Consolidate the frontend (≈1 week)
 
-- [ ] Move the Rx pad to `apps/doctor-portal/src/rx/` and route `/rx` with
+- [x] Move the Rx pad to `apps/doctor-portal/src/rx/` and route `/rx` with
       `React.lazy`. Delete the bridge, `session.ts`, `check-bridge.mjs`, the
-      gateway `/rx` rule and the nginx alias.
+      gateway `/rx` rule and the nginx alias. (Done 2026-10-22; checked in the
+      browser. The pad now shares the portal's session and in-memory data.)
 - [ ] Remove the duplicates and shims from §2.5. Use one CSS file plus the
       shared Tailwind preset.
 - [ ] Move the print template into `apps/shared` (`renderRxHtml`) and use it

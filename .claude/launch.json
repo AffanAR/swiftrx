@@ -8,12 +8,6 @@
       "port": 5174
     },
     {
-      "name": "rx",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:rx"],
-      "port": 5173
-    },
-    {
       "name": "admin",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:admin"],

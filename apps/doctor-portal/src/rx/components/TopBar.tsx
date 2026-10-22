@@ -1,6 +1,4 @@
-import React from 'react';
 import { useApp, actions } from '../store';
-import { loadSession } from '../session';
 import { cx } from '../useHotkeys';
 import { LiveDot, AnimatedNumber } from './Fx';
 
@@ -10,7 +8,7 @@ export function TopBar({ onSignOut }: { onSignOut: () => void }) {
   const medCount = useApp((s) => s.medications.length);
   const diagnosis = useApp((s) => s.diagnosis);
   const setFocusZone = actions.setFocusZone;
-  const session = loadSession();
+  const doctor = useApp((s) => s.doctor);
 
   return (
     <header className="relative h-12 border-b border-ink-700 bg-ink-800/80 backdrop-blur flex items-center px-4 gap-4 select-none overflow-hidden">
@@ -82,12 +80,12 @@ export function TopBar({ onSignOut }: { onSignOut: () => void }) {
           <span>Rx{medCount === 1 ? '' : 's'}</span>
         </span>
 
-        {session && (
+        {doctor && (
           <div className="hidden md:flex items-center gap-2 px-2 py-1 rounded-md bg-ink-800/70 border border-ink-700 animate-fadeIn">
             <span className="text-ink-500">Dr.</span>
-            <span className="text-ink-200 font-medium">{session.doctorName.replace(/^Dr\.\s*/i, '')}</span>
+            <span className="text-ink-200 font-medium">{doctor.name.replace(/^Dr\.\s*/i, '')}</span>
             <span className="text-ink-600">·</span>
-            <span className="font-mono text-ink-400">{session.licenseNo}</span>
+            <span className="font-mono text-ink-400">{doctor.licenseNo}</span>
             <button
               onClick={onSignOut}
               className="ml-1 px-1.5 py-0.5 rounded text-rx-accent hover:bg-ink-700/60 transition-colors"

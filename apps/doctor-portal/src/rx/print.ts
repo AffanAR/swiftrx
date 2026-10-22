@@ -5,8 +5,13 @@ import { DEFAULT_RX_DESIGN, getRxDesign, type RxDesign } from '@swiftrx/shared';
 // Render a prescription into the #print-area for the browser print dialog.
 // `draft` marks an unsigned pad: DRAFT watermark, no signature verification.
 export function renderPrintable(rx: SignedRx, opts?: { draft?: boolean }) {
-  const target = document.getElementById('print-area');
-  if (!target) return;
+  // The portal page has no #print-area of its own; create it on first print.
+  let target = document.getElementById('print-area');
+  if (!target) {
+    target = document.createElement('div');
+    target.id = 'print-area';
+    document.body.appendChild(target);
+  }
 
   // Defensive default for older payloads that predate the investigations field.
   // We pass a shallow copy to the renderer so we never mutate the caller's
@@ -255,8 +260,8 @@ export function buildDraftRx(): SignedRx | null {
     medications: s.medications,
     investigations: s.investigations,
     doctorId: 'draft',
-    doctorName: s.doctorName,
-    doctorLicense: s.doctorLicense,
+    doctorName: s.doctor?.name ?? '',
+    doctorLicense: s.doctor?.licenseNo ?? '',
   };
 }
 
@@ -269,6 +274,8 @@ export function printCurrent(rx?: SignedRx): boolean {
   const payload = rx ?? buildDraftRx();
   if (!payload) return false;
   renderPrintable(payload, { draft: !rx });
+  // Switches on the print stylesheet in rx.css until the dialog closes.
+  document.documentElement.classList.add('rx-printing');
   // Two rAFs + a small timeout is the most reliable cross-browser pattern
   // for letting layout/paint settle before the print dialog opens.
   requestAnimationFrame(() => {
@@ -279,10 +286,12 @@ export function printCurrent(rx?: SignedRx): boolean {
   return true;
 }
 
-// Empty the print area once the dialog closes, so a later print from the
-// browser menu can't reproduce an old (possibly signed) prescription.
+// Once the dialog closes, empty the print area and switch the print stylesheet
+// off, so a later print from the browser menu prints the page itself rather
+// than an old (possibly signed) prescription.
 if (typeof window !== 'undefined') {
   window.addEventListener('afterprint', () => {
+    document.documentElement.classList.remove('rx-printing');
     const target = document.getElementById('print-area');
     if (target) target.innerHTML = '';
   });

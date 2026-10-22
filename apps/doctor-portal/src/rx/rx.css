@@ -1,0 +1,48 @@
+/* Rx pad styles the portal's own stylesheet doesn't have. Plain CSS (no
+   @tailwind / @layer): this file loads with the lazy /rx chunk, and the
+   portal's index.css already provides Tailwind and the shared rx-* classes. */
+
+/* Subtle focus underline that animates under pills. */
+.rx-underline-track {
+  position: relative;
+  overflow: hidden;
+}
+.rx-underline-track::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  transform: translateX(-100%);
+  animation: underlineSweep 2.2s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+/* ---- Print stylesheet --------------------------------------------------- */
+/* print.ts renders the Rx into #print-area and adds `rx-printing` to <html>  */
+/* only while its print dialog is open, so printing any other portal page   */
+/* from the browser menu is unaffected.                                      */
+#print-area { display: none; }
+
+@media print {
+  html.rx-printing,
+  html.rx-printing body { background: white !important; }
+  html.rx-printing body * { visibility: hidden !important; }
+  html.rx-printing #print-area {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: white !important;
+    color: #111 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 99999 !important;
+  }
+  html.rx-printing #print-area,
+  html.rx-printing #print-area * { visibility: visible !important; }
+  /* Avoid awkward page splits inside the Rx and signature. */
+  html.rx-printing #print-area table,
+  html.rx-printing #print-area tr { page-break-inside: avoid; }
+}

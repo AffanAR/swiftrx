@@ -10,14 +10,21 @@ import type {
 import { DRUGS } from './data';
 import { evaluateAllMedications, findDrug } from './safety';
 import {
-  loadBridge,
   MOCK_PATIENTS,
   listPatientsForHospital,
   listSignedRxForHospital,
   appendSignedRx,
   appendAudit,
-  type BridgeSession,
 } from './shared-bridge';
+
+/** The signed-in doctor the pad prescribes as, taken from the portal session. */
+export interface DoctorIdentity {
+  id: string;
+  email: string;
+  name: string;
+  licenseNo: string;
+  hospitalSlug: string;
+}
 
 export interface NewPatientInput {
   name: string;
@@ -41,9 +48,8 @@ export interface AppState {
   medications: RxMedication[];
   // Signed history
   signed: SignedRx[];
-  // Doctor
-  doctorName: string;
-  doctorLicense: string;
+  // Doctor (null until loadWorkspace)
+  doctor: DoctorIdentity | null;
   // Active focused input (for tab/keyboard management)
   focusZone:
     | 'patient'
@@ -87,7 +93,6 @@ export interface AppActions {
   cancelOverride: () => void;
   /** Copies a previous Rx for the current patient onto the pad (see the action for merge rules). */
   repeatRx: (rx: SignedRx) => void;
-  setDoctorIdentity: (id: { doctorName: string; doctorLicense: string }) => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -98,7 +103,7 @@ export const MIN_OVERRIDE_REASON = 10;
 const newRowId = () => 'r_' + Math.random().toString(36).slice(2, 9);
 const newPatientId = () => 'p_' + Math.random().toString(36).slice(2, 9);
 
-// Empty until bootstrapFromBridge() loads the signed-in doctor's hospital:
+// Empty until loadWorkspace() loads the signed-in doctor's hospital:
 // no default patients and no default doctor identity.
 const initialState: AppState = {
   patients: [],
@@ -108,8 +113,7 @@ const initialState: AppState = {
   investigations: [],
   medications: [],
   signed: [],
-  doctorName: '',
-  doctorLicense: '',
+  doctor: null,
   focusZone: null,
   activeRowId: null,
   showNewPatient: false,
@@ -136,15 +140,15 @@ class Store {
         }),
       createPatient: (input: NewPatientInput) => {
         // Patients always belong to the signed-in doctor's hospital — no fallback.
-        const bridge = currentBridge();
-        if (!bridge) {
+        const doctor = this.state.doctor;
+        if (!doctor) {
           this.set({ banner: { kind: 'danger', text: 'Sign in as a doctor to add patients.' } });
           return '';
         }
         const id = newPatientId();
         const p: Patient = {
           id,
-          hospitalSlug: bridge.hospitalSlug,
+          hospitalSlug: doctor.hospitalSlug,
           name: input.name,
           age: input.age,
           sex: input.sex,
@@ -163,8 +167,8 @@ class Store {
         MOCK_PATIENTS.push(p);
         appendAudit({
           kind: 'create_patient',
-          userId: bridge.doctorId,
-          userEmail: bridge.email,
+          userId: doctor.id,
+          userEmail: doctor.email,
           at: new Date().toISOString(),
           hospitalSlug: p.hospitalSlug,
           patientId: p.id,
@@ -260,8 +264,8 @@ class Store {
           return null;
         }
         // Only the signed-in doctor can sign — there is no fallback identity.
-        const bridge = currentBridge();
-        if (!bridge || !s.doctorName || !s.doctorLicense) {
+        const doctor = s.doctor;
+        if (!doctor || !doctor.licenseNo) {
           this.set({ banner: { kind: 'danger', text: 'Only a signed-in doctor with a license number can sign.' } });
           return null;
         }
@@ -291,16 +295,16 @@ class Store {
           diagnosis: s.diagnosis,
           medications: s.medications,
           investigations: s.investigations,
-          doctorId: bridge.doctorId,
-          doctorName: s.doctorName,
-          doctorLicense: s.doctorLicense,
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          doctorLicense: doctor.licenseNo,
           safetyOverride: critical.length ? { reason, alerts: critical } : undefined,
         };
         appendSignedRx(signed);
         appendAudit({
           kind: 'sign_rx',
-          userId: bridge.doctorId,
-          userEmail: bridge.email,
+          userId: doctor.id,
+          userEmail: doctor.email,
           at: signed.signedAt,
           hospitalSlug: patient.hospitalSlug,
           rxId: signed.id,
@@ -348,7 +352,6 @@ class Store {
           },
         });
       },
-      setDoctorIdentity: (id) => this.set({ doctorName: id.doctorName, doctorLicense: id.doctorLicense }),
     };
   }
 
@@ -391,30 +394,31 @@ export function useApp<T>(selector: (s: AppState) => T): T {
 }
 
 // -----------------------------------------------------------------------------
-//  Bootstrap: seed the store with the hospital-scoped patient roster + signed
-//  Rx history. Called once from App.tsx on mount, after the bridge session is
-//  loaded. Without a bridge the roster stays empty — never another hospital's.
+//  Workspace loading. The Rx pad is a portal route, so the doctor and hospital
+//  come from the portal session (see RxPad.tsx), and the roster + signed Rx
+//  history come from the same in-memory mock db the portal pages read.
 // -----------------------------------------------------------------------------
 
-function currentBridge(): BridgeSession | null {
-  return loadBridge();
+/**
+ * Load the doctor's hospital into the store. Called each time the Rx pad
+ * mounts. The same doctor keeps their in-progress pad, with the roster and
+ * signed history re-read so patients or prescriptions added elsewhere in the
+ * portal show up. A different doctor or hospital starts from a clean store.
+ */
+export function loadWorkspace(doctor: DoctorIdentity): void {
+  const prev = store.state$;
+  const patients = listPatientsForHospital(doctor.hospitalSlug);
+  const signed = listSignedRxForHospital(doctor.hospitalSlug);
+  const sameDoctor = prev.doctor?.id === doctor.id && prev.doctor.hospitalSlug === doctor.hospitalSlug;
+  if (sameDoctor) {
+    const keepPatient = patients.some((p) => p.id === prev.patientId);
+    store.set({ doctor, patients, signed, patientId: keepPatient ? prev.patientId : patients[0]?.id ?? '' });
+  } else {
+    store.set({ ...initialState, doctor, patients, signed, patientId: patients[0]?.id ?? '' });
+  }
 }
 
-function currentHospitalSlug(): string | null {
-  const b = currentBridge();
-  return b?.hospitalSlug ?? null;
-}
-
-export function bootstrapFromBridge(): void {
-  const slug = currentHospitalSlug();
-  const patients = slug ? listPatientsForHospital(slug) : [];
-  const signed = slug ? listSignedRxForHospital(slug) : [];
-  const bridge = currentBridge();
-  store.set({
-    patients,
-    patientId: patients[0]?.id ?? '',
-    signed,
-    doctorName: bridge?.doctorName ?? '',
-    doctorLicense: bridge?.licenseNo ?? '',
-  });
+/** Forget the doctor and their pad (on sign-out). */
+export function resetWorkspace(): void {
+  store.set({ ...initialState });
 }

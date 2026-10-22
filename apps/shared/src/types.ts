@@ -264,18 +264,3 @@ export type AuditEvent =
 export type SessionPayload =
   | { role: 'platform_admin'; userId: string; issuedAt: number; email: string; name: string }
   | { role: 'hospital_admin' | 'doctor'; userId: string; hospitalSlug: string; issuedAt: number; email: string; name: string; licenseNo?: string };
-
-/**
- * The "bridge" payload the hospital portal writes to localStorage and
- * encodes in the URL when handing the doctor off to the Rx Pad. Defined
- * here so the portal, the Rx app, and the shared module all agree on the
- * shape.
- */
-export interface BridgeSession {
-  doctorId: string;
-  hospitalSlug: string;
-  doctorName: string;
-  licenseNo: string;
-  email: string;
-  issuedAt: number;
-}

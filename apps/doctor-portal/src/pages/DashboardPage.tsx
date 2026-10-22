@@ -3,9 +3,6 @@ import {
   LiveDot,
   Card,
   HospitalBadge,
-  RX_APP_URL,
-  loadBridge,
-  encodeBridgeToken,
   listPatientsForHospital,
   listSignedRxForHospital,
   type Hospital,
@@ -33,13 +30,6 @@ function DoctorDashboard({ hospital, user }: Props) {
   const patients = listPatientsForHospital(hospital.slug);
   const rx = listSignedRxForHospital(hospital.slug).filter((r) => r.doctorId === user.id);
 
-  const rxLink = (() => {
-    const bridge = loadBridge();
-    if (!bridge) return RX_APP_URL;
-    const token = encodeBridgeToken(bridge);
-    return `${RX_APP_URL}/?session=${encodeURIComponent(token)}`;
-  })();
-
   return (
     <div className="p-6 sm:p-8 max-w-4xl mx-auto space-y-5 animate-fadeIn">
       <header className="flex items-end justify-between flex-wrap gap-3">
@@ -58,10 +48,8 @@ function DoctorDashboard({ hospital, user }: Props) {
         <HospitalBadge hospital={hospital} />
       </header>
 
-      <a
-        href={rxLink}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        to="/rx"
         className="rx-card rx-hover-lift p-6 transition-all hover:border-rx-accent/50 hover:shadow-glow animate-fadeIn block group"
         data-test="open-rx-pad"
       >
@@ -73,7 +61,7 @@ function DoctorDashboard({ hospital, user }: Props) {
             </div>
             <div className="mt-1 text-xl font-semibold text-ink-100 flex items-center gap-2">
               Start a new prescription
-              <span className="text-sm text-ink-500 group-hover:translate-x-0.5 transition-transform">↗</span>
+              <span className="text-sm text-ink-500 group-hover:translate-x-0.5 transition-transform">→</span>
             </div>
             <p className="mt-2 text-sm text-ink-400 max-w-md">
               Keyboard-first prescribing. Search a drug, set the dose, and sign.
@@ -85,10 +73,10 @@ function DoctorDashboard({ hospital, user }: Props) {
               className="absolute inset-0 rounded-full border-2 border-rx-accent/0 animate-spinSlowReverse"
               style={{ borderTopColor: 'rgba(16,185,129,0.6)' }}
             />
-            <span className="relative text-rx-accent text-base font-bold">↗</span>
+            <span className="relative text-rx-accent text-base font-bold">→</span>
           </div>
         </div>
-      </a>
+      </Link>
 
       <div className="grid sm:grid-cols-2 gap-3">
         <Card title="Your patients" subtitle={`${patients.length} in roster`} right={<Link to="/patients" className="text-xs text-rx-accent hover:underline">View all →</Link>}>
@@ -172,7 +160,7 @@ function AdminDashboard({ hospital, user }: Props) {
       </header>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Hospital admins don't prescribe — only doctors sign in to the Rx pad. */}
+        {/* Hospital admins don't prescribe — only doctors can open the Rx pad. */}
         <Card title="Prescribing" subtitle="Doctors only">
           <p className="text-sm text-ink-400">
             Doctors open the Rx pad from their own dashboard. Admin accounts can't sign prescriptions.

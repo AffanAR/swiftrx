@@ -1,5 +1,5 @@
 import React from 'react';
-import { useApp, actions } from '../store';
+import { useApp } from '../store';
 import { QUICK_PACKS, DRUGS } from '../data';
 import { evaluateMedication, severityRank } from '../safety';
 import { cx } from '../useHotkeys';

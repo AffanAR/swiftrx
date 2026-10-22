@@ -73,40 +73,6 @@ export function login(opts: LoginOpts): LoginResult {
   return { ok: true, user, session };
 }
 
-/** URL-safe base64 JSON encoding (no padding) — works in browser + node. */
-export function encodeToken<T>(payload: T): string {
-  const json = JSON.stringify(payload);
-  // Works in both browser and node 16+
-  const bytes = new TextEncoder().encode(json);
-  let bin = '';
-  bytes.forEach((b) => (bin += String.fromCharCode(b)));
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-export function decodeToken<T>(token: string): T | null {
-  try {
-    const padded = token.replace(/-/g, '+').replace(/_/g, '/');
-    const bin = atob(padded);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const json = new TextDecoder().decode(bytes);
-    return JSON.parse(json) as T;
-  } catch {
-    return null;
-  }
-}
-
-// Bridge payload import kept in the type-only path to avoid a circular dep.
-import type { BridgeSession } from './types';
-
-/** Helper for callers that want to encode a bridge session specifically. */
-export function encodeBridgeToken(s: BridgeSession): string {
-  return encodeToken(s);
-}
-export function decodeBridgeToken(t: string): BridgeSession | null {
-  return decodeToken<BridgeSession>(t);
-}
-
 /** Tiny `loadSession`-style helpers. Apps plug these into their own storage key. */
 export function readSessionFromStorage<T>(key: string): T | null {
   try {
@@ -138,41 +104,4 @@ export function clearSessionFromStorage(key: string) {
   } catch {
     /* ignore */
   }
-}
-
-// --- Bridge session (portal → Rx pad handoff) --------------------------------
-// The hospital portal writes a BridgeSession to a single localStorage key
-// when a doctor opens the Rx pad. The Rx pad reads the same key on boot
-// and (when present) seeds the doctor + tenant context.
-
-export const BRIDGE_KEY = 'swiftrx.session';
-
-export function loadBridge(): BridgeSession | null {
-  if (typeof localStorage === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(BRIDGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as BridgeSession;
-    if (
-      typeof parsed.doctorId !== 'string' ||
-      typeof parsed.hospitalSlug !== 'string' ||
-      typeof parsed.doctorName !== 'string' ||
-      typeof parsed.licenseNo !== 'string' ||
-      typeof parsed.email !== 'string' ||
-      typeof parsed.issuedAt !== 'number'
-    ) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-export function saveBridge(s: BridgeSession) {
-  if (typeof localStorage === 'undefined') return;
-  try { localStorage.setItem(BRIDGE_KEY, JSON.stringify(s)); } catch { /* ignore */ }
-}
-
-export function clearBridge() {
-  if (typeof localStorage === 'undefined') return;
-  try { localStorage.removeItem(BRIDGE_KEY); } catch { /* ignore */ }
 }

@@ -1,6 +1,8 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSession } from './useSession';
 import { useTenant } from './tenantStore';
+import { canPrescribe } from './auth';
 import { LoginPage } from './pages/LoginPage';
 import { PortalShell } from './components/PortalShell';
 import { DashboardPage } from './pages/DashboardPage';
@@ -9,6 +11,9 @@ import { PrescriptionsPage } from './pages/PrescriptionsPage';
 import { DoctorsPage } from './pages/DoctorsPage';
 import { HospitalSettingsPage } from './pages/HospitalSettingsPage';
 import { TenantNotFound } from './pages/TenantNotFound';
+
+// The Rx pad is its own chunk, loaded only when a doctor opens /rx.
+const RxPad = lazy(() => import('./rx/RxPad'));
 
 export default function App() {
   const tenant = useTenant();
@@ -76,6 +81,26 @@ export default function App() {
               </PortalShell>
             )
             : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/rx"
+        element={
+          session.status !== 'signed-in'
+            ? <Navigate to="/" replace />
+            : canPrescribe(session.user, hospital)
+              ? (
+                <Suspense
+                  fallback={
+                    <div className="h-full flex items-center justify-center text-ink-400 text-sm">
+                      Loading Rx pad…
+                    </div>
+                  }
+                >
+                  <RxPad user={session.user} hospital={hospital} onSignOut={signOut} />
+                </Suspense>
+              )
+              : <Navigate to="/dashboard" replace />
         }
       />
       <Route

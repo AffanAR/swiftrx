@@ -1,5 +1,15 @@
 import React from 'react';
-import { actions, getState, useApp, bootstrapFromBridge, previousRxForPatient } from './store';
+import { Link } from 'react-router-dom';
+import type { Hospital, User } from '@swiftrx/shared';
+import {
+  actions,
+  getState,
+  useApp,
+  previousRxForPatient,
+  loadWorkspace,
+  resetWorkspace,
+  type DoctorIdentity,
+} from './store';
 import { useHotkeys, cx } from './useHotkeys';
 import { TopBar } from './components/TopBar';
 import { LeftColumn } from './components/LeftColumn';
@@ -7,39 +17,58 @@ import { CenterColumn } from './components/CenterColumn';
 import { RightColumn } from './components/RightColumn';
 import { NewPatientModal } from './components/NewPatientModal';
 import { SafetyOverrideModal } from './components/SafetyOverrideModal';
-import { SessionGate } from './components/SessionGate';
-import { useSession, loadSession } from './session';
 import { QUICK_PACKS } from './data';
 import type { QuickPack, SignedRx } from './types';
 import { printCurrent, signAndPrint } from './print';
+import './rx.css';
 
-export default function App() {
-  const [session, signOut] = useSession();
+/**
+ * The Rx pad, mounted by the portal at /rx (lazy-loaded). The portal only
+ * renders it for a signed-in, licensed doctor of this hospital and passes that
+ * identity in, so there is no separate Rx session.
+ */
+export default function RxPad({
+  user,
+  hospital,
+  onSignOut,
+}: {
+  user: User;
+  hospital: Hospital;
+  onSignOut: () => void;
+}) {
+  const doctor = React.useMemo<DoctorIdentity>(
+    () => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      licenseNo: user.licenseNo ?? '',
+      hospitalSlug: hospital.slug,
+    }),
+    [user, hospital.slug],
+  );
+  const [loadedFor, setLoadedFor] = React.useState<DoctorIdentity | null>(null);
+
+  // Load before the first paint so the workspace never flashes empty.
+  React.useLayoutEffect(() => {
+    loadWorkspace(doctor);
+    setLoadedFor(doctor);
+  }, [doctor]);
+
+  const signOut = React.useCallback(() => {
+    resetWorkspace();
+    onSignOut();
+  }, [onSignOut]);
+
+  if (loadedFor !== doctor) return null;
+  return <Workspace doctor={doctor} onSignOut={signOut} />;
+}
+
+function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: () => void }) {
   const showNewPatient = useApp((s) => s.showNewPatient);
   const overrideOpen = useApp((s) => s.overridePrompt !== null);
   const hasPatient = useApp((s) => s.patients.some((p) => p.id === s.patientId));
   const patientSearchRef = React.useRef<HTMLInputElement>(null);
   const diagnosisRef = React.useRef<HTMLInputElement>(null);
-
-  // On first paint, seed the store with the hospital-scoped patients, signed
-  // Rx history, and doctor identity from the bridge session. We do this once
-  // (not in response to every session change) so that re-renders triggered
-  // by the store don't loop back into the bridge.
-  React.useEffect(() => {
-    bootstrapFromBridge();
-  }, []);
-
-  // When a session appears (URL handoff or localStorage), push the doctor's
-  // identity into the store so the Rx pad's "signed by" fields match the
-  // logged-in doctor.
-  React.useEffect(() => {
-    if (session.status === 'signed-in') {
-      actions.setDoctorIdentity({
-        doctorName: session.session.doctorName,
-        doctorLicense: session.session.licenseNo,
-      });
-    }
-  }, [session]);
 
   const applyPack = React.useCallback((pack: QuickPack) => {
     const meds = pack.medications.map((m) => ({
@@ -88,11 +117,6 @@ export default function App() {
       actions.setBanner({ kind: 'info', text: 'Nothing to print yet: add a diagnosis and at least one medication.' });
     }
   }, []);
-
-  const onSignOut = React.useCallback(() => {
-    signOut();
-    actions.clearAll();
-  }, [signOut]);
 
   useHotkeys([
     {
@@ -187,28 +211,26 @@ export default function App() {
         actions.setFocusZone('diagnosis');
       },
     },
-  ], session.status === 'signed-in' && !showNewPatient && !overrideOpen); // off while signed out or a modal is open
+  ], !showNewPatient && !overrideOpen); // off while a modal is open
 
   return (
-    <SessionGate session={session}>
-      <SignedInShell onSignOut={onSignOut}>
-        {hasPatient ? (
-          <>
-            <TopBar onSignOut={onSignOut} />
-            <div className="flex-1 flex min-h-0">
-              <LeftColumn patientSearchRef={patientSearchRef} />
-              <CenterColumn diagnosisRef={diagnosisRef} />
-              <RightColumn onApply={applyPack} onRepeat={repeatPrescription} />
-            </div>
-          </>
-        ) : (
-          <EmptyRoster />
-        )}
-        <StatusLine />
-        <NewPatientModal />
-        <SafetyOverrideModal />
-      </SignedInShell>
-    </SessionGate>
+    <SignedInShell doctor={doctor} onSignOut={onSignOut}>
+      {hasPatient ? (
+        <>
+          <TopBar onSignOut={onSignOut} />
+          <div className="flex-1 flex min-h-0">
+            <LeftColumn patientSearchRef={patientSearchRef} />
+            <CenterColumn diagnosisRef={diagnosisRef} />
+            <RightColumn onApply={applyPack} onRepeat={repeatPrescription} />
+          </div>
+        </>
+      ) : (
+        <EmptyRoster />
+      )}
+      <StatusLine />
+      <NewPatientModal />
+      <SafetyOverrideModal />
+    </SignedInShell>
   );
 }
 
@@ -237,44 +259,46 @@ function EmptyRoster() {
 }
 
 /**
- * Small layout wrapper for the signed-in workspace. Reads the live session
- * (already validated by SessionGate) and shows the doctor name + tenant
- * label so the user always knows whose workspace they're in.
+ * Small layout wrapper for the workspace. Shows the doctor name + tenant label
+ * so the user always knows whose workspace they're in, with a way back to the
+ * rest of the portal.
  */
 function SignedInShell({
+  doctor,
   children,
   onSignOut,
 }: {
+  doctor: DoctorIdentity;
   children: React.ReactNode;
   onSignOut: () => void;
 }) {
-  const s = loadSession();
   return (
     <div className="h-full flex flex-col bg-ink-900 text-ink-100 relative">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-50 rx-bg-grid rx-fade-mask"
       />
-      {s && (
-        <div className="relative px-4 py-1.5 bg-ink-800/60 border-b border-ink-700 text-[11px] text-ink-400 flex items-center justify-between animate-fadeIn">
-          <span className="flex items-center gap-1.5 min-w-0">
-            <span className="h-1.5 w-1.5 rounded-full bg-rx-accent animate-breathe" />
-            <span className="truncate">
-              Signed in as <span className="text-ink-200 font-medium">{s.doctorName}</span>
-              <span className="mx-1.5 text-ink-600">·</span>
-              Tenant <span className="font-mono text-ink-300">{s.hospitalSlug}</span>
-              <span className="mx-1.5 text-ink-600 hidden sm:inline">·</span>
-              <span className="hidden sm:inline">{s.licenseNo}</span>
-            </span>
+      <div className="relative px-4 py-1.5 bg-ink-800/60 border-b border-ink-700 text-[11px] text-ink-400 flex items-center justify-between animate-fadeIn">
+        <span className="flex items-center gap-1.5 min-w-0">
+          <Link to="/dashboard" className="mr-2 text-rx-accent hover:underline shrink-0">
+            ← Portal
+          </Link>
+          <span className="h-1.5 w-1.5 rounded-full bg-rx-accent animate-breathe" />
+          <span className="truncate">
+            Signed in as <span className="text-ink-200 font-medium">{doctor.name}</span>
+            <span className="mx-1.5 text-ink-600">·</span>
+            Tenant <span className="font-mono text-ink-300">{doctor.hospitalSlug}</span>
+            <span className="mx-1.5 text-ink-600 hidden sm:inline">·</span>
+            <span className="hidden sm:inline">{doctor.licenseNo}</span>
           </span>
-          <button
-            onClick={onSignOut}
-            className="text-rx-accent hover:underline transition-colors"
-          >
-            Sign out
-          </button>
-        </div>
-      )}
+        </span>
+        <button
+          onClick={onSignOut}
+          className="text-rx-accent hover:underline transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
       <div className="relative flex-1 min-h-0 flex flex-col">{children}</div>
     </div>
   );

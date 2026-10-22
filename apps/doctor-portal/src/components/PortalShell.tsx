@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { LiveDot, cx, type Hospital, type User } from '@swiftrx/shared';
+import { canPrescribe } from '../auth';
 
 export function PortalShell({
   children,
@@ -13,6 +14,11 @@ export function PortalShell({
   onSignOut: () => void;
 }) {
   const isAdmin = user.role === 'hospital_admin';
+  const nav = isAdmin
+    ? NAV_ADMIN
+    : canPrescribe(user, hospital)
+      ? [NAV_DOCTOR[0], NAV_RX, ...NAV_DOCTOR.slice(1)]
+      : NAV_DOCTOR;
 
   return (
     <div className="h-full flex flex-col bg-ink-900 text-ink-100 relative overflow-hidden">
@@ -39,7 +45,7 @@ export function PortalShell({
         </div>
 
         <nav className="ml-2 flex items-center gap-1 text-sm">
-          {(isAdmin ? NAV_ADMIN : NAV_DOCTOR).map((n) => (
+          {nav.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
@@ -98,3 +104,6 @@ const NAV_DOCTOR = [
   { to: '/patients', label: 'Patients' },
   { to: '/prescriptions', label: 'My Rx' },
 ];
+
+// Shown to doctors who can prescribe (see canPrescribe).
+const NAV_RX = { to: '/rx', label: 'Rx pad' };
