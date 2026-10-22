@@ -106,7 +106,7 @@ export function NewHospitalPage() {
           <Select
             label="Plan"
             value={plan}
-            onChange={(v) => setPlan(v as any)}
+            onChange={setPlan}
             options={[
               { value: 'starter', label: 'Starter — 200 Rx / month' },
               { value: 'clinic', label: 'Clinic — 1,500 Rx / month' },

@@ -44,7 +44,7 @@ export function login(opts: {
     expectedRole: 'any', // could be 'doctor' or 'hospital_admin' — accept either
     hospitalSlug: opts.hospitalSlug,
   });
-  if (!r.ok) return { ok: false, reason: r.reason as any };
+  if (!r.ok) return { ok: false, reason: r.reason };
 
   writeSessionToStorage(SESSION_KEY, r.session);
   return { ok: true, session: r.session, user: r.user };

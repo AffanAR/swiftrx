@@ -151,7 +151,9 @@ function shutdown() {
   children.forEach((c) => {
     try {
       c.kill('SIGINT');
-    } catch {}
+    } catch {
+      // Already exited; nothing to stop.
+    }
   });
   process.exit(0);
 }

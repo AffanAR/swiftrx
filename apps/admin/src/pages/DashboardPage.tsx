@@ -100,7 +100,7 @@ export function DashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <ProgressBar value={pct} tone={tone as any} />
+                      <ProgressBar value={pct} tone={tone} />
                     </Link>
                   </li>
                 );

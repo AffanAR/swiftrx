@@ -61,9 +61,10 @@ export function resolveSurface(
     return { surface: 'hospital', subdomain: slug, hospitalSlug: slug, source: 'query' };
   }
 
-  // 2. Subdomain from host.
+  // 2. Subdomain from host. An IP address (e.g. 127.0.0.1) has none — without
+  // this check its first octet would be read as a hospital slug.
   const parts = host.toLowerCase().split('.');
-  if (parts.length < 2) {
+  if (parts.length < 2 || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
     // No subdomain — default to admin in dev, hospital in prod (handled by host).
     return { surface: 'admin', subdomain: null, hospitalSlug: null, source: 'domain' };
   }

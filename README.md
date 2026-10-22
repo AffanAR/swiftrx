@@ -34,7 +34,19 @@ npm run dev:gateway     # Only the dev gateway on http://localhost:5172
 
 # Build both apps:
 npm run build
+
+# Checks — the same steps CI runs (.github/workflows/ci.yml):
+npm run check           # format check, lint, type check, unit tests, build
+npm test                # unit tests only (npm run test:watch re-runs on save)
+npm run lint            # ESLint
+npm run format          # rewrite files in Prettier style
 ```
+
+Unit tests (Vitest) sit next to the code they cover as `*.test.ts`: the Rx
+pad's safety checks, search and store actions, the shared print template and
+the tenant resolver. Two `it.fails` tests in `safety.test.ts` track known
+safety gaps from `PLAN.md` §2.2; when a gap is fixed, Vitest reports the test
+as unexpectedly passing so the marker can be removed.
 
 ### Try it with the dev gateway
 

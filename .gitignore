@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+coverage/
 *.tsbuildinfo
 
 # Local env files (keep the committed .env.example templates)
@@ -16,6 +17,7 @@ dist/
 .vscode/
 .idea/
 .claude/settings.local.json
+.claude/worktrees/
 
 # Logs and OS junk
 *.log

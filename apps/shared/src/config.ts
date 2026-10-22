@@ -10,9 +10,10 @@ function readEnv(name: string, fallback: string): string {
   // Vite injects env at build time under import.meta.env. We also peek
   // process.env so the Node-side scripts (the dev gateway) can use the
   // same module.
-  const fromVite = typeof import.meta !== 'undefined' && (import.meta as any).env?.[name];
-  const fromProcess = typeof process !== 'undefined' && (process as any).env?.[name];
-  const raw = (fromVite || fromProcess || fallback) as string;
+  type Env = Record<string, string | undefined>;
+  const fromVite = (import.meta as { env?: Env }).env?.[name];
+  const fromProcess = (globalThis as { process?: { env?: Env } }).process?.env?.[name];
+  const raw = fromVite || fromProcess || fallback;
   return raw.replace(/\/+$/, '');
 }
 

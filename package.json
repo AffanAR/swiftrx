@@ -15,11 +15,27 @@
     "build:admin": "npm run build -w @swiftrx/admin",
     "build": "npm run build:portal && npm run build:admin",
     "preview:portal": "npm run preview -w @swiftrx/doctor-portal",
-    "preview:admin": "npm run preview -w @swiftrx/admin"
+    "preview:admin": "npm run preview -w @swiftrx/admin",
+    "typecheck": "tsc -p apps/doctor-portal/tsconfig.json --noEmit && tsc -p apps/admin/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.12.0",
     "concurrently": "^9.2.4",
-    "http-proxy-middleware": "^2.0.6"
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "http-proxy-middleware": "^2.0.6",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^2.1.9"
   }
 }

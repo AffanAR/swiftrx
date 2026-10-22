@@ -95,8 +95,9 @@ export function readSessionFromStorage<T>(key: string): T | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as T;
     // Refresh the user from mock db so role changes take effect on next render.
-    if ((parsed as any)?.userId) {
-      const u = getUserById((parsed as any).userId);
+    const userId = (parsed as { userId?: unknown } | null)?.userId;
+    if (typeof userId === 'string' && userId) {
+      const u = getUserById(userId);
       if (!u || u.status === 'disabled') return null;
     }
     return parsed;

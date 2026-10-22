@@ -153,7 +153,7 @@ export function StaggeredList({
     <As className={className}>
       {arr.map((child, i) => (
         <div
-          key={(child as any)?.key ?? i}
+          key={React.isValidElement(child) ? (child.key ?? i) : i}
           className={cx('animate-fadeIn will-change-transform', itemClassName)}
           style={{ animationDelay: `${initialMs + i * stepMs}ms` }}
         >
