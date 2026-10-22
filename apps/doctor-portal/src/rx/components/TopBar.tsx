@@ -27,7 +27,9 @@ export function TopBar({ onSignOut }: { onSignOut: () => void }) {
           <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-rx-accent animate-breathe" />
         </div>
         <div className="font-semibold tracking-tight">SwiftRx</div>
-        <div className="text-xs text-ink-400 ml-1 hidden md:block">keyboard-first prescription pad</div>
+        <div className="text-xs text-ink-400 ml-1 hidden md:block">
+          keyboard-first prescription pad
+        </div>
       </div>
 
       <div className="mx-3 h-6 w-px bg-ink-700" />
@@ -37,7 +39,8 @@ export function TopBar({ onSignOut }: { onSignOut: () => void }) {
         <div className="text-sm">
           <span className="font-medium animate-slideInRight inline-block">{patient.name}</span>
           <span className="text-ink-400 ml-2">
-            {patient.age}{patient.sex} · {patient.weightKg}kg · {patient.contact}
+            {patient.age}
+            {patient.sex} · {patient.weightKg}kg · {patient.contact}
           </span>
         </div>
       </div>
@@ -99,7 +102,8 @@ export function TopBar({ onSignOut }: { onSignOut: () => void }) {
           className={cx(
             'px-2 py-0.5 rounded font-mono transition-colors duration-200 rx-underline-track',
             focusZone === 'diagnosis' && 'bg-rx-focus/15 text-rx-focus border border-rx-focus/30',
-            focusZone === 'med-search' && 'bg-rx-accent/15 text-rx-accent border border-rx-accent/30',
+            focusZone === 'med-search' &&
+              'bg-rx-accent/15 text-rx-accent border border-rx-accent/30',
             focusZone === 'patient' && 'bg-rx-warn/15 text-rx-warn border border-rx-warn/30',
           )}
         >

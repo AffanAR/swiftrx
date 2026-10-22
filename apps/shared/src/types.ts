@@ -97,7 +97,8 @@ export const DEFAULT_RX_DESIGN: RxDesign = {
   accentColor: '#10b981',
   showRxBadge: true,
   showAccentBand: true,
-  footerText: 'This prescription is generated electronically and is valid without a physical signature.',
+  footerText:
+    'This prescription is generated electronically and is valid without a physical signature.',
   watermark: 'none',
   pageSize: 'A4',
   landscape: false,
@@ -109,17 +110,17 @@ export const DEFAULT_RX_DESIGN: RxDesign = {
 };
 
 export interface Hospital {
-  slug: string;             // e.g. "city-hospital" → sub.swiftrx.com
+  slug: string; // e.g. "city-hospital" → sub.swiftrx.com
   name: string;
   city: string;
   country: string;
   status: 'active' | 'suspended' | 'trial';
   plan: 'starter' | 'clinic' | 'enterprise';
-  createdAt: string;        // ISO
+  createdAt: string; // ISO
   contactEmail: string;
-  monthlyRxCap: number;     // usage cap
-  monthlyRxUsed: number;    // usage this month
-  primaryColor?: string;    // optional accent override
+  monthlyRxCap: number; // usage cap
+  monthlyRxUsed: number; // usage this month
+  primaryColor?: string; // optional accent override
   features: HospitalFeatures;
   rxDesign: RxDesign;
 }
@@ -135,9 +136,9 @@ export interface User {
   password: string;
   name: string;
   role: UserRole;
-  hospitalSlug: string | null;     // null for platform_admin
-  specialty?: string;               // doctor-only
-  licenseNo?: string;               // doctor-only
+  hospitalSlug: string | null; // null for platform_admin
+  specialty?: string; // doctor-only
+  licenseNo?: string; // doctor-only
   status: 'active' | 'invited' | 'disabled';
   createdAt: string;
   lastLoginAt?: string;
@@ -147,7 +148,7 @@ export interface User {
 
 export interface Patient {
   id: string;
-  hospitalSlug: string;            // tenant key
+  hospitalSlug: string; // tenant key
   name: string;
   age: number;
   sex: 'M' | 'F';
@@ -253,14 +254,60 @@ export interface SignedRx {
 // --- Audit log ---------------------------------------------------------------
 
 export type AuditEvent =
-  | { kind: 'login'; userId: string; userEmail: string; at: string; hospitalSlug: string | null; ip?: string }
-  | { kind: 'sign_rx'; userId: string; userEmail: string; at: string; hospitalSlug: string; rxId: string; patientName: string; overrideReason?: string }
-  | { kind: 'create_patient'; userId: string; userEmail: string; at: string; hospitalSlug: string; patientId: string; patientName: string }
-  | { kind: 'create_hospital'; userId: string; userEmail: string; at: string; hospitalSlug: string; hospitalName: string }
-  | { kind: 'invite_user'; userId: string; userEmail: string; at: string; hospitalSlug: string; invitedEmail: string };
+  | {
+      kind: 'login';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string | null;
+      ip?: string;
+    }
+  | {
+      kind: 'sign_rx';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      rxId: string;
+      patientName: string;
+      overrideReason?: string;
+    }
+  | {
+      kind: 'create_patient';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      patientId: string;
+      patientName: string;
+    }
+  | {
+      kind: 'create_hospital';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      hospitalName: string;
+    }
+  | {
+      kind: 'invite_user';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      invitedEmail: string;
+    };
 
 // --- Sessions ----------------------------------------------------------------
 
 export type SessionPayload =
   | { role: 'platform_admin'; userId: string; issuedAt: number; email: string; name: string }
-  | { role: 'hospital_admin' | 'doctor'; userId: string; hospitalSlug: string; issuedAt: number; email: string; name: string; licenseNo?: string };
+  | {
+      role: 'hospital_admin' | 'doctor';
+      userId: string;
+      hospitalSlug: string;
+      issuedAt: number;
+      email: string;
+      name: string;
+      licenseNo?: string;
+    };

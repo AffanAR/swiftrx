@@ -15,10 +15,15 @@ export function auditColor(kind: AuditEvent['kind']): string {
 /** One-line description of an audit event. */
 export function auditTitle(e: AuditEvent): string {
   switch (e.kind) {
-    case 'login': return `${e.userEmail} signed in`;
-    case 'sign_rx': return `${e.userEmail} signed Rx ${e.rxId} for ${e.patientName}`;
-    case 'create_patient': return `${e.userEmail} created patient ${e.patientName}`;
-    case 'create_hospital': return `Provisioned hospital ${e.hospitalName}`;
-    case 'invite_user': return `Invited ${e.invitedEmail}`;
+    case 'login':
+      return `${e.userEmail} signed in`;
+    case 'sign_rx':
+      return `${e.userEmail} signed Rx ${e.rxId} for ${e.patientName}`;
+    case 'create_patient':
+      return `${e.userEmail} created patient ${e.patientName}`;
+    case 'create_hospital':
+      return `Provisioned hospital ${e.hospitalName}`;
+    case 'invite_user':
+      return `Invited ${e.invitedEmail}`;
   }
 }

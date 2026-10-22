@@ -25,7 +25,9 @@ export function AuditLogPage() {
           <span>Audit log</span>
         </div>
         <h1 className="mt-1 text-2xl font-semibold text-ink-100">Every event, every tenant</h1>
-        <p className="text-sm text-ink-400">Searchable stream of sign-ins, signed Rx, and admin actions.</p>
+        <p className="text-sm text-ink-400">
+          Searchable stream of sign-ins, signed Rx, and admin actions.
+        </p>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -35,7 +37,11 @@ export function AuditLogPage() {
           placeholder="Search by email, tenant, or patient…"
           className="rx-input max-w-md"
         />
-        <select className="rx-input max-w-[200px]" value={kind} onChange={(e) => setKind(e.target.value)}>
+        <select
+          className="rx-input max-w-[200px]"
+          value={kind}
+          onChange={(e) => setKind(e.target.value)}
+        >
           <option value="all">All events</option>
           <option value="login">Sign-in</option>
           <option value="sign_rx">Signed Rx</option>

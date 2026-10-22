@@ -49,13 +49,7 @@ export interface AppState {
   // Doctor (null until loadWorkspace)
   doctor: DoctorIdentity | null;
   // Active focused input (for tab/keyboard management)
-  focusZone:
-    | 'patient'
-    | 'diagnosis'
-    | 'med-search'
-    | 'med-row'
-    | 'sign'
-    | null;
+  focusZone: 'patient' | 'diagnosis' | 'med-search' | 'med-row' | 'sign' | null;
   activeRowId: string | null;
   // New-patient modal visibility
   showNewPatient: boolean;
@@ -258,20 +252,35 @@ class Store {
         const s = this.state;
         const patient = s.patients.find((p) => p.id === s.patientId);
         if (!patient || !s.diagnosis || !s.medications.length) {
-          this.set({ banner: { kind: 'warn', text: 'Need patient, diagnosis, and at least one medication to sign.' } });
+          this.set({
+            banner: {
+              kind: 'warn',
+              text: 'Need patient, diagnosis, and at least one medication to sign.',
+            },
+          });
           return null;
         }
         // Only the signed-in doctor can sign — there is no fallback identity.
         const doctor = s.doctor;
         if (!doctor || !doctor.licenseNo) {
-          this.set({ banner: { kind: 'danger', text: 'Only a signed-in doctor with a license number can sign.' } });
+          this.set({
+            banner: {
+              kind: 'danger',
+              text: 'Only a signed-in doctor with a license number can sign.',
+            },
+          });
           return null;
         }
-        const badRow = s.medications.findIndex((m) => !(m.dosage.value > 0) || !(m.durationDays > 0));
+        const badRow = s.medications.findIndex(
+          (m) => !(m.dosage.value > 0) || !(m.durationDays > 0),
+        );
         if (badRow >= 0) {
           const m = s.medications[badRow];
           this.set({
-            banner: { kind: 'danger', text: `Row ${badRow + 1} (${m.genericName}): dose and duration must be greater than 0.` },
+            banner: {
+              kind: 'danger',
+              text: `Row ${badRow + 1} (${m.genericName}): dose and duration must be greater than 0.`,
+            },
           });
           return null;
         }
@@ -312,7 +321,10 @@ class Store {
         this.set({
           signed: [signed, ...s.signed],
           banner: critical.length
-            ? { kind: 'warn', text: `Signed ${signed.id} for ${patient.name} with an allergy override.` }
+            ? {
+                kind: 'warn',
+                text: `Signed ${signed.id} for ${patient.name} with an allergy override.`,
+              }
             : { kind: 'success', text: `Signed ${signed.id} for ${patient.name}.` },
           diagnosis: null,
           diagnosisQuery: '',
@@ -338,7 +350,9 @@ class Store {
         const date = new Date(rx.signedAt).toLocaleDateString();
         this.set({
           diagnosis: takeDiagnosis ? rx.diagnosis : s.diagnosis,
-          diagnosisQuery: takeDiagnosis ? `${rx.diagnosis.code} ${rx.diagnosis.name}` : s.diagnosisQuery,
+          diagnosisQuery: takeDiagnosis
+            ? `${rx.diagnosis.code} ${rx.diagnosis.name}`
+            : s.diagnosisQuery,
           investigations: takeDiagnosis ? [...(rx.investigations ?? [])] : s.investigations,
           medications: [...s.medications, ...added],
           activeRowId: added[added.length - 1]?.rowId ?? s.activeRowId,
@@ -407,10 +421,16 @@ export function loadWorkspace(doctor: DoctorIdentity): void {
   const prev = store.state$;
   const patients = listPatientsForHospital(doctor.hospitalSlug);
   const signed = listSignedRxForHospital(doctor.hospitalSlug);
-  const sameDoctor = prev.doctor?.id === doctor.id && prev.doctor.hospitalSlug === doctor.hospitalSlug;
+  const sameDoctor =
+    prev.doctor?.id === doctor.id && prev.doctor.hospitalSlug === doctor.hospitalSlug;
   if (sameDoctor) {
     const keepPatient = patients.some((p) => p.id === prev.patientId);
-    store.set({ doctor, patients, signed, patientId: keepPatient ? prev.patientId : patients[0]?.id ?? '' });
+    store.set({
+      doctor,
+      patients,
+      signed,
+      patientId: keepPatient ? prev.patientId : (patients[0]?.id ?? ''),
+    });
   } else {
     store.set({ ...initialState, doctor, patients, signed, patientId: patients[0]?.id ?? '' });
   }

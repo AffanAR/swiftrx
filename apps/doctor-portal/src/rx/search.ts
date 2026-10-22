@@ -15,7 +15,10 @@ interface Scored<T> {
 }
 
 // Substring match with earlier index = higher score; prefix bonus.
-function substringScore(haystack: string, needle: string): { score: number; indexOf: number } | null {
+function substringScore(
+  haystack: string,
+  needle: string,
+): { score: number; indexOf: number } | null {
   if (!needle) return { score: 0, indexOf: 0 };
   const h = norm(haystack);
   const n = norm(needle);

@@ -69,8 +69,7 @@ export function RightColumn({ onApply, onRepeat }: Props) {
             ),
           );
           const worst = alertsByMed.reduce<number>(
-            (acc, arr) =>
-              arr.reduce((m, a) => Math.max(m, severityRank(a.severity)), acc),
+            (acc, arr) => arr.reduce((m, a) => Math.max(m, severityRank(a.severity)), acc),
             0,
           );
 
@@ -78,8 +77,8 @@ export function RightColumn({ onApply, onRepeat }: Props) {
             worst >= 3
               ? 'border-rx-danger/70 bg-rx-danger/5'
               : worst === 2
-              ? 'border-rx-warn/60 bg-rx-warn/5'
-              : 'border-ink-700 hover:border-rx-accent/50';
+                ? 'border-rx-warn/60 bg-rx-warn/5'
+                : 'border-ink-700 hover:border-rx-accent/50';
 
           return (
             <button
@@ -123,13 +122,11 @@ export function RightColumn({ onApply, onRepeat }: Props) {
 
               <ul className="mt-2 space-y-0.5">
                 {pack.medications.map((m, mi) => (
-                  <li
-                    key={mi}
-                    className="text-[11px] font-mono text-ink-300 flex justify-between"
-                  >
+                  <li key={mi} className="text-[11px] font-mono text-ink-300 flex justify-between">
                     <span>· {m.genericName}</span>
                     <span className="text-ink-400">
-                      {m.dosage.value}{m.dosage.unit} · {m.frequency} · {m.durationDays}d
+                      {m.dosage.value}
+                      {m.dosage.unit} · {m.frequency} · {m.durationDays}d
                     </span>
                   </li>
                 ))}

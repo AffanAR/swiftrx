@@ -1,7 +1,11 @@
 import * as React from 'react';
 import { TextField, LiveDot, Spinner } from '@swiftrx/shared';
 
-export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: string) => string | null }) {
+export function LoginPage({
+  onSignIn,
+}: {
+  onSignIn: (email: string, password: string) => string | null;
+}) {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -31,7 +35,13 @@ export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: st
       <div className="hidden lg:flex relative flex-col justify-between p-12 border-r border-ink-700">
         <div className="flex items-center gap-3 animate-fadeIn">
           <div className="relative h-10 w-10 rounded-lg bg-rx-accent/15 border border-rx-accent/30 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="h-6 w-6 text-rx-accent animate-float" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-6 w-6 text-rx-accent animate-float"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M12 2l9 4-9 4-9-4 9-4z" strokeLinejoin="round" />
               <path d="M3 10l9 4 9-4" strokeLinejoin="round" />
               <path d="M3 16l9 4 9-4" strokeLinejoin="round" />
@@ -40,7 +50,9 @@ export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: st
           </div>
           <div>
             <div className="text-lg font-semibold tracking-tight">SwiftRx</div>
-            <div className="text-[10px] uppercase tracking-wider text-rx-accent">Platform Console</div>
+            <div className="text-[10px] uppercase tracking-wider text-rx-accent">
+              Platform Console
+            </div>
           </div>
         </div>
 
@@ -49,8 +61,8 @@ export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: st
             The control room for every hospital running SwiftRx.
           </h2>
           <p className="mt-4 text-ink-400 leading-relaxed">
-            Provision tenants, monitor usage, audit prescription activity, and manage
-            doctors across the entire network — from a single console.
+            Provision tenants, monitor usage, audit prescription activity, and manage doctors across
+            the entire network — from a single console.
           </p>
           <div className="mt-8 grid grid-cols-2 gap-3 text-xs text-ink-400">
             <Stat label="Tenants" value="3" delay={220} />
@@ -60,7 +72,10 @@ export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: st
           </div>
         </div>
 
-        <div className="text-xs text-ink-500 flex items-center gap-1.5 animate-fadeIn" style={{ animationDelay: '420ms' }}>
+        <div
+          className="text-xs text-ink-500 flex items-center gap-1.5 animate-fadeIn"
+          style={{ animationDelay: '420ms' }}
+        >
           <LiveDot color="bg-rx-accent" />
           <span>© SwiftRx · Platform admin · audit logged</span>
         </div>
@@ -68,10 +83,16 @@ export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: st
 
       <div className="relative flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <h1 className="text-2xl font-semibold text-ink-100 animate-fadeIn" style={{ animationDelay: '60ms' }}>
+          <h1
+            className="text-2xl font-semibold text-ink-100 animate-fadeIn"
+            style={{ animationDelay: '60ms' }}
+          >
             Platform admin sign-in
           </h1>
-          <p className="mt-1 text-sm text-ink-400 animate-fadeIn" style={{ animationDelay: '120ms' }}>
+          <p
+            className="mt-1 text-sm text-ink-400 animate-fadeIn"
+            style={{ animationDelay: '120ms' }}
+          >
             Authorized personnel only. All sign-ins are audited.
           </p>
 
@@ -115,10 +136,19 @@ export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: st
               className="rx-shine rx-btn-primary w-full justify-center animate-fadeIn disabled:animate-none"
               style={{ animationDelay: '300ms' }}
             >
-              {busy ? <><Spinner /> Signing in…</> : 'Open console'}
+              {busy ? (
+                <>
+                  <Spinner /> Signing in…
+                </>
+              ) : (
+                'Open console'
+              )}
             </button>
 
-            <details className="mt-6 text-xs text-ink-500 animate-fadeIn" style={{ animationDelay: '380ms' }}>
+            <details
+              className="mt-6 text-xs text-ink-500 animate-fadeIn"
+              style={{ animationDelay: '380ms' }}
+            >
               <summary className="cursor-pointer text-ink-400 hover:text-ink-300 select-none transition-colors">
                 Demo credentials
               </summary>
@@ -135,7 +165,10 @@ export function LoginPage({ onSignIn }: { onSignIn: (email: string, password: st
 
 function Stat({ label, value, delay }: { label: string; value: string; delay: number }) {
   return (
-    <div className="rx-card rx-hover-lift px-3 py-2 animate-fadeIn" style={{ animationDelay: `${delay}ms` }}>
+    <div
+      className="rx-card rx-hover-lift px-3 py-2 animate-fadeIn"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className="font-mono text-rx-accent text-base">{value}</div>
       <div className="mt-0.5 text-ink-500">{label}</div>
     </div>

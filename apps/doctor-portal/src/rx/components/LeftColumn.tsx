@@ -3,7 +3,11 @@ import { useApp, actions } from '../store';
 import { fuzzySearch } from '../search';
 import { LiveDot, StaggeredList, cx } from '@swiftrx/shared';
 
-export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefObject<HTMLInputElement> }) {
+export function LeftColumn({
+  patientSearchRef,
+}: {
+  patientSearchRef: React.RefObject<HTMLInputElement>;
+}) {
   const patients = useApp((s) => s.patients);
   const patientId = useApp((s) => s.patientId);
   const [query, setQuery] = React.useState('');
@@ -11,12 +15,7 @@ export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefOb
 
   const results = React.useMemo(() => {
     if (!query.trim()) return patients;
-    return fuzzySearch(
-      patients,
-      query,
-      (p) => [p.name, p.contact, p.activeProblems.join(' ')],
-      5,
-    );
+    return fuzzySearch(patients, query, (p) => [p.name, p.contact, p.activeProblems.join(' ')], 5);
   }, [query, patients]);
 
   const current = patients.find((p) => p.id === patientId)!;
@@ -48,11 +47,7 @@ export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefOb
       {focused && query && (
         <ul className="mt-1 bg-ink-800 border border-ink-700 rounded-md overflow-hidden animate-slideUpIn shadow-xl">
           {results.map((p, i) => (
-            <li
-              key={p.id}
-              className="animate-fadeIn"
-              style={{ animationDelay: `${i * 30}ms` }}
-            >
+            <li key={p.id} className="animate-fadeIn" style={{ animationDelay: `${i * 30}ms` }}>
               <button
                 className={cx(
                   'w-full text-left px-2.5 py-1.5 text-sm flex justify-between items-center transition-colors',
@@ -68,7 +63,8 @@ export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefOb
               >
                 <span className="truncate">{p.name}</span>
                 <span className="text-xs text-ink-400 shrink-0 ml-2">
-                  {p.age}{p.sex}
+                  {p.age}
+                  {p.sex}
                 </span>
               </button>
             </li>
@@ -85,7 +81,9 @@ export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefOb
                 }}
               >
                 <span>+ Create &quot;{query}&quot;</span>
-                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-ink-200 border border-ink-600">Alt+N</span>
+                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-ink-200 border border-ink-600">
+                  Alt+N
+                </span>
               </button>
             </li>
           )}
@@ -98,7 +96,9 @@ export function LeftColumn({ patientSearchRef }: { patientSearchRef: React.RefOb
         title="New patient (Alt+N)"
       >
         <span>+ New patient</span>
-        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-800 text-ink-300 border border-ink-700">Alt+N</span>
+        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-800 text-ink-300 border border-ink-700">
+          Alt+N
+        </span>
       </button>
 
       <Section title="Active Problems">

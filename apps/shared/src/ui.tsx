@@ -102,10 +102,13 @@ export function ProgressBar({
 }) {
   const pct = Math.max(0, Math.min(1, value)) * 100;
   const barColor =
-    tone === 'warn' ? 'bg-rx-warn'
-    : tone === 'danger' ? 'bg-rx-danger'
-    : tone === 'focus' ? 'bg-rx-focus'
-    : 'bg-rx-accent';
+    tone === 'warn'
+      ? 'bg-rx-warn'
+      : tone === 'danger'
+        ? 'bg-rx-danger'
+        : tone === 'focus'
+          ? 'bg-rx-focus'
+          : 'bg-rx-accent';
   return (
     <div
       className={cx('relative h-1 w-full overflow-hidden rounded-full bg-ink-800/80', className)}
@@ -118,7 +121,10 @@ export function ProgressBar({
         className={cx('h-full rounded-full transition-[width] duration-500 ease-out', barColor)}
         style={{ width: `${pct}%` }}
       />
-      <div className="pointer-events-none absolute inset-0 rx-shimmer animate-shimmer opacity-50" aria-hidden />
+      <div
+        className="pointer-events-none absolute inset-0 rx-shimmer animate-shimmer opacity-50"
+        aria-hidden
+      />
     </div>
   );
 }
@@ -163,7 +169,9 @@ export function Kbd({ children, dark }: { children: React.ReactNode; dark?: bool
     <span
       className={cx(
         'font-mono text-[10px] px-1.5 py-0.5 rounded border',
-        dark ? 'bg-ink-900/40 text-ink-100 border-ink-900/40' : 'bg-ink-700 text-ink-200 border-ink-600',
+        dark
+          ? 'bg-ink-900/40 text-ink-100 border-ink-900/40'
+          : 'bg-ink-700 text-ink-200 border-ink-600',
       )}
     >
       {children}

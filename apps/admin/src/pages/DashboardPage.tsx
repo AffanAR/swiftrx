@@ -15,11 +15,14 @@ import { auditColor, auditTitle } from '../audit';
 export function DashboardPage() {
   const totalHospitals = MOCK_HOSPITALS.length;
   const totalDoctors = MOCK_USERS.filter((u) => u.role === 'doctor').length;
-  const totalRxThisMonth = MOCK_SIGNED_RX.length + MOCK_HOSPITALS.reduce((s, h) => s + h.monthlyRxUsed, 0);
+  const totalRxThisMonth =
+    MOCK_SIGNED_RX.length + MOCK_HOSPITALS.reduce((s, h) => s + h.monthlyRxUsed, 0);
   const totalAudit = MOCK_AUDIT.length;
 
   const recentAudit = MOCK_AUDIT.slice(0, 8);
-  const recentHospitals = [...MOCK_HOSPITALS].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const recentHospitals = [...MOCK_HOSPITALS].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
 
   return (
     <div className="p-6 sm:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn">
@@ -37,14 +40,34 @@ export function DashboardPage() {
       </header>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile label="Tenants" value={totalHospitals} hint="Active across the network" trend={{ delta: 12.4, label: 'vs last mo' }} />
-        <StatTile label="Active doctors" value={totalDoctors} hint="Signed in this week" trend={{ delta: 3.1, label: 'vs last mo' }} />
-        <StatTile label="Rx this month" value={totalRxThisMonth} hint="Across all hospitals" tone="focus" trend={{ delta: 8.6, label: 'vs last mo' }} />
+        <StatTile
+          label="Tenants"
+          value={totalHospitals}
+          hint="Active across the network"
+          trend={{ delta: 12.4, label: 'vs last mo' }}
+        />
+        <StatTile
+          label="Active doctors"
+          value={totalDoctors}
+          hint="Signed in this week"
+          trend={{ delta: 3.1, label: 'vs last mo' }}
+        />
+        <StatTile
+          label="Rx this month"
+          value={totalRxThisMonth}
+          hint="Across all hospitals"
+          tone="focus"
+          trend={{ delta: 8.6, label: 'vs last mo' }}
+        />
         <StatTile label="Audit events" value={totalAudit} hint="Last 30 days" tone="warn" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
-        <Card title="Top hospitals by usage" subtitle="Monthly prescription count" className="lg:col-span-2">
+        <Card
+          title="Top hospitals by usage"
+          subtitle="Monthly prescription count"
+          className="lg:col-span-2"
+        >
           <ul className="space-y-3">
             {recentHospitals
               .slice()
@@ -58,10 +81,7 @@ export function DashboardPage() {
                     className="animate-fadeIn"
                     style={{ animationDelay: `${i * 60}ms` }}
                   >
-                    <Link
-                      to={`/hospitals/${h.slug}`}
-                      className="block group"
-                    >
+                    <Link to={`/hospitals/${h.slug}`} className="block group">
                       <div className="flex items-center justify-between gap-3 mb-1">
                         <div>
                           <div className="text-sm font-medium text-ink-100 group-hover:text-rx-accent transition-colors">
@@ -130,7 +150,10 @@ export function DashboardPage() {
                   style={{ animationDelay: `${i * 30}ms` }}
                 >
                   <td className="py-2 px-2">
-                    <Link to={`/hospitals/${h.slug}`} className="text-ink-100 hover:text-rx-accent transition-colors font-medium">
+                    <Link
+                      to={`/hospitals/${h.slug}`}
+                      className="text-ink-100 hover:text-rx-accent transition-colors font-medium"
+                    >
                       {h.name}
                     </Link>
                   </td>
@@ -158,11 +181,18 @@ export function DashboardPage() {
 
 function StatusBadge({ status }: { status: 'active' | 'suspended' | 'trial' }) {
   const tone =
-    status === 'active' ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30'
-    : status === 'trial' ? 'bg-rx-warn/15 text-rx-warn border-rx-warn/30'
-    : 'bg-rx-danger/15 text-rx-danger border-rx-danger/30';
+    status === 'active'
+      ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30'
+      : status === 'trial'
+        ? 'bg-rx-warn/15 text-rx-warn border-rx-warn/30'
+        : 'bg-rx-danger/15 text-rx-danger border-rx-danger/30';
   return (
-    <span className={cx('inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider border', tone)}>
+    <span
+      className={cx(
+        'inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider border',
+        tone,
+      )}
+    >
       {status === 'active' && <LiveDot color="bg-rx-accent" />}
       {status}
     </span>

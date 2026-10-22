@@ -23,9 +23,12 @@ export function HospitalDetailPage() {
         <div className="rx-card p-6 text-center animate-fadeIn">
           <h1 className="text-lg font-semibold text-ink-100">Hospital not found</h1>
           <p className="mt-2 text-sm text-ink-400">
-            The slug <code className="font-mono text-ink-200">{slug}</code> doesn't match any tenant.
+            The slug <code className="font-mono text-ink-200">{slug}</code> doesn't match any
+            tenant.
           </p>
-          <Link to="/hospitals" className="rx-btn-ghost mt-4 inline-flex">Back to hospitals</Link>
+          <Link to="/hospitals" className="rx-btn-ghost mt-4 inline-flex">
+            Back to hospitals
+          </Link>
         </div>
       </div>
     );
@@ -39,7 +42,10 @@ export function HospitalDetailPage() {
 
   return (
     <div className="p-6 sm:p-8 max-w-6xl mx-auto space-y-6 animate-fadeIn">
-      <Link to="/hospitals" className="text-xs text-ink-400 hover:text-rx-accent transition-colors inline-flex items-center gap-1">
+      <Link
+        to="/hospitals"
+        className="text-xs text-ink-400 hover:text-rx-accent transition-colors inline-flex items-center gap-1"
+      >
         ← All hospitals
       </Link>
 
@@ -62,7 +68,11 @@ export function HospitalDetailPage() {
       </header>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile label="Doctors" value={doctors.length} hint={`${doctors.filter((d) => d.status === 'active').length} active`} />
+        <StatTile
+          label="Doctors"
+          value={doctors.length}
+          hint={`${doctors.filter((d) => d.status === 'active').length} active`}
+        />
         <StatTile label="Patients" value={patients.length} hint="Total roster" />
         <StatTile label="Signed Rx" value={rx.length} hint="All-time" tone="focus" />
         <StatTile
@@ -77,11 +87,20 @@ export function HospitalDetailPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Plan" value={<span className="capitalize">{hospital.plan}</span>} />
           <Field label="Status" value={<span className="capitalize">{hospital.status}</span>} />
-          <Field label="Monthly cap" value={<span className="font-mono">{hospital.monthlyRxCap.toLocaleString()} Rx</span>} />
-          <Field label="Contact" value={<span className="font-mono">{hospital.contactEmail}</span>} />
+          <Field
+            label="Monthly cap"
+            value={<span className="font-mono">{hospital.monthlyRxCap.toLocaleString()} Rx</span>}
+          />
+          <Field
+            label="Contact"
+            value={<span className="font-mono">{hospital.contactEmail}</span>}
+          />
         </div>
         <div className="mt-4">
-          <ProgressBar value={usagePct} tone={usagePct > 0.85 ? 'danger' : usagePct > 0.6 ? 'warn' : 'accent'} />
+          <ProgressBar
+            value={usagePct}
+            tone={usagePct > 0.85 ? 'danger' : usagePct > 0.6 ? 'warn' : 'accent'}
+          />
         </div>
       </Card>
 
@@ -101,7 +120,14 @@ export function HospitalDetailPage() {
                     {d.specialty} · {d.licenseNo}
                   </div>
                 </div>
-                <span className={cx('text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border', d.status === 'active' ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30' : 'bg-ink-700 text-ink-300 border-ink-600')}>
+                <span
+                  className={cx(
+                    'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border',
+                    d.status === 'active'
+                      ? 'bg-rx-accent/15 text-rx-accent border-rx-accent/30'
+                      : 'bg-ink-700 text-ink-300 border-ink-600',
+                  )}
+                >
                   {d.status}
                 </span>
               </li>
@@ -121,7 +147,8 @@ export function HospitalDetailPage() {
                 <div>
                   <div className="text-sm font-medium text-ink-100">{p.name}</div>
                   <div className="text-[11px] text-ink-400 font-mono">
-                    {p.age}{p.sex} · {p.contact}
+                    {p.age}
+                    {p.sex} · {p.contact}
                   </div>
                 </div>
                 {p.allergies.length > 0 && (
@@ -146,7 +173,8 @@ export function HospitalDetailPage() {
             >
               <div>
                 <div className="text-sm font-medium text-ink-100">
-                  {r.patient.name} · <span className="font-mono text-ink-300">{r.diagnosis.code}</span>
+                  {r.patient.name} ·{' '}
+                  <span className="font-mono text-ink-300">{r.diagnosis.code}</span>
                 </div>
                 <div className="text-[11px] text-ink-400">
                   {r.medications.length} med{r.medications.length === 1 ? '' : 's'} · {r.doctorName}

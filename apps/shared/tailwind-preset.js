@@ -34,20 +34,56 @@ module.exports = {
         card: '0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4)',
       },
       keyframes: {
-        fadeIn: { from: { opacity: '0', transform: 'translateY(2px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
-        pulseRing: { '0%,100%': { boxShadow: '0 0 0 0 rgba(16,185,129,0.5)' }, '50%': { boxShadow: '0 0 0 8px rgba(16,185,129,0)' } },
-        shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
-        breathe: { '0%,100%': { opacity: '0.55', transform: 'scale(1)' }, '50%': { opacity: '1', transform: 'scale(1.15)' } },
-        float: { '0%,100%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-3px)' } },
-        slideInRight: { from: { opacity: '0', transform: 'translateX(8px)' }, to: { opacity: '1', transform: 'translateX(0)' } },
-        slideUpIn: { from: { opacity: '0', transform: 'translateY(6px) scale(0.98)' }, to: { opacity: '1', transform: 'translateY(0) scale(1)' } },
-        ripple: { from: { opacity: '0.5', transform: 'scale(0.6)' }, to: { opacity: '0', transform: 'scale(2.4)' } },
-        countTick: { from: { transform: 'translateY(8px)', opacity: '0' }, to: { transform: 'translateY(0)', opacity: '1' } },
-        underlineSweep: { from: { transform: 'translateX(-100%)' }, to: { transform: 'translateX(100%)' } },
+        fadeIn: {
+          from: { opacity: '0', transform: 'translateY(2px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        pulseRing: {
+          '0%,100%': { boxShadow: '0 0 0 0 rgba(16,185,129,0.5)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(16,185,129,0)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        breathe: {
+          '0%,100%': { opacity: '0.55', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.15)' },
+        },
+        float: {
+          '0%,100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-3px)' },
+        },
+        slideInRight: {
+          from: { opacity: '0', transform: 'translateX(8px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        slideUpIn: {
+          from: { opacity: '0', transform: 'translateY(6px) scale(0.98)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        ripple: {
+          from: { opacity: '0.5', transform: 'scale(0.6)' },
+          to: { opacity: '0', transform: 'scale(2.4)' },
+        },
+        countTick: {
+          from: { transform: 'translateY(8px)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' },
+        },
+        underlineSweep: {
+          from: { transform: 'translateX(-100%)' },
+          to: { transform: 'translateX(100%)' },
+        },
         caretBlink: { '0%,49%': { opacity: '1' }, '50%,100%': { opacity: '0' } },
         spinSlow: { from: { transform: 'rotate(0deg)' }, to: { transform: 'rotate(360deg)' } },
-        spinSlowReverse: { from: { transform: 'rotate(360deg)' }, to: { transform: 'rotate(0deg)' } },
-        aura: { '0%,100%': { boxShadow: '0 0 0 0 rgba(16,185,129,0.0)' }, '50%': { boxShadow: '0 0 18px 2px rgba(16,185,129,0.18)' } },
+        spinSlowReverse: {
+          from: { transform: 'rotate(360deg)' },
+          to: { transform: 'rotate(0deg)' },
+        },
+        aura: {
+          '0%,100%': { boxShadow: '0 0 0 0 rgba(16,185,129,0.0)' },
+          '50%': { boxShadow: '0 0 18px 2px rgba(16,185,129,0.18)' },
+        },
       },
       animation: {
         fadeIn: 'fadeIn 120ms ease-out',

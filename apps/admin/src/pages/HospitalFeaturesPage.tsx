@@ -44,9 +44,7 @@ export function HospitalFeaturesPage() {
   const [features, setFeatures] = useState<HospitalFeatures>(
     () => initial?.features ?? DEFAULT_HOSPITAL_FEATURES,
   );
-  const [design, setDesign] = useState<RxDesign>(
-    () => initial?.rxDesign ?? DEFAULT_RX_DESIGN,
-  );
+  const [design, setDesign] = useState<RxDesign>(() => initial?.rxDesign ?? DEFAULT_RX_DESIGN);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   // If the admin navigates to a different hospital, reset.
@@ -63,9 +61,12 @@ export function HospitalFeaturesPage() {
         <div className="rx-card p-6 text-center animate-fadeIn">
           <h1 className="text-lg font-semibold text-ink-100">Hospital not found</h1>
           <p className="mt-2 text-sm text-ink-400">
-            The slug <code className="font-mono text-ink-200">{slug}</code> doesn't match any tenant.
+            The slug <code className="font-mono text-ink-200">{slug}</code> doesn't match any
+            tenant.
           </p>
-          <Link to="/hospitals" className="rx-btn-ghost mt-4 inline-flex">Back to hospitals</Link>
+          <Link to="/hospitals" className="rx-btn-ghost mt-4 inline-flex">
+            Back to hospitals
+          </Link>
         </div>
       </div>
     );
@@ -108,11 +109,7 @@ export function HospitalFeaturesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            className="rx-btn-ghost disabled:opacity-50"
-            onClick={onReset}
-            disabled={!dirty}
-          >
+          <button className="rx-btn-ghost disabled:opacity-50" onClick={onReset} disabled={!dirty}>
             Reset
           </button>
           <button
@@ -190,7 +187,9 @@ export function HospitalFeaturesPage() {
                 label="Max medications per Rx"
                 type="number"
                 value={String(features.maxMedicationsPerRx)}
-                onChange={(v) => setFeatures({ ...features, maxMedicationsPerRx: clampInt(v, 1, 20) })}
+                onChange={(v) =>
+                  setFeatures({ ...features, maxMedicationsPerRx: clampInt(v, 1, 20) })
+                }
                 hint="Hard cap on rows the doctor can add before signing."
               />
               <TextField
@@ -204,13 +203,20 @@ export function HospitalFeaturesPage() {
                 label="Usage warning at %"
                 type="number"
                 value={String(features.usageWarnAtPercent)}
-                onChange={(v) => setFeatures({ ...features, usageWarnAtPercent: clampInt(v, 50, 100) })}
+                onChange={(v) =>
+                  setFeatures({ ...features, usageWarnAtPercent: clampInt(v, 50, 100) })
+                }
                 hint="Show a warning banner above this utilization."
               />
               <Select
                 label="Default language"
                 value={features.defaultLanguage}
-                onChange={(v) => setFeatures({ ...features, defaultLanguage: v as HospitalFeatures['defaultLanguage'] })}
+                onChange={(v) =>
+                  setFeatures({
+                    ...features,
+                    defaultLanguage: v as HospitalFeatures['defaultLanguage'],
+                  })
+                }
                 options={[
                   { value: 'en', label: 'English' },
                   { value: 'es', label: 'Español' },
@@ -223,7 +229,10 @@ export function HospitalFeaturesPage() {
             </div>
           </Card>
 
-          <Card title="Printed Rx — header" subtitle="What appears at the top of the printed prescription.">
+          <Card
+            title="Printed Rx — header"
+            subtitle="What appears at the top of the printed prescription."
+          >
             <div className="grid sm:grid-cols-2 gap-4">
               <TextField
                 label="Header title"
@@ -349,9 +358,9 @@ export function HospitalFeaturesPage() {
           </Card>
 
           <div className="mt-4 text-[11px] text-ink-500 leading-relaxed px-1">
-            The preview is drawn by the same template the Rx pad prints with
-            (<code className="text-ink-300">renderRxHtml</code>), using a sample prescription.
-            Saving here updates the design that all doctors on{' '}
+            The preview is drawn by the same template the Rx pad prints with (
+            <code className="text-ink-300">renderRxHtml</code>), using a sample prescription. Saving
+            here updates the design that all doctors on{' '}
             <span className="text-ink-300">{initial.name}</span> see when they print.
           </div>
         </div>
@@ -399,10 +408,7 @@ function ColorField({
     <label className="block text-xs text-ink-300 w-full">
       <span>{label}</span>
       <div className="mt-1 flex items-center gap-2">
-        <span
-          className="h-9 w-9 rounded-md border border-ink-600"
-          style={{ background: value }}
-        />
+        <span className="h-9 w-9 rounded-md border border-ink-600" style={{ background: value }} />
         <input
           type="text"
           value={value}
@@ -460,11 +466,40 @@ function sampleRx(hospitalSlug: string): SignedRx {
       recentVitals: [],
       createdAt: now,
     },
-    diagnosis: { code: 'I10', name: 'Essential (primary) hypertension', category: 'Cardiovascular' },
+    diagnosis: {
+      code: 'I10',
+      name: 'Essential (primary) hypertension',
+      category: 'Cardiovascular',
+    },
     medications: [
-      { rowId: 'r1', drugId: 'lisinopril', genericName: 'Lisinopril', dosage: { value: 10, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Same time daily' },
-      { rowId: 'r2', drugId: 'amlo', genericName: 'Amlodipine', brandName: 'Norvasc', dosage: { value: 5, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Morning' },
-      { rowId: 'r3', drugId: 'atorva', genericName: 'Atorvastatin', dosage: { value: 20, unit: 'mg' }, frequency: 'QHS', durationDays: 90, instructions: 'At bedtime' },
+      {
+        rowId: 'r1',
+        drugId: 'lisinopril',
+        genericName: 'Lisinopril',
+        dosage: { value: 10, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Same time daily',
+      },
+      {
+        rowId: 'r2',
+        drugId: 'amlo',
+        genericName: 'Amlodipine',
+        brandName: 'Norvasc',
+        dosage: { value: 5, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Morning',
+      },
+      {
+        rowId: 'r3',
+        drugId: 'atorva',
+        genericName: 'Atorvastatin',
+        dosage: { value: 20, unit: 'mg' },
+        frequency: 'QHS',
+        durationDays: 90,
+        instructions: 'At bedtime',
+      },
     ],
     investigations: [
       { code: 'BMP', name: 'Basic Metabolic Panel', type: 'lab' },

@@ -11,7 +11,16 @@ import { MOCK_USERS, appendAudit, getUserById } from './mockDb';
 
 export type LoginResult =
   | { ok: true; user: User; session: SessionPayload }
-  | { ok: false; reason: 'no-hospital' | 'unknown-user' | 'wrong-password' | 'wrong-hospital' | 'disabled' | 'wrong-role' };
+  | {
+      ok: false;
+      reason:
+        | 'no-hospital'
+        | 'unknown-user'
+        | 'wrong-password'
+        | 'wrong-hospital'
+        | 'disabled'
+        | 'wrong-role';
+    };
 
 export interface LoginOpts {
   email: string;
@@ -47,7 +56,13 @@ export function login(opts: LoginOpts): LoginResult {
   // Build the role-specific session payload.
   let session: SessionPayload;
   if (user.role === 'platform_admin') {
-    session = { role: 'platform_admin', userId: user.id, issuedAt: Date.now(), email: user.email, name: user.name };
+    session = {
+      role: 'platform_admin',
+      userId: user.id,
+      issuedAt: Date.now(),
+      email: user.email,
+      name: user.name,
+    };
   } else {
     if (!user.hospitalSlug) return { ok: false, reason: 'unknown-user' };
     session = {

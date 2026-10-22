@@ -32,7 +32,9 @@ export function DiagnosisField({ diagnosisRef }: Props) {
     );
   }, [query]);
 
-  React.useEffect(() => { setActiveIdx(0); }, [query]);
+  React.useEffect(() => {
+    setActiveIdx(0);
+  }, [query]);
 
   const choose = (d: Diagnosis) => {
     setDiagnosis(d);
@@ -80,7 +82,9 @@ export function DiagnosisField({ diagnosisRef }: Props) {
                          transition-all hover:bg-rx-accent/15 animate-fadeIn"
             >
               <span className="font-bold">{diagnosis.code}</span> · {diagnosis.name}
-              <span className="float-right text-ink-400 group-hover:text-ink-200 transition-colors">✕</span>
+              <span className="float-right text-ink-400 group-hover:text-ink-200 transition-colors">
+                ✕
+              </span>
             </button>
           ) : (
             <>
@@ -117,9 +121,7 @@ export function DiagnosisField({ diagnosisRef }: Props) {
                         type="button"
                         className={cx(
                           'w-full text-left px-3 py-1.5 text-sm flex justify-between gap-2 transition-colors',
-                          i === activeIdx
-                            ? 'bg-rx-focus/15 text-rx-focus'
-                            : 'hover:bg-ink-700/60',
+                          i === activeIdx ? 'bg-rx-focus/15 text-rx-focus' : 'hover:bg-ink-700/60',
                         )}
                         onMouseDown={(e) => {
                           e.preventDefault();
@@ -138,7 +140,9 @@ export function DiagnosisField({ diagnosisRef }: Props) {
                     </li>
                   ))}
                   {!results.length && (
-                    <li className="px-3 py-2 text-xs text-ink-400">No matches. Try a code or symptom.</li>
+                    <li className="px-3 py-2 text-xs text-ink-400">
+                      No matches. Try a code or symptom.
+                    </li>
                   )}
                 </ul>
               )}
@@ -161,9 +165,7 @@ function InvestigationList({ selected }: { selected: Investigation[] }) {
     if (!draft.trim()) return MOCK_INVESTIGATIONS;
     const q = draft.trim().toLowerCase();
     return MOCK_INVESTIGATIONS.filter(
-      (i) =>
-        i.code.toLowerCase().includes(q) ||
-        i.name.toLowerCase().includes(q),
+      (i) => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q),
     ).slice(0, 8);
   }, [draft]);
 
@@ -172,7 +174,9 @@ function InvestigationList({ selected }: { selected: Investigation[] }) {
   return (
     <div className="ml-[6.5rem] -mt-1">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] uppercase tracking-wider text-ink-400 mr-1">Advised Tests</span>
+        <span className="text-[10px] uppercase tracking-wider text-ink-400 mr-1">
+          Advised Tests
+        </span>
         {selected.map((inv, i) => (
           <button
             key={inv.code}
@@ -220,11 +224,7 @@ function InvestigationList({ selected }: { selected: Investigation[] }) {
           />
           <ul className="absolute z-10 mt-1 left-0 right-0 max-h-56 overflow-y-auto bg-ink-800 border border-ink-700 rounded-md shadow-2xl">
             {matches.map((m, i) => (
-              <li
-                key={m.code}
-                className="animate-fadeIn"
-                style={{ animationDelay: `${i * 18}ms` }}
-              >
+              <li key={m.code} className="animate-fadeIn" style={{ animationDelay: `${i * 18}ms` }}>
                 <button
                   className={cx(
                     'w-full text-left px-2 py-1 text-xs flex justify-between hover:bg-ink-700/60 transition-colors',

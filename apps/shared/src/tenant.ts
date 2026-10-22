@@ -13,12 +13,7 @@
 //  DNS.
 // =============================================================================
 
-const ROOT_HOSTS = new Set([
-  'swiftrx.com',
-  'www.swiftrx.com',
-  'localhost',
-  '127.0.0.1',
-]);
+const ROOT_HOSTS = new Set(['swiftrx.com', 'www.swiftrx.com', 'localhost', '127.0.0.1']);
 
 /** Normalize a free-form string into a tenant slug (lowercase, dash-separated). */
 export function normalizeSlug(input: string): string {
@@ -75,9 +70,7 @@ export function resolveSurface(
 
   // Treat `.localhost` as a dev root (Chrome/FF resolve *.localhost → 127.0.0.1).
   const root = parts.slice(-2).join('.');
-  const lastIsTld =
-    parts[parts.length - 1] === 'localhost' ||
-    parts[parts.length - 1] === 'local';
+  const lastIsTld = parts[parts.length - 1] === 'localhost' || parts[parts.length - 1] === 'local';
   const isLocalhost = lastIsTld || ROOT_HOSTS.has(root) || ROOT_HOSTS.has(host);
 
   if (isLocalhost) {
@@ -89,7 +82,8 @@ export function resolveSurface(
     }
     if (!sub) return { surface: 'admin', subdomain: null, hospitalSlug: null, source: 'domain' };
 
-    if (sub === 'admin') return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'domain' };
+    if (sub === 'admin')
+      return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'domain' };
     if (pathname.startsWith('/rx') || sub === 'rx') {
       return { surface: 'rx', subdomain: sub, hospitalSlug: sub, source: 'domain' };
     }
@@ -100,9 +94,12 @@ export function resolveSurface(
   if (ROOT_HOSTS.has(root) || host === 'swiftrx.com') {
     const sub = parts.length >= 3 ? parts[0] : null;
     if (!sub) return { surface: 'admin', subdomain: null, hospitalSlug: null, source: 'domain' };
-    if (sub === 'admin') return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'domain' };
-    if (sub === 'www') return { surface: 'admin', subdomain: null, hospitalSlug: null, source: 'domain' };
-    if (sub === 'rx') return { surface: 'rx', subdomain: 'rx', hospitalSlug: null, source: 'domain' };
+    if (sub === 'admin')
+      return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'domain' };
+    if (sub === 'www')
+      return { surface: 'admin', subdomain: null, hospitalSlug: null, source: 'domain' };
+    if (sub === 'rx')
+      return { surface: 'rx', subdomain: 'rx', hospitalSlug: null, source: 'domain' };
     return { surface: 'hospital', subdomain: sub, hospitalSlug: sub, source: 'domain' };
   }
 

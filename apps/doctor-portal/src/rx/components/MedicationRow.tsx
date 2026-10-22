@@ -39,8 +39,8 @@ export function MedicationRow({ med, index }: RowProps) {
     worstSeverity === 'critical' || invalidAmount
       ? 'border-rx-danger/70 bg-rx-danger/5'
       : worstSeverity === 'moderate'
-      ? 'border-rx-warn/60 bg-rx-warn/5'
-      : 'border-ink-700';
+        ? 'border-rx-warn/60 bg-rx-warn/5'
+        : 'border-ink-700';
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && (e.currentTarget as HTMLInputElement).value === '') {
@@ -65,11 +65,11 @@ export function MedicationRow({ med, index }: RowProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 truncate">
             <span className="font-semibold text-sm">{med.genericName}</span>
-            {med.brandName && (
-              <span className="text-xs text-ink-400">← {med.brandName}</span>
-            )}
+            {med.brandName && <span className="text-xs text-ink-400">← {med.brandName}</span>}
           </div>
-          <div className="text-[11px] text-ink-400 font-mono">{findDrug(med.drugId, MOCK_DRUGS)?.therapeuticClass}</div>
+          <div className="text-[11px] text-ink-400 font-mono">
+            {findDrug(med.drugId, MOCK_DRUGS)?.therapeuticClass}
+          </div>
         </div>
 
         <NumberInput
@@ -82,9 +82,13 @@ export function MedicationRow({ med, index }: RowProps) {
         <select
           className="bg-ink-800 border border-ink-700 rounded px-1.5 py-1 text-xs"
           value={med.dosage.unit}
-          onChange={(e) => update(med.rowId, { dosage: { ...med.dosage, unit: e.target.value as DoseUnit } })}
+          onChange={(e) =>
+            update(med.rowId, { dosage: { ...med.dosage, unit: e.target.value as DoseUnit } })
+          }
         >
-          {UNITS.map((u) => <option key={u}>{u}</option>)}
+          {UNITS.map((u) => (
+            <option key={u}>{u}</option>
+          ))}
         </select>
 
         <select
@@ -92,7 +96,9 @@ export function MedicationRow({ med, index }: RowProps) {
           value={med.frequency}
           onChange={(e) => update(med.rowId, { frequency: e.target.value as Frequency })}
         >
-          {FREQS.map((f) => <option key={f}>{f}</option>)}
+          {FREQS.map((f) => (
+            <option key={f}>{f}</option>
+          ))}
         </select>
 
         <div className="flex items-center gap-1">
@@ -152,7 +158,11 @@ export function MedicationRow({ med, index }: RowProps) {
 }
 
 function NumberInput({
-  value, onChange, className, onKeyDown, ariaLabel,
+  value,
+  onChange,
+  className,
+  onKeyDown,
+  ariaLabel,
 }: {
   value: number;
   onChange: (v: number) => void;

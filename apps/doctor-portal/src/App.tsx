@@ -21,9 +21,7 @@ export default function App() {
 
   if (session.status === 'loading') {
     return (
-      <div className="h-full flex items-center justify-center text-ink-400 text-sm">
-        Loading…
-      </div>
+      <div className="h-full flex items-center justify-center text-ink-400 text-sm">Loading…</div>
     );
   }
 
@@ -42,89 +40,91 @@ export default function App() {
       <Route
         path="/"
         element={
-          session.status === 'signed-in'
-            ? <Navigate to="/dashboard" replace />
-            : <LoginPage hospital={hospital} onSignedIn={refreshSession} />
+          session.status === 'signed-in' ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LoginPage hospital={hospital} onSignedIn={refreshSession} />
+          )
         }
       />
       <Route
         path="/dashboard"
         element={
-          session.status === 'signed-in'
-            ? (
-              <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-                <DashboardPage hospital={hospital} user={session.user} />
-              </PortalShell>
-            )
-            : <Navigate to="/" replace />
+          session.status === 'signed-in' ? (
+            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
+              <DashboardPage hospital={hospital} user={session.user} />
+            </PortalShell>
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path="/patients"
         element={
-          session.status === 'signed-in'
-            ? (
-              <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-                <PatientsPage hospital={hospital} user={session.user} />
-              </PortalShell>
-            )
-            : <Navigate to="/" replace />
+          session.status === 'signed-in' ? (
+            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
+              <PatientsPage hospital={hospital} user={session.user} />
+            </PortalShell>
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path="/prescriptions"
         element={
-          session.status === 'signed-in'
-            ? (
-              <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-                <PrescriptionsPage hospital={hospital} user={session.user} />
-              </PortalShell>
-            )
-            : <Navigate to="/" replace />
+          session.status === 'signed-in' ? (
+            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
+              <PrescriptionsPage hospital={hospital} user={session.user} />
+            </PortalShell>
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path="/rx"
         element={
-          session.status !== 'signed-in'
-            ? <Navigate to="/" replace />
-            : canPrescribe(session.user, hospital)
-              ? (
-                <Suspense
-                  fallback={
-                    <div className="h-full flex items-center justify-center text-ink-400 text-sm">
-                      Loading Rx pad…
-                    </div>
-                  }
-                >
-                  <RxPad user={session.user} hospital={hospital} onSignOut={signOut} />
-                </Suspense>
-              )
-              : <Navigate to="/dashboard" replace />
+          session.status !== 'signed-in' ? (
+            <Navigate to="/" replace />
+          ) : canPrescribe(session.user, hospital) ? (
+            <Suspense
+              fallback={
+                <div className="h-full flex items-center justify-center text-ink-400 text-sm">
+                  Loading Rx pad…
+                </div>
+              }
+            >
+              <RxPad user={session.user} hospital={hospital} onSignOut={signOut} />
+            </Suspense>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
       <Route
         path="/doctors"
         element={
-          session.status === 'signed-in' && session.user.role === 'hospital_admin'
-            ? (
-              <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-                <DoctorsPage hospital={hospital} user={session.user} />
-              </PortalShell>
-            )
-            : <Navigate to="/dashboard" replace />
+          session.status === 'signed-in' && session.user.role === 'hospital_admin' ? (
+            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
+              <DoctorsPage hospital={hospital} user={session.user} />
+            </PortalShell>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
       <Route
         path="/settings"
         element={
-          session.status === 'signed-in' && session.user.role === 'hospital_admin'
-            ? (
-              <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-                <HospitalSettingsPage hospital={hospital} user={session.user} />
-              </PortalShell>
-            )
-            : <Navigate to="/dashboard" replace />
+          session.status === 'signed-in' && session.user.role === 'hospital_admin' ? (
+            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
+              <HospitalSettingsPage hospital={hospital} user={session.user} />
+            </PortalShell>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

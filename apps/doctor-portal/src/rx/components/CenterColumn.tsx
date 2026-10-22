@@ -65,27 +65,21 @@ export function CenterColumn({
               </span>
             </h2>
             <p className="text-xs text-ink-400">
-              {patient.name} · {patient.age}{patient.sex} · {patient.weightKg}kg
+              {patient.name} · {patient.age}
+              {patient.sex} · {patient.weightKg}kg
             </p>
           </div>
           <div className="hidden md:flex items-center gap-1.5 text-xs text-ink-400">
-            <Kbd>Tab</Kbd> next · <Kbd>⇧Tab</Kbd> prev · <Kbd>↵</Kbd> accept · <Kbd>⌘K</Kbd> patient · <Kbd>Esc</Kbd> clear
+            <Kbd>Tab</Kbd> next · <Kbd>⇧Tab</Kbd> prev · <Kbd>↵</Kbd> accept · <Kbd>⌘K</Kbd> patient
+            · <Kbd>Esc</Kbd> clear
           </div>
         </div>
 
         {/* Progress strip — lights up as the prescription is filled in. */}
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider">
-          <Step
-            on={completeness >= 1}
-            label="Diagnosis"
-            code={diagnosis?.code}
-          />
+          <Step on={completeness >= 1} label="Diagnosis" code={diagnosis?.code} />
           <Connector on={completeness >= 2} />
-          <Step
-            on={completeness === 2}
-            label="Medications"
-            count={medications.length}
-          />
+          <Step on={completeness === 2} label="Medications" count={medications.length} />
           <Connector on={false} />
           <Step on={false} label="Sign" />
         </div>
@@ -170,7 +164,9 @@ function Step({
           : 'bg-ink-800/60 text-ink-500 border-ink-700',
       )}
     >
-      {on ? <LiveDot color="bg-rx-accent" /> : (
+      {on ? (
+        <LiveDot color="bg-rx-accent" />
+      ) : (
         <span className="h-1.5 w-1.5 rounded-full bg-ink-600" aria-hidden />
       )}
       <span>{label}</span>

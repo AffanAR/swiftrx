@@ -21,10 +21,7 @@ function drugKeyMatches(needle: string, drug: Drug): boolean {
 function findDrug(needle: string, catalog: Drug[]): Drug | undefined {
   const n = norm(needle);
   return catalog.find(
-    (d) =>
-      norm(d.id) === n ||
-      norm(d.genericName) === n ||
-      d.brandNames.some((b) => norm(b) === n),
+    (d) => norm(d.id) === n || norm(d.genericName) === n || d.brandNames.some((b) => norm(b) === n),
   );
 }
 
@@ -42,11 +39,7 @@ export function checkAllergy(drug: Drug, patient: Patient): SafetyAlert | null {
   return null;
 }
 
-export function checkInteraction(
-  drug: Drug,
-  patient: Patient,
-  catalog: Drug[],
-): SafetyAlert[] {
+export function checkInteraction(drug: Drug, patient: Patient, catalog: Drug[]): SafetyAlert[] {
   const alerts: SafetyAlert[] = [];
   const activeGenericNames = patient.activeMedications.map((m) => norm(m.name));
 
@@ -79,12 +72,11 @@ export function checkInteraction(
   return alerts;
 }
 
-export function checkDuplicateTherapy(
-  drug: Drug,
-  patient: Patient,
-): SafetyAlert | null {
+export function checkDuplicateTherapy(drug: Drug, patient: Patient): SafetyAlert | null {
   const cls = norm(drug.therapeuticClass.split(' ')[0]); // e.g. "Antibiotic", "NSAID", "Statin"
-  const dup = patient.activeMedications.find((m) => norm(m.name).includes(cls) || cls.includes(norm(m.name)));
+  const dup = patient.activeMedications.find(
+    (m) => norm(m.name).includes(cls) || cls.includes(norm(m.name)),
+  );
   if (dup) {
     return {
       severity: 'low',

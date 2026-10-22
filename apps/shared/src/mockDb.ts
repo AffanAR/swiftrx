@@ -13,7 +13,17 @@
 import {
   DEFAULT_HOSPITAL_FEATURES,
   DEFAULT_RX_DESIGN,
-  type Drug, type Diagnosis, type Hospital, type HospitalFeatures, type Investigation, type Patient, type QuickPack, type RxDesign, type User, type SignedRx, type AuditEvent,
+  type Drug,
+  type Diagnosis,
+  type Hospital,
+  type HospitalFeatures,
+  type Investigation,
+  type Patient,
+  type QuickPack,
+  type RxDesign,
+  type User,
+  type SignedRx,
+  type AuditEvent,
 } from './types';
 
 // --- Hospitals (tenants) -----------------------------------------------------
@@ -37,7 +47,8 @@ const CITY_HOSPITAL_DESIGN: RxDesign = {
   accentColor: '#10b981',
   showAccentBand: true,
   showRxBadge: true,
-  footerText: 'City Hospital · Prescriptions are electronically signed. Verify at verify.city-hospital.com',
+  footerText:
+    'City Hospital · Prescriptions are electronically signed. Verify at verify.city-hospital.com',
   watermark: 'hospital',
   pageSize: 'A4',
   showAllergyBanner: true,
@@ -342,6 +353,8 @@ export const MOCK_PATIENTS: Patient[] = [
 
 // --- Drug catalog (shared across all hospitals) ------------------------------
 
+// One drug per line keeps the catalog scannable.
+// prettier-ignore
 export const MOCK_DRUGS: Drug[] = [
   { id: 'para',  genericName: 'Paracetamol', brandNames: ['Panadol', 'Tylenol'], therapeuticClass: 'Analgesic', defaultDosage: { value: 500, unit: 'mg' }, defaultFrequency: 'QID', defaultDurationDays: 5, contraindications: [], interactsWith: [] },
   { id: 'ibu',   genericName: 'Ibuprofen',    brandNames: ['Brufen', 'Advil'],   therapeuticClass: 'NSAID',    defaultDosage: { value: 400, unit: 'mg' }, defaultFrequency: 'TID', defaultDurationDays: 5, contraindications: ['aspirin', 'nsaid hypersensitivity'], interactsWith: ['aspirin', 'warfarin', 'lisinopril'] },
@@ -360,34 +373,58 @@ export const MOCK_DRUGS: Drug[] = [
 // --- ICD-10 diagnoses --------------------------------------------------------
 
 export const MOCK_DIAGNOSES: Diagnosis[] = [
-  { code: 'J45.909', name: 'Asthma, unspecified, uncomplicated', category: 'Respiratory',
+  {
+    code: 'J45.909',
+    name: 'Asthma, unspecified, uncomplicated',
+    category: 'Respiratory',
     recommendedInvestigations: [
       { code: 'Spiro', name: 'Spirometry', type: 'imaging' },
       { code: 'PEF', name: 'Peak Expiratory Flow', type: 'imaging' },
       { code: 'CXR', name: 'Chest X-Ray PA View', type: 'imaging' },
-    ]},
-  { code: 'J02.9',   name: 'Acute pharyngitis, unspecified', category: 'Respiratory',
+    ],
+  },
+  {
+    code: 'J02.9',
+    name: 'Acute pharyngitis, unspecified',
+    category: 'Respiratory',
     recommendedInvestigations: [
       { code: 'CBC', name: 'Complete Blood Count', type: 'lab' },
       { code: 'ThroatSwab', name: 'Throat Swab Culture', type: 'lab' },
-    ]},
-  { code: 'I10',     name: 'Essential (primary) hypertension', category: 'Cardiovascular',
+    ],
+  },
+  {
+    code: 'I10',
+    name: 'Essential (primary) hypertension',
+    category: 'Cardiovascular',
     recommendedInvestigations: [
       { code: 'BMP', name: 'Basic Metabolic Panel', type: 'lab' },
       { code: 'Lipid', name: 'Lipid Profile', type: 'lab' },
-    ]},
-  { code: 'E11.9',   name: 'Type 2 diabetes mellitus without complications', category: 'Endocrine',
+    ],
+  },
+  {
+    code: 'E11.9',
+    name: 'Type 2 diabetes mellitus without complications',
+    category: 'Endocrine',
     recommendedInvestigations: [
       { code: 'HbA1c', name: 'Glycated Hemoglobin', type: 'lab' },
       { code: 'FBS', name: 'Fasting Blood Sugar', type: 'lab' },
-    ]},
-  { code: 'J44.9',   name: 'Chronic obstructive pulmonary disease, unspecified', category: 'Respiratory',
+    ],
+  },
+  {
+    code: 'J44.9',
+    name: 'Chronic obstructive pulmonary disease, unspecified',
+    category: 'Respiratory',
     recommendedInvestigations: [
       { code: 'CXR', name: 'Chest X-Ray PA View', type: 'imaging' },
       { code: 'ABG', name: 'Arterial Blood Gas', type: 'lab' },
-    ]},
-  { code: 'G43.909', name: 'Migraine, unspecified, not intractable, without status migrainosus', category: 'Neurology' },
-  { code: 'R51',     name: 'Headache', category: 'Neurology' },
+    ],
+  },
+  {
+    code: 'G43.909',
+    name: 'Migraine, unspecified, not intractable, without status migrainosus',
+    category: 'Neurology',
+  },
+  { code: 'R51', name: 'Headache', category: 'Neurology' },
 ];
 
 // --- Investigations catalog --------------------------------------------------
@@ -416,75 +453,282 @@ export const MOCK_INVESTIGATIONS: Investigation[] = [
 // --- Quick packs -------------------------------------------------------------
 
 export const MOCK_QUICK_PACKS: QuickPack[] = [
-  { packId: 'qp-asthma-1', shortcutKey: '1', diagnosisCode: 'J45.909', rankScore: 0.96,
+  {
+    packId: 'qp-asthma-1',
+    shortcutKey: '1',
+    diagnosisCode: 'J45.909',
+    rankScore: 0.96,
     recommendationReason: 'First-line bronchodilator + inhaled steroid for adult asthma.',
     medications: [
-      { drugId: 'salin', genericName: 'Salbutamol', dosage: { value: 100, unit: 'mcg' }, frequency: 'PRN', durationDays: 30, instructions: '2 puffs every 4-6h when needed' },
-      { drugId: 'pred', genericName: 'Prednisone', dosage: { value: 10, unit: 'mg' }, frequency: 'BID', durationDays: 5, instructions: 'After breakfast and dinner, taper as directed' },
-    ]},
-  { packId: 'qp-asthma-2', shortcutKey: '2', diagnosisCode: 'J45.909', rankScore: 0.88,
+      {
+        drugId: 'salin',
+        genericName: 'Salbutamol',
+        dosage: { value: 100, unit: 'mcg' },
+        frequency: 'PRN',
+        durationDays: 30,
+        instructions: '2 puffs every 4-6h when needed',
+      },
+      {
+        drugId: 'pred',
+        genericName: 'Prednisone',
+        dosage: { value: 10, unit: 'mg' },
+        frequency: 'BID',
+        durationDays: 5,
+        instructions: 'After breakfast and dinner, taper as directed',
+      },
+    ],
+  },
+  {
+    packId: 'qp-asthma-2',
+    shortcutKey: '2',
+    diagnosisCode: 'J45.909',
+    rankScore: 0.88,
     recommendationReason: 'Rescue inhaler only — mild intermittent asthma.',
     medications: [
-      { drugId: 'salin', genericName: 'Salbutamol', dosage: { value: 100, unit: 'mcg' }, frequency: 'PRN', durationDays: 30, instructions: '2 puffs every 4-6h when needed' },
-    ]},
-  { packId: 'qp-asthma-3', shortcutKey: '3', diagnosisCode: 'J45.909', rankScore: 0.74,
+      {
+        drugId: 'salin',
+        genericName: 'Salbutamol',
+        dosage: { value: 100, unit: 'mcg' },
+        frequency: 'PRN',
+        durationDays: 30,
+        instructions: '2 puffs every 4-6h when needed',
+      },
+    ],
+  },
+  {
+    packId: 'qp-asthma-3',
+    shortcutKey: '3',
+    diagnosisCode: 'J45.909',
+    rankScore: 0.74,
     recommendationReason: 'Adjunct antihistamine for allergic-trigger asthma.',
     medications: [
-      { drugId: 'salin', genericName: 'Salbutamol', dosage: { value: 100, unit: 'mcg' }, frequency: 'PRN', durationDays: 30, instructions: '2 puffs every 4-6h when needed' },
-      { drugId: 'cetiri', genericName: 'Cetirizine', dosage: { value: 10, unit: 'mg' }, frequency: 'QD', durationDays: 30, instructions: 'At bedtime' },
-    ]},
-  { packId: 'qp-uri-1', shortcutKey: '1', diagnosisCode: 'J02.9', rankScore: 0.93,
+      {
+        drugId: 'salin',
+        genericName: 'Salbutamol',
+        dosage: { value: 100, unit: 'mcg' },
+        frequency: 'PRN',
+        durationDays: 30,
+        instructions: '2 puffs every 4-6h when needed',
+      },
+      {
+        drugId: 'cetiri',
+        genericName: 'Cetirizine',
+        dosage: { value: 10, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 30,
+        instructions: 'At bedtime',
+      },
+    ],
+  },
+  {
+    packId: 'qp-uri-1',
+    shortcutKey: '1',
+    diagnosisCode: 'J02.9',
+    rankScore: 0.93,
     recommendationReason: 'Symptomatic relief + first-line antibiotic for strep suspicion.',
     medications: [
-      { drugId: 'para', genericName: 'Paracetamol', dosage: { value: 500, unit: 'mg' }, frequency: 'QID', durationDays: 5, instructions: 'Every 6 hours, max 4 doses/day' },
-      { drugId: 'amox', genericName: 'Amoxicillin', dosage: { value: 500, unit: 'mg' }, frequency: 'TID', durationDays: 7, instructions: 'After meals' },
-    ]},
-  { packId: 'qp-uri-2', shortcutKey: '2', diagnosisCode: 'J02.9', rankScore: 0.81,
+      {
+        drugId: 'para',
+        genericName: 'Paracetamol',
+        dosage: { value: 500, unit: 'mg' },
+        frequency: 'QID',
+        durationDays: 5,
+        instructions: 'Every 6 hours, max 4 doses/day',
+      },
+      {
+        drugId: 'amox',
+        genericName: 'Amoxicillin',
+        dosage: { value: 500, unit: 'mg' },
+        frequency: 'TID',
+        durationDays: 7,
+        instructions: 'After meals',
+      },
+    ],
+  },
+  {
+    packId: 'qp-uri-2',
+    shortcutKey: '2',
+    diagnosisCode: 'J02.9',
+    rankScore: 0.81,
     recommendationReason: 'Penicillin-allergic alternative.',
     medications: [
-      { drugId: 'para', genericName: 'Paracetamol', dosage: { value: 500, unit: 'mg' }, frequency: 'QID', durationDays: 5, instructions: 'Every 6 hours, max 4 doses/day' },
-      { drugId: 'azith', genericName: 'Azithromycin', dosage: { value: 500, unit: 'mg' }, frequency: 'QD', durationDays: 3, instructions: '1 hour before or 2 hours after meals' },
-    ]},
-  { packId: 'qp-uri-3', shortcutKey: '3', diagnosisCode: 'J02.9', rankScore: 0.68,
+      {
+        drugId: 'para',
+        genericName: 'Paracetamol',
+        dosage: { value: 500, unit: 'mg' },
+        frequency: 'QID',
+        durationDays: 5,
+        instructions: 'Every 6 hours, max 4 doses/day',
+      },
+      {
+        drugId: 'azith',
+        genericName: 'Azithromycin',
+        dosage: { value: 500, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 3,
+        instructions: '1 hour before or 2 hours after meals',
+      },
+    ],
+  },
+  {
+    packId: 'qp-uri-3',
+    shortcutKey: '3',
+    diagnosisCode: 'J02.9',
+    rankScore: 0.68,
     recommendationReason: 'Supportive care only — viral etiology likely.',
     medications: [
-      { drugId: 'para', genericName: 'Paracetamol', dosage: { value: 500, unit: 'mg' }, frequency: 'QID', durationDays: 5, instructions: 'As needed for pain/fever' },
-      { drugId: 'cetiri', genericName: 'Cetirizine', dosage: { value: 10, unit: 'mg' }, frequency: 'QD', durationDays: 7, instructions: 'At bedtime' },
-    ]},
-  { packId: 'qp-htn-1', shortcutKey: '1', diagnosisCode: 'I10', rankScore: 0.95,
+      {
+        drugId: 'para',
+        genericName: 'Paracetamol',
+        dosage: { value: 500, unit: 'mg' },
+        frequency: 'QID',
+        durationDays: 5,
+        instructions: 'As needed for pain/fever',
+      },
+      {
+        drugId: 'cetiri',
+        genericName: 'Cetirizine',
+        dosage: { value: 10, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 7,
+        instructions: 'At bedtime',
+      },
+    ],
+  },
+  {
+    packId: 'qp-htn-1',
+    shortcutKey: '1',
+    diagnosisCode: 'I10',
+    rankScore: 0.95,
     recommendationReason: 'First-line ACE inhibitor for uncomplicated HTN.',
     medications: [
-      { drugId: 'lisinopril', genericName: 'Lisinopril', dosage: { value: 10, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Same time daily, monitor BP' },
-    ]},
-  { packId: 'qp-htn-2', shortcutKey: '2', diagnosisCode: 'I10', rankScore: 0.86,
+      {
+        drugId: 'lisinopril',
+        genericName: 'Lisinopril',
+        dosage: { value: 10, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Same time daily, monitor BP',
+      },
+    ],
+  },
+  {
+    packId: 'qp-htn-2',
+    shortcutKey: '2',
+    diagnosisCode: 'I10',
+    rankScore: 0.86,
     recommendationReason: 'CCB alternative for ACE-intolerant patients.',
     medications: [
-      { drugId: 'amlo', genericName: 'Amlodipine', dosage: { value: 5, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Same time daily' },
-    ]},
-  { packId: 'qp-htn-3', shortcutKey: '3', diagnosisCode: 'I10', rankScore: 0.78,
+      {
+        drugId: 'amlo',
+        genericName: 'Amlodipine',
+        dosage: { value: 5, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Same time daily',
+      },
+    ],
+  },
+  {
+    packId: 'qp-htn-3',
+    shortcutKey: '3',
+    diagnosisCode: 'I10',
+    rankScore: 0.78,
     recommendationReason: 'Combination therapy for stage 2 HTN.',
     medications: [
-      { drugId: 'amlo', genericName: 'Amlodipine', dosage: { value: 5, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Morning' },
-      { drugId: 'lisinopril', genericName: 'Lisinopril', dosage: { value: 10, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Evening' },
-    ]},
-  { packId: 'qp-dm-1', shortcutKey: '1', diagnosisCode: 'E11.9', rankScore: 0.97,
+      {
+        drugId: 'amlo',
+        genericName: 'Amlodipine',
+        dosage: { value: 5, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Morning',
+      },
+      {
+        drugId: 'lisinopril',
+        genericName: 'Lisinopril',
+        dosage: { value: 10, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Evening',
+      },
+    ],
+  },
+  {
+    packId: 'qp-dm-1',
+    shortcutKey: '1',
+    diagnosisCode: 'E11.9',
+    rankScore: 0.97,
     recommendationReason: 'First-line biguanide for T2DM without renal impairment.',
     medications: [
-      { drugId: 'metformin', genericName: 'Metformin', dosage: { value: 500, unit: 'mg' }, frequency: 'BID', durationDays: 90, instructions: 'With breakfast and dinner' },
-    ]},
-  { packId: 'qp-dm-2', shortcutKey: '2', diagnosisCode: 'E11.9', rankScore: 0.82,
+      {
+        drugId: 'metformin',
+        genericName: 'Metformin',
+        dosage: { value: 500, unit: 'mg' },
+        frequency: 'BID',
+        durationDays: 90,
+        instructions: 'With breakfast and dinner',
+      },
+    ],
+  },
+  {
+    packId: 'qp-dm-2',
+    shortcutKey: '2',
+    diagnosisCode: 'E11.9',
+    rankScore: 0.82,
     recommendationReason: 'Add-on statin for diabetic dyslipidemia.',
     medications: [
-      { drugId: 'metformin', genericName: 'Metformin', dosage: { value: 500, unit: 'mg' }, frequency: 'BID', durationDays: 90, instructions: 'With meals' },
-      { drugId: 'atorva', genericName: 'Atorvastatin', dosage: { value: 20, unit: 'mg' }, frequency: 'QHS', durationDays: 90, instructions: 'At bedtime' },
-    ]},
-  { packId: 'qp-dm-3', shortcutKey: '3', diagnosisCode: 'E11.9', rankScore: 0.71,
+      {
+        drugId: 'metformin',
+        genericName: 'Metformin',
+        dosage: { value: 500, unit: 'mg' },
+        frequency: 'BID',
+        durationDays: 90,
+        instructions: 'With meals',
+      },
+      {
+        drugId: 'atorva',
+        genericName: 'Atorvastatin',
+        dosage: { value: 20, unit: 'mg' },
+        frequency: 'QHS',
+        durationDays: 90,
+        instructions: 'At bedtime',
+      },
+    ],
+  },
+  {
+    packId: 'qp-dm-3',
+    shortcutKey: '3',
+    diagnosisCode: 'E11.9',
+    rankScore: 0.71,
     recommendationReason: 'Triple therapy for uncontrolled T2DM.',
     medications: [
-      { drugId: 'metformin', genericName: 'Metformin', dosage: { value: 1, unit: 'g' }, frequency: 'BID', durationDays: 90, instructions: 'With meals' },
-      { drugId: 'amlo', genericName: 'Amlodipine', dosage: { value: 5, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'For BP if needed' },
-      { drugId: 'atorva', genericName: 'Atorvastatin', dosage: { value: 20, unit: 'mg' }, frequency: 'QHS', durationDays: 90, instructions: 'At bedtime' },
-    ]},
+      {
+        drugId: 'metformin',
+        genericName: 'Metformin',
+        dosage: { value: 1, unit: 'g' },
+        frequency: 'BID',
+        durationDays: 90,
+        instructions: 'With meals',
+      },
+      {
+        drugId: 'amlo',
+        genericName: 'Amlodipine',
+        dosage: { value: 5, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'For BP if needed',
+      },
+      {
+        drugId: 'atorva',
+        genericName: 'Atorvastatin',
+        dosage: { value: 20, unit: 'mg' },
+        frequency: 'QHS',
+        durationDays: 90,
+        instructions: 'At bedtime',
+      },
+    ],
+  },
 ];
 
 // --- Signed Rx seed (so the dashboard has history) ---------------------------
@@ -495,10 +739,26 @@ export const MOCK_SIGNED_RX: SignedRx[] = [
     signedAt: '2025-09-25T11:20:00.000Z',
     hospitalSlug: 'city-hospital',
     patient: MOCK_PATIENTS[0],
-    diagnosis: MOCK_DIAGNOSES[2],   // I10
+    diagnosis: MOCK_DIAGNOSES[2], // I10
     medications: [
-      { rowId: 'r_seed_1', drugId: 'lisinopril', genericName: 'Lisinopril', dosage: { value: 10, unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Same time daily' },
-      { rowId: 'r_seed_2', drugId: 'amlo',       genericName: 'Amlodipine',  dosage: { value: 5,  unit: 'mg' }, frequency: 'QD', durationDays: 90, instructions: 'Morning' },
+      {
+        rowId: 'r_seed_1',
+        drugId: 'lisinopril',
+        genericName: 'Lisinopril',
+        dosage: { value: 10, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Same time daily',
+      },
+      {
+        rowId: 'r_seed_2',
+        drugId: 'amlo',
+        genericName: 'Amlodipine',
+        dosage: { value: 5, unit: 'mg' },
+        frequency: 'QD',
+        durationDays: 90,
+        instructions: 'Morning',
+      },
     ],
     investigations: [{ code: 'BMP', name: 'Basic Metabolic Panel', type: 'lab' }],
     doctorId: 'd_001',
@@ -510,9 +770,17 @@ export const MOCK_SIGNED_RX: SignedRx[] = [
     signedAt: '2025-09-22T14:10:00.000Z',
     hospitalSlug: 'city-hospital',
     patient: MOCK_PATIENTS[2],
-    diagnosis: MOCK_DIAGNOSES[0],   // J45
+    diagnosis: MOCK_DIAGNOSES[0], // J45
     medications: [
-      { rowId: 'r_seed_3', drugId: 'salin', genericName: 'Salbutamol', dosage: { value: 100, unit: 'mcg' }, frequency: 'PRN', durationDays: 30, instructions: '2 puffs every 4-6h' },
+      {
+        rowId: 'r_seed_3',
+        drugId: 'salin',
+        genericName: 'Salbutamol',
+        dosage: { value: 100, unit: 'mcg' },
+        frequency: 'PRN',
+        durationDays: 30,
+        instructions: '2 puffs every 4-6h',
+      },
     ],
     investigations: [{ code: 'CXR', name: 'Chest X-Ray PA View', type: 'imaging' }],
     doctorId: 'd_002',
@@ -524,9 +792,17 @@ export const MOCK_SIGNED_RX: SignedRx[] = [
     signedAt: '2025-09-26T08:45:00.000Z',
     hospitalSlug: 'northstar-medical',
     patient: MOCK_PATIENTS[3],
-    diagnosis: MOCK_DIAGNOSES[1],   // J02.9
+    diagnosis: MOCK_DIAGNOSES[1], // J02.9
     medications: [
-      { rowId: 'r_seed_4', drugId: 'para', genericName: 'Paracetamol', dosage: { value: 250, unit: 'mg' }, frequency: 'QID', durationDays: 3, instructions: 'Per weight; max 4 doses/day' },
+      {
+        rowId: 'r_seed_4',
+        drugId: 'para',
+        genericName: 'Paracetamol',
+        dosage: { value: 250, unit: 'mg' },
+        frequency: 'QID',
+        durationDays: 3,
+        instructions: 'Per weight; max 4 doses/day',
+      },
     ],
     investigations: [{ code: 'ThroatSwab', name: 'Throat Swab Culture', type: 'lab' }],
     doctorId: 'd_003',
@@ -537,6 +813,8 @@ export const MOCK_SIGNED_RX: SignedRx[] = [
 
 // --- Audit log seed ----------------------------------------------------------
 
+// One event per line keeps the aligned columns readable.
+// prettier-ignore
 export const MOCK_AUDIT: AuditEvent[] = [
   { kind: 'login',         userId: 'd_001', userEmail: 'ayesha@city-hospital.com',    at: '2025-09-25T11:18:00.000Z', hospitalSlug: 'city-hospital' },
   { kind: 'sign_rx',       userId: 'd_001', userEmail: 'ayesha@city-hospital.com',    at: '2025-09-25T11:20:00.000Z', hospitalSlug: 'city-hospital', rxId: 'rx_seed_001', patientName: 'Bilal Ahmed' },
@@ -604,7 +882,10 @@ export function findDrug(drugId: string) {
 
 const ADMIN_OVERRIDES_KEY = 'swiftrx:admin-overrides:v1';
 
-type AdminOverrides = Record<string, Partial<Pick<Hospital, 'features' | 'rxDesign' | 'plan' | 'status'>>>;
+type AdminOverrides = Record<
+  string,
+  Partial<Pick<Hospital, 'features' | 'rxDesign' | 'plan' | 'status'>>
+>;
 
 function loadOverrides(): AdminOverrides {
   if (typeof localStorage === 'undefined') return {};
@@ -618,7 +899,11 @@ function loadOverrides(): AdminOverrides {
 
 function saveOverrides(o: AdminOverrides) {
   if (typeof localStorage === 'undefined') return;
-  try { localStorage.setItem(ADMIN_OVERRIDES_KEY, JSON.stringify(o)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(ADMIN_OVERRIDES_KEY, JSON.stringify(o));
+  } catch {
+    /* ignore */
+  }
 }
 
 function applyOverrides(h: Hospital): Hospital {

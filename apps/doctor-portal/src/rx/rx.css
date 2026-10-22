@@ -10,7 +10,9 @@
 .rx-underline-track::before {
   content: '';
   position: absolute;
-  left: 0; right: 0; bottom: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, currentColor, transparent);
   transform: translateX(-100%);
@@ -22,12 +24,18 @@
 /* print.ts renders the Rx into #print-area and adds `rx-printing` to <html>  */
 /* only while its print dialog is open, so printing any other portal page   */
 /* from the browser menu is unaffected.                                      */
-#print-area { display: none; }
+#print-area {
+  display: none;
+}
 
 @media print {
   html.rx-printing,
-  html.rx-printing body { background: white !important; }
-  html.rx-printing body * { visibility: hidden !important; }
+  html.rx-printing body {
+    background: white !important;
+  }
+  html.rx-printing body * {
+    visibility: hidden !important;
+  }
   html.rx-printing #print-area {
     display: block !important;
     position: absolute !important;
@@ -41,8 +49,12 @@
     z-index: 99999 !important;
   }
   html.rx-printing #print-area,
-  html.rx-printing #print-area * { visibility: visible !important; }
+  html.rx-printing #print-area * {
+    visibility: visible !important;
+  }
   /* Avoid awkward page splits inside the Rx and signature. */
   html.rx-printing #print-area table,
-  html.rx-printing #print-area tr { page-break-inside: avoid; }
+  html.rx-printing #print-area tr {
+    page-break-inside: avoid;
+  }
 }
