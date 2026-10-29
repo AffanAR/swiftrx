@@ -1,0 +1,8 @@
+# Keep LF line endings in the working tree on every OS. Prettier expects LF,
+# and a system-wide `core.autocrlf=true` (the Git for Windows default) would
+# otherwise check files out as CRLF, which `npm run check` then flags.
+* text=auto eol=lf
+
+# Windows batch files need CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf
