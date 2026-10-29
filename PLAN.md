@@ -1,7 +1,8 @@
 # SwiftRx — Code Review & Re-plan
 
 Reviewed 2026-10-22. Covers all source in `src/` (Rx pad), `apps/shared`,
-`apps/doctor-portal`, `apps/admin`, `scripts/` and `deploy/`.
+`apps/doctor-portal`, `apps/admin`, `scripts/` and `deploy/`. Backend
+readiness re-checked 2026-10-30 (§2.7).
 
 **How findings were checked:** `tsc --noEmit` passes for all three apps. A
 fresh portal build (to a temp folder) was used to confirm the Tailwind and
@@ -179,6 +180,57 @@ fix, not a UI patch.
 - Free tunnels and free VMs are fine for a UI demo. They aren't for anything
   that holds patient data.
 
+### 2.7 Backend readiness (reviewed 2026-10-30)
+
+There is still no backend. `scripts/serve.mjs` (on GitHub `main`) only serves
+the two builds as static files. Login, safety checks and signing all run in
+the browser against `mockDb.ts`. What has to change, most important first:
+
+- **Login protects nothing yet.** An in-progress change (not committed as of
+  2026-10-30) stores bcrypt hashes instead of plaintext passwords, but the
+  hashes still ship in the bundle at cost 8, so they can be cracked offline.
+  The session is plain JSON in localStorage, and `readSessionFromStorage()`
+  in `apps/shared/src/auth.ts` only checks that the user id exists. Anyone
+  can paste a doctor's session in DevTools and sign as that doctor.
+  (`bcryptjs` is also listed as a devDependency but ships in the browser
+  bundle.)
+- **A signed Rx can't be trusted:**
+  - The id is `'rx_' + Date.now().toString(36)`
+    (`apps/doctor-portal/src/rx/store.ts:298`), so two signings in the same
+    millisecond get the same id.
+  - The printed "signature hash" is a 32-bit hash of the id only
+    (`shortHash()` in `apps/shared/src/print.ts`). Editing the medications
+    doesn't change it, yet the print says "Verified digitally".
+  - The safety checks, the override reason and the license check run only
+    in the browser.
+- **The API seam is wider than the docs say.** 11 files read the `MOCK_*`
+  arrays directly instead of going through the helpers:
+  - admin: `AuditLogPage`, `DashboardPage`, `HospitalsListPage`,
+    `NewHospitalPage`;
+  - portal: `PatientsPage`;
+  - Rx pad: `RxPad`, `store.ts`, `DiagnosisField`, `MedicationRow`,
+    `MedicationSearch`, `RightColumn`.
+
+  Every helper is synchronous and an API is not, so each call site needs
+  loading and error states. That is most of the frontend cost of Phase 2.
+- **Data-model gaps to settle before the schema:**
+  - A prescription keeps `patient_id` *and* a frozen copy of the patient as
+    signed (name, age, weight, allergies). Storing only a reference, as the
+    seed JSON does, suits seed data but not a legal record.
+  - Users have one `hospitalSlug`. Use `memberships` (a role per hospital).
+  - Allergies need three states: none known, not recorded, recorded.
+  - Admin overrides live in localStorage. They belong in
+    `hospital_settings`.
+- **Hosting:**
+  - Serve the API on the same origin under `/api`, so cookies stay
+    same-site and no CORS is needed. `serve.mjs` can grow into the API
+    server.
+  - `serve.mjs` sends no Content-Security-Policy (the print page is built
+    from strings) and no HSTS (or set HSTS at Cloudflare).
+  - Render's free plan sleeps when idle and has no persistent disk, so the
+    database has to be a managed Postgres.
+  - Hosting region and data residency are still open (§4, item 5).
+
 ---
 
 ## 3. Re-plan
@@ -267,33 +319,60 @@ console errors.
       `127.0.0.1` resolved to a hospital named "127", now fixed.)
 - [x] ESLint and Prettier, plus GitHub Actions for typecheck, test and build
       on every push. (Done 2026-10-22: `.github/workflows/ci.yml`; the same
-      steps run locally with `npm run check`. Not yet run on GitHub — the repo
-      has no remote.)
+      steps run locally with `npm run check`. The repo has been on GitHub,
+      `AffanAR/swiftrx` branch `main`, since 2026-10-22.)
 
 **Exit:** two apps (admin; portal + Rx), CI green, and pure logic covered by
-tests. (Met locally; CI goes green on GitHub once the repo is pushed.)
+tests. (Met locally. The CI result on GitHub hasn't been checked here.)
 
 #### Phase 2: Backend MVP (≈3–4 weeks)
 
-- [ ] `apps/api` (Fastify/Hono + Prisma + Postgres). Tables:
+Findings are in §2.7. Recommended stack: a TypeScript API in `apps/api`
+(Hono or Fastify, Postgres, Prisma or Drizzle), with zod schemas in
+`apps/shared`. Prefer it over Supabase (§4, item 2): signing and the safety
+rules have to run on the server, in the TypeScript that already exists.
+Branch from GitHub `main`, which has the hosted-demo changes that local
+`master` lacks.
+
+In this order:
+
+- [ ] **Async data client, no server yet.** An async client in `apps/shared`
+      backed by `mockDb`. Move the 11 files from §2.7 onto it with TanStack
+      Query, and add loading/error states and error boundaries. After this,
+      switching to HTTP touches one file.
+- [ ] **`apps/api` skeleton:** Postgres in Docker for local dev, migrations,
+      and a seed script that loads `apps/shared/src/seed/*.json`. Tables:
   - `hospitals`, `users`, `memberships` (role per hospital), `patients`
   - `patient_allergies` (status: *none known* / *not recorded* / *recorded*)
-  - `prescriptions`, `prescription_items`, `investigations`
+  - `prescriptions` (with a frozen patient copy), `prescription_items`,
+    `investigations`
   - `audit_events` (append-only)
   - `drugs`, `diagnoses`, `quick_packs`, `hospital_settings`
-- [ ] Endpoints that mirror the `mockDb` helpers, plus a seed script that
-      ports the `MOCK_*` data.
-- [ ] Cookie auth on `.swiftrx.com`, login rate-limiting, password reset, and
-      a real invite flow (makes "Invite doctor" work).
+- [ ] **Auth:** `/auth/login`, `/auth/logout` and `/auth/me` with `httpOnly`,
+      `Secure`, `SameSite=Lax` cookie sessions on `.swiftrx.com`, Argon2id
+      hashes on the server, and the tenant taken from Host on the server.
+      Then login rate-limiting, password reset and a real invite flow (makes
+      "Invite doctor" work). No hashes or passwords left in any bundle.
+- [ ] **Read endpoints** that mirror the `mockDb` helpers: hospital,
+      patients, and the drug, diagnosis and quick-pack catalog.
+- [ ] **`POST /prescriptions`:** the server
+  - assigns the id and timestamp;
+  - re-runs `safety.ts` (pure, so it runs unchanged) and enforces role,
+    license and the override reason;
+  - freezes the patient and `RxDesign`;
+  - stores a SHA-256 of the record, which the print shows instead of
+    `shortHash(id)`;
+  - writes the audit row in the same transaction.
 - [ ] Server-side enforcement: tenant scoping, caps, flags, suspended status
       and reserved slugs.
-- [ ] Frontend: swap `mockDb` imports for an API client (TanStack Query), and
-      add loading/error states and error boundaries.
+- [ ] Hosting: the API under `/api` on the same origin, CSP and HSTS headers,
+      and a managed Postgres for the hosted demo.
 - [ ] Playwright e2e:
   - sign in → Rx → sign → visible in the portal and the admin audit log;
   - cross-tenant access is refused.
 
-**Exit:** data persists and flows across apps. No secrets in any bundle.
+**Exit:** data persists and flows across apps. No secrets in any bundle. Only
+the server creates a signed Rx.
 
 #### Phase 3: Clinical safety v2 (≈2–3 weeks, plus clinician review)
 
