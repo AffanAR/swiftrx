@@ -109,9 +109,15 @@ export function MedicationSearch() {
   return (
     <div className="relative">
       <div className="flex items-center gap-2">
-        <label className="text-[11px] uppercase tracking-wider text-ink-400 w-24">Medication</label>
+        <label
+          htmlFor="rx-med-search"
+          className="text-[11px] uppercase tracking-wider text-ink-400 w-24"
+        >
+          Medication
+        </label>
         <div className="flex-1 relative">
           <input
+            id="rx-med-search"
             data-zone="med-search"
             type="text"
             placeholder="Add drug · e.g. 'Lipitor' (brand) or 'atorvastatin' (generic)"

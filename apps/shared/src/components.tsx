@@ -45,6 +45,9 @@ export function TextField({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
+            // Callers opt in explicitly (sign-in forms, modal fields). Keeping
+            // the prop is the point; see the no-autofocus note in eslint.config.js.
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={autoFocus}
             required={required}
             rows={3}
@@ -58,6 +61,7 @@ export function TextField({
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             autoComplete={autoComplete}
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={autoFocus}
             required={required}
             className="rx-input pr-10"

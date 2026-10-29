@@ -144,18 +144,27 @@ export function PatientsPage({ hospital, user }: Props) {
       </Card>
 
       {adding && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setAdding(false);
-          }}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn">
+          {/* Click-outside-to-close as a real button, so it is announced and
+             reachable instead of being a mouse-only affordance on the overlay. */}
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="Close add patient"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setAdding(false)}
+          />
           <form
             onSubmit={submit}
-            className="w-[min(560px,92vw)] rounded-xl border border-ink-700 bg-ink-800 shadow-2xl animate-slideUpIn"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-patient-title"
+            className="relative w-[min(560px,92vw)] rounded-xl border border-ink-700 bg-ink-800 shadow-2xl animate-slideUpIn"
           >
             <div className="px-5 py-3 border-b border-ink-700">
-              <h3 className="text-base font-semibold">Add patient</h3>
+              <h3 id="add-patient-title" className="text-base font-semibold">
+                Add patient
+              </h3>
               <p className="text-xs text-ink-400">Saved to {hospital.name}'s roster.</p>
             </div>
             <div className="p-5 grid sm:grid-cols-2 gap-3">

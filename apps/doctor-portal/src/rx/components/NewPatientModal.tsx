@@ -104,16 +104,27 @@ export function NewPatientModal() {
   submitRef.current = submit;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) actions.closeNewPatient();
-      }}
-    >
-      <div className="w-[min(640px,92vw)] rounded-xl border border-ink-700 bg-ink-800 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn">
+      {/* Click-outside-to-close as a real button, so it is announced and
+         reachable instead of being a mouse-only affordance on the overlay. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Close new patient"
+        className="absolute inset-0 cursor-default"
+        onClick={actions.closeNewPatient}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-patient-title"
+        className="relative w-[min(640px,92vw)] rounded-xl border border-ink-700 bg-ink-800 shadow-2xl"
+      >
         <div className="flex items-center justify-between px-5 py-3 border-b border-ink-700">
           <div>
-            <h3 className="text-base font-semibold tracking-tight">New Patient</h3>
+            <h3 id="new-patient-title" className="text-base font-semibold tracking-tight">
+              New Patient
+            </h3>
             <p className="text-xs text-ink-400">
               Required: name · age · weight &nbsp;·&nbsp; <Kbd>Esc</Kbd> to close, <Kbd>⌘↵</Kbd> to
               save

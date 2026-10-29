@@ -50,14 +50,18 @@ export function MedicationRow({ med, index }: RowProps) {
   };
 
   return (
+    // Focus-tracking wrapper: React's onFocus bubbles (focusin), so this marks
+    // the row active when any control inside it is focused or clicked. That is
+    // the wrapper's entire purpose, so it needs no ARIA role of its own.
+    /* eslint-disable-next-line jsx-a11y/no-static-element-interactions */
     <div
+      onFocus={() => setActive(med.rowId)}
+      onMouseDown={() => setActive(med.rowId)}
       className={cx(
         'rounded-md border px-3 py-2 transition-colors',
         borderColor,
         active && 'ring-2 ring-rx-focus/60',
       )}
-      onFocus={() => setActive(med.rowId)}
-      onMouseDown={() => setActive(med.rowId)}
     >
       <div className="flex items-center gap-2">
         <span className="text-xs text-ink-400 font-mono w-5 text-right">{index + 1}.</span>

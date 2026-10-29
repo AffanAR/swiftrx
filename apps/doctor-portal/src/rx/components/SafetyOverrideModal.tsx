@@ -51,16 +51,22 @@ export function SafetyOverrideModal() {
   confirmRef.current = confirm;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) actions.cancelOverride();
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="override-title"
-    >
-      <div className="w-[min(560px,92vw)] rounded-xl border border-rx-danger/50 bg-ink-800 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn">
+      {/* Click-outside-to-close as a real button, so it is announced and
+         reachable instead of being a mouse-only affordance on the overlay. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Cancel override"
+        className="absolute inset-0 cursor-default"
+        onClick={actions.cancelOverride}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="override-title"
+        className="relative w-[min(560px,92vw)] rounded-xl border border-rx-danger/50 bg-ink-800 shadow-2xl"
+      >
         <div className="px-5 py-3 border-b border-ink-700">
           <h3 id="override-title" className="text-base font-semibold tracking-tight text-rx-danger">
             ⚠ Critical alert — override required
