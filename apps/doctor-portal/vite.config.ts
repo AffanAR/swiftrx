@@ -18,7 +18,24 @@ export default defineConfig({
     // Bind to 0.0.0.0 (or '::') so <host>.localhost requests (Chrome/FF
     // resolve *.localhost → 127.0.0.1) actually reach the dev server, and
     // `strictPort` so the port is predictable when the gateway is up.
-    host: true,
+    //
+    // `host: true` binds every interface, which puts the tenant data (mock
+    // patients, Rx) on the LAN for anyone on the same network. Bind to
+    // loopback instead — Chrome and Firefox resolve *.localhost to 127.0.0.1
+    // natively, so subdomain routing still works without exposing the port.
+    host: '127.0.0.1',
     strictPort: true,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // React and the router change far less often than app code, so a
+        // separate vendor chunk keeps them cached across deploys. The Rx pad is
+        // already its own lazy chunk at /rx.
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
   },
 });

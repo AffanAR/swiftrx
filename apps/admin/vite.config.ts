@@ -11,7 +11,20 @@ export default defineConfig({
   },
   server: {
     port: 5175,
-    host: true,
+    // Loopback only — `host: true` would expose the admin console (and the
+    // seed data it renders) to the whole LAN.
+    host: '127.0.0.1',
     strictPort: true,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // See apps/doctor-portal/vite.config.ts — vendor code is stable across
+        // deploys, so it gets its own long-lived cache entry.
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
   },
 });
