@@ -6,15 +6,16 @@
 //  owns *shape*.
 //
 //  Two things are re-derived on load, deliberately:
-//   1. Patient `createdAt` is rebased from `createdAtDaysAgo` + `seededAt`, so
-//      the demo keeps showing "registered 3 days ago" instead of freezing on
-//      the date the JSON was generated.
+//   1. Patient `createdAt` is stored as `createdAtDaysAgo` and rebased from
+//      `seededAt` in seed/manifest.json, so each patient gets a fixed date
+//      (seededAt minus N days). The pre-JSON mockDb counted back from today
+//      instead, so its dates moved with the clock.
 //   2. Signed Rx store a `patientId` / `diagnosisCode`, and the full objects are
 //      resolved here. Storing a reference instead of a copy means a renamed
 //      patient can never leave a stale duplicate inside a prescription.
 //
-//  Regenerate the JSON after editing seed data:
-//     npx vite-node scripts/gen-seed.mjs
+//  Edit seed/*.json directly. scripts/gen-seed.mjs was the one-off move of the
+//  rows out of mockDb.ts; don't rerun it (see its header).
 // =============================================================================
 
 import manifest from './seed/manifest.json';

@@ -52,8 +52,16 @@ pick the route by **path**. `/rx` wins over the host check.
 
 ## Tenant resolution
 
-Every hospital owns a subdomain. The tenant comes from `window.location.hostname`,
-never from a query string, so a doctor cannot switch tenants by editing a URL.
+Every hospital owns a subdomain, and the tenant normally comes from
+`window.location.hostname`. A `?hospital=<slug>` query overrides the host; that
+is how the portal opens on plain `localhost` without the dev gateway.
+
+**Known gap (`PLAN.md` §2.3):** the portal pages don't yet check that a
+signed-in user belongs to the URL's hospital, so a signed-in user who edits
+`?hospital=` sees that hospital's portal pages. Sign-in refuses doctors and
+hospital admins of another hospital (a platform admin can sign in anywhere),
+and the Rx pad only opens for active, licensed doctors of the URL's hospital
+(`canPrescribe()`).
 
 ```mermaid
 sequenceDiagram
@@ -121,7 +129,7 @@ from the hospital's design, so a tenant on A5 landscape prints on A5 landscape.
 | You want to change | File |
 | --- | --- |
 | Cross-app types or defaults | `apps/shared/src/types.ts` |
-| Seed data | `apps/shared/src/mockDb.ts` |
+| Seed data | `apps/shared/src/seed/*.json` (loaded by `seedData.ts`) |
 | Login / role gates | `apps/shared/src/auth.ts` |
 | Which tenant a request belongs to | `apps/shared/src/tenant.ts` |
 | Allergy / interaction / duplicate checks | `apps/doctor-portal/src/rx/safety.ts` |

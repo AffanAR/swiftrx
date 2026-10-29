@@ -85,9 +85,10 @@ browsers may need a `/etc/hosts` entry — see `deploy/DNS.md`.
 
 Only doctors can open the Rx pad. Riverside Clinic has no accounts yet.
 
-Passwords are stored as bcrypt hashes in `apps/shared/src/mockDb.ts` and checked
-by `verifyPassword()` in `apps/shared/src/auth.ts`, so no plaintext credential
-is kept on the `User` type.
+Passwords are stored as bcrypt hashes in `apps/shared/src/seed/users.json` and
+checked by `verifyPassword()` in `apps/shared/src/auth.ts`, so no plaintext
+credential is kept on the `User` type. The hashes still ship in the browser
+bundle, so this is not real authentication yet (see `PLAN.md` §2.7).
 
 ## Repo layout
 

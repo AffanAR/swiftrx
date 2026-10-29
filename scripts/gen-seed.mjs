@@ -1,13 +1,16 @@
-// One-off generator: dumps the seed data from mockDb.ts into JSON files.
-// Not part of the app or the test suite — run it by hand after editing the
-// seed data, then delete it.
+// One-off migration, already run: it moved the seed rows out of mockDb.ts
+// into apps/shared/src/seed/*.json. The JSON is the source of truth now, so
+// edit it directly. Don't rerun this: it rewrites the JSON from what the
+// loader produces, which drops any patient or signed-Rx field it doesn't list
+// below (such as safetyOverride) and can shift patient dates by up to half a
+// day. Safe to delete.
 //
-//   npx vite-node scripts/gen-seed.mjs
+//   It was run as: npx vite-node scripts/gen-seed.mjs
 //
 // Why JSON and not a straight copy:
-//   - MOCK_PATIENTS createdAt values are relative ("120 days ago"). The loader
-//     rebases those offsets from seed/manifest.json's `seededAt`, so a JSON
-//     round-trip stays relative instead of freezing absolute dates.
+//   - MOCK_PATIENTS createdAt values were relative ("120 days ago"), so they
+//     are stored as day offsets that the loader rebases from
+//     seed/manifest.json's `seededAt`.
 //   - Signed Rx embed full patient + diagnosis objects. JSON stores ids and the
 //     loader resolves them, so the two lists cannot drift apart.
 import { mkdirSync, writeFileSync } from 'node:fs';
