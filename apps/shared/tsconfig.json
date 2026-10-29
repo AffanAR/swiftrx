@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "isolatedModules": true,
+    "incremental": true,
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
