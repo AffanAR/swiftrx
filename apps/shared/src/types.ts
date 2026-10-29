@@ -132,8 +132,10 @@ export type UserRole = 'platform_admin' | 'hospital_admin' | 'doctor';
 export interface User {
   id: string;
   email: string;
-  // For the mock only — in real life this lives only in the database.
-  password: string;
+  // bcrypt hash, never the plaintext. `login()` compares against this, so the
+  // credential stays out of UI state, session payloads and anything that
+  // renders a User.
+  passwordHash: string;
   name: string;
   role: UserRole;
   hospitalSlug: string | null; // null for platform_admin

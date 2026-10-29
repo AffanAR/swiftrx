@@ -1,0 +1,341 @@
+[
+  {
+    "packId": "qp-asthma-1",
+    "shortcutKey": "1",
+    "diagnosisCode": "J45.909",
+    "rankScore": 0.96,
+    "recommendationReason": "First-line bronchodilator + inhaled steroid for adult asthma.",
+    "medications": [
+      {
+        "drugId": "salin",
+        "genericName": "Salbutamol",
+        "dosage": {
+          "value": 100,
+          "unit": "mcg"
+        },
+        "frequency": "PRN",
+        "durationDays": 30,
+        "instructions": "2 puffs every 4-6h when needed"
+      },
+      {
+        "drugId": "pred",
+        "genericName": "Prednisone",
+        "dosage": {
+          "value": 10,
+          "unit": "mg"
+        },
+        "frequency": "BID",
+        "durationDays": 5,
+        "instructions": "After breakfast and dinner, taper as directed"
+      }
+    ]
+  },
+  {
+    "packId": "qp-asthma-2",
+    "shortcutKey": "2",
+    "diagnosisCode": "J45.909",
+    "rankScore": 0.88,
+    "recommendationReason": "Rescue inhaler only — mild intermittent asthma.",
+    "medications": [
+      {
+        "drugId": "salin",
+        "genericName": "Salbutamol",
+        "dosage": {
+          "value": 100,
+          "unit": "mcg"
+        },
+        "frequency": "PRN",
+        "durationDays": 30,
+        "instructions": "2 puffs every 4-6h when needed"
+      }
+    ]
+  },
+  {
+    "packId": "qp-asthma-3",
+    "shortcutKey": "3",
+    "diagnosisCode": "J45.909",
+    "rankScore": 0.74,
+    "recommendationReason": "Adjunct antihistamine for allergic-trigger asthma.",
+    "medications": [
+      {
+        "drugId": "salin",
+        "genericName": "Salbutamol",
+        "dosage": {
+          "value": 100,
+          "unit": "mcg"
+        },
+        "frequency": "PRN",
+        "durationDays": 30,
+        "instructions": "2 puffs every 4-6h when needed"
+      },
+      {
+        "drugId": "cetiri",
+        "genericName": "Cetirizine",
+        "dosage": {
+          "value": 10,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 30,
+        "instructions": "At bedtime"
+      }
+    ]
+  },
+  {
+    "packId": "qp-uri-1",
+    "shortcutKey": "1",
+    "diagnosisCode": "J02.9",
+    "rankScore": 0.93,
+    "recommendationReason": "Symptomatic relief + first-line antibiotic for strep suspicion.",
+    "medications": [
+      {
+        "drugId": "para",
+        "genericName": "Paracetamol",
+        "dosage": {
+          "value": 500,
+          "unit": "mg"
+        },
+        "frequency": "QID",
+        "durationDays": 5,
+        "instructions": "Every 6 hours, max 4 doses/day"
+      },
+      {
+        "drugId": "amox",
+        "genericName": "Amoxicillin",
+        "dosage": {
+          "value": 500,
+          "unit": "mg"
+        },
+        "frequency": "TID",
+        "durationDays": 7,
+        "instructions": "After meals"
+      }
+    ]
+  },
+  {
+    "packId": "qp-uri-2",
+    "shortcutKey": "2",
+    "diagnosisCode": "J02.9",
+    "rankScore": 0.81,
+    "recommendationReason": "Penicillin-allergic alternative.",
+    "medications": [
+      {
+        "drugId": "para",
+        "genericName": "Paracetamol",
+        "dosage": {
+          "value": 500,
+          "unit": "mg"
+        },
+        "frequency": "QID",
+        "durationDays": 5,
+        "instructions": "Every 6 hours, max 4 doses/day"
+      },
+      {
+        "drugId": "azith",
+        "genericName": "Azithromycin",
+        "dosage": {
+          "value": 500,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 3,
+        "instructions": "1 hour before or 2 hours after meals"
+      }
+    ]
+  },
+  {
+    "packId": "qp-uri-3",
+    "shortcutKey": "3",
+    "diagnosisCode": "J02.9",
+    "rankScore": 0.68,
+    "recommendationReason": "Supportive care only — viral etiology likely.",
+    "medications": [
+      {
+        "drugId": "para",
+        "genericName": "Paracetamol",
+        "dosage": {
+          "value": 500,
+          "unit": "mg"
+        },
+        "frequency": "QID",
+        "durationDays": 5,
+        "instructions": "As needed for pain/fever"
+      },
+      {
+        "drugId": "cetiri",
+        "genericName": "Cetirizine",
+        "dosage": {
+          "value": 10,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 7,
+        "instructions": "At bedtime"
+      }
+    ]
+  },
+  {
+    "packId": "qp-htn-1",
+    "shortcutKey": "1",
+    "diagnosisCode": "I10",
+    "rankScore": 0.95,
+    "recommendationReason": "First-line ACE inhibitor for uncomplicated HTN.",
+    "medications": [
+      {
+        "drugId": "lisinopril",
+        "genericName": "Lisinopril",
+        "dosage": {
+          "value": 10,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 90,
+        "instructions": "Same time daily, monitor BP"
+      }
+    ]
+  },
+  {
+    "packId": "qp-htn-2",
+    "shortcutKey": "2",
+    "diagnosisCode": "I10",
+    "rankScore": 0.86,
+    "recommendationReason": "CCB alternative for ACE-intolerant patients.",
+    "medications": [
+      {
+        "drugId": "amlo",
+        "genericName": "Amlodipine",
+        "dosage": {
+          "value": 5,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 90,
+        "instructions": "Same time daily"
+      }
+    ]
+  },
+  {
+    "packId": "qp-htn-3",
+    "shortcutKey": "3",
+    "diagnosisCode": "I10",
+    "rankScore": 0.78,
+    "recommendationReason": "Combination therapy for stage 2 HTN.",
+    "medications": [
+      {
+        "drugId": "amlo",
+        "genericName": "Amlodipine",
+        "dosage": {
+          "value": 5,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 90,
+        "instructions": "Morning"
+      },
+      {
+        "drugId": "lisinopril",
+        "genericName": "Lisinopril",
+        "dosage": {
+          "value": 10,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 90,
+        "instructions": "Evening"
+      }
+    ]
+  },
+  {
+    "packId": "qp-dm-1",
+    "shortcutKey": "1",
+    "diagnosisCode": "E11.9",
+    "rankScore": 0.97,
+    "recommendationReason": "First-line biguanide for T2DM without renal impairment.",
+    "medications": [
+      {
+        "drugId": "metformin",
+        "genericName": "Metformin",
+        "dosage": {
+          "value": 500,
+          "unit": "mg"
+        },
+        "frequency": "BID",
+        "durationDays": 90,
+        "instructions": "With breakfast and dinner"
+      }
+    ]
+  },
+  {
+    "packId": "qp-dm-2",
+    "shortcutKey": "2",
+    "diagnosisCode": "E11.9",
+    "rankScore": 0.82,
+    "recommendationReason": "Add-on statin for diabetic dyslipidemia.",
+    "medications": [
+      {
+        "drugId": "metformin",
+        "genericName": "Metformin",
+        "dosage": {
+          "value": 500,
+          "unit": "mg"
+        },
+        "frequency": "BID",
+        "durationDays": 90,
+        "instructions": "With meals"
+      },
+      {
+        "drugId": "atorva",
+        "genericName": "Atorvastatin",
+        "dosage": {
+          "value": 20,
+          "unit": "mg"
+        },
+        "frequency": "QHS",
+        "durationDays": 90,
+        "instructions": "At bedtime"
+      }
+    ]
+  },
+  {
+    "packId": "qp-dm-3",
+    "shortcutKey": "3",
+    "diagnosisCode": "E11.9",
+    "rankScore": 0.71,
+    "recommendationReason": "Triple therapy for uncontrolled T2DM.",
+    "medications": [
+      {
+        "drugId": "metformin",
+        "genericName": "Metformin",
+        "dosage": {
+          "value": 1,
+          "unit": "g"
+        },
+        "frequency": "BID",
+        "durationDays": 90,
+        "instructions": "With meals"
+      },
+      {
+        "drugId": "amlo",
+        "genericName": "Amlodipine",
+        "dosage": {
+          "value": 5,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 90,
+        "instructions": "For BP if needed"
+      },
+      {
+        "drugId": "atorva",
+        "genericName": "Atorvastatin",
+        "dosage": {
+          "value": 20,
+          "unit": "mg"
+        },
+        "frequency": "QHS",
+        "durationDays": 90,
+        "instructions": "At bedtime"
+      }
+    ]
+  }
+]

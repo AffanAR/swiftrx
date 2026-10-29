@@ -1,0 +1,92 @@
+[
+  {
+    "code": "CBC",
+    "name": "Complete Blood Count",
+    "type": "lab"
+  },
+  {
+    "code": "ESR",
+    "name": "Erythrocyte Sedimentation Rate",
+    "type": "lab"
+  },
+  {
+    "code": "CRP",
+    "name": "C-Reactive Protein",
+    "type": "lab"
+  },
+  {
+    "code": "HbA1c",
+    "name": "Glycated Hemoglobin",
+    "type": "lab"
+  },
+  {
+    "code": "INR",
+    "name": "Prothrombin Time / INR",
+    "type": "lab"
+  },
+  {
+    "code": "FBS",
+    "name": "Fasting Blood Sugar",
+    "type": "lab"
+  },
+  {
+    "code": "RBS",
+    "name": "Random Blood Sugar",
+    "type": "lab"
+  },
+  {
+    "code": "Lipid",
+    "name": "Lipid Profile",
+    "type": "lab"
+  },
+  {
+    "code": "BMP",
+    "name": "Basic Metabolic Panel",
+    "type": "lab"
+  },
+  {
+    "code": "CMP",
+    "name": "Comprehensive Metabolic Panel",
+    "type": "lab"
+  },
+  {
+    "code": "TSH",
+    "name": "Thyroid Stimulating Hormone",
+    "type": "lab"
+  },
+  {
+    "code": "CXR",
+    "name": "Chest X-Ray PA View",
+    "type": "imaging"
+  },
+  {
+    "code": "ECG",
+    "name": "Electrocardiogram",
+    "type": "imaging"
+  },
+  {
+    "code": "USG",
+    "name": "Ultrasound Abdomen",
+    "type": "imaging"
+  },
+  {
+    "code": "Spiro",
+    "name": "Spirometry",
+    "type": "imaging"
+  },
+  {
+    "code": "PEF",
+    "name": "Peak Expiratory Flow",
+    "type": "imaging"
+  },
+  {
+    "code": "ABG",
+    "name": "Arterial Blood Gas",
+    "type": "lab"
+  },
+  {
+    "code": "ThroatSwab",
+    "name": "Throat Swab Culture",
+    "type": "lab"
+  }
+]

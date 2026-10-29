@@ -1,0 +1,188 @@
+[
+  {
+    "id": "p_001",
+    "hospitalSlug": "city-hospital",
+    "name": "Bilal Ahmed",
+    "age": 42,
+    "sex": "M",
+    "weightKg": 78,
+    "contact": "+92-300-1234567",
+    "allergies": ["Penicillin"],
+    "activeProblems": ["Hypertension", "Type 2 Diabetes"],
+    "activeMedications": [
+      {
+        "name": "Metformin",
+        "dose": "500mg BID"
+      },
+      {
+        "name": "Amlodipine",
+        "dose": "5mg QD"
+      }
+    ],
+    "recentVitals": [
+      {
+        "label": "BP",
+        "value": "138/86"
+      },
+      {
+        "label": "Pulse",
+        "value": "82 bpm"
+      },
+      {
+        "label": "SpO2",
+        "value": "98%"
+      },
+      {
+        "label": "HbA1c",
+        "value": "7.4%"
+      }
+    ],
+    "createdAtDaysAgo": 120
+  },
+  {
+    "id": "p_002",
+    "hospitalSlug": "city-hospital",
+    "name": "Fatima Noor",
+    "age": 28,
+    "sex": "F",
+    "weightKg": 62,
+    "contact": "+92-301-9876543",
+    "allergies": [],
+    "activeProblems": ["Asthma"],
+    "activeMedications": [
+      {
+        "name": "Salbutamol",
+        "dose": "100mcg PRN"
+      }
+    ],
+    "recentVitals": [
+      {
+        "label": "BP",
+        "value": "118/74"
+      },
+      {
+        "label": "Pulse",
+        "value": "76 bpm"
+      },
+      {
+        "label": "SpO2",
+        "value": "99%"
+      }
+    ],
+    "createdAtDaysAgo": 45
+  },
+  {
+    "id": "p_003",
+    "hospitalSlug": "city-hospital",
+    "name": "Hassan Raza",
+    "age": 65,
+    "sex": "M",
+    "weightKg": 82,
+    "contact": "+92-333-2221100",
+    "allergies": ["Sulfa drugs"],
+    "activeProblems": ["COPD", "Coronary Artery Disease"],
+    "activeMedications": [
+      {
+        "name": "Atorvastatin",
+        "dose": "20mg QHS"
+      },
+      {
+        "name": "Aspirin",
+        "dose": "75mg QD"
+      }
+    ],
+    "recentVitals": [
+      {
+        "label": "BP",
+        "value": "146/92"
+      },
+      {
+        "label": "Pulse",
+        "value": "88 bpm"
+      },
+      {
+        "label": "SpO2",
+        "value": "94%"
+      }
+    ],
+    "createdAtDaysAgo": 200
+  },
+  {
+    "id": "p_004",
+    "hospitalSlug": "northstar-medical",
+    "name": "Ayan Khan",
+    "age": 6,
+    "sex": "M",
+    "weightKg": 21,
+    "contact": "+92-345-1112233",
+    "allergies": [],
+    "activeProblems": ["Acute pharyngitis"],
+    "activeMedications": [],
+    "recentVitals": [
+      {
+        "label": "Temp",
+        "value": "38.6°C"
+      },
+      {
+        "label": "Pulse",
+        "value": "104 bpm"
+      }
+    ],
+    "createdAtDaysAgo": 3
+  },
+  {
+    "id": "p_005",
+    "hospitalSlug": "northstar-medical",
+    "name": "Mariam Aslam",
+    "age": 34,
+    "sex": "F",
+    "weightKg": 60,
+    "contact": "+92-321-4445566",
+    "allergies": ["Latex"],
+    "activeProblems": ["Migraine"],
+    "activeMedications": [],
+    "recentVitals": [
+      {
+        "label": "BP",
+        "value": "122/78"
+      },
+      {
+        "label": "Pulse",
+        "value": "72 bpm"
+      }
+    ],
+    "createdAtDaysAgo": 15
+  },
+  {
+    "id": "p_006",
+    "hospitalSlug": "riverside-clinic",
+    "name": "Omar Faruq",
+    "age": 51,
+    "sex": "M",
+    "weightKg": 70,
+    "contact": "+92-311-7778899",
+    "allergies": [],
+    "activeProblems": ["Type 2 Diabetes", "Dyslipidemia"],
+    "activeMedications": [
+      {
+        "name": "Metformin",
+        "dose": "1g BID"
+      },
+      {
+        "name": "Atorvastatin",
+        "dose": "10mg QHS"
+      }
+    ],
+    "recentVitals": [
+      {
+        "label": "BP",
+        "value": "130/80"
+      },
+      {
+        "label": "HbA1c",
+        "value": "8.1%"
+      }
+    ],
+    "createdAtDaysAgo": 60
+  }
+]

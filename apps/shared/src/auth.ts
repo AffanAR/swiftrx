@@ -6,6 +6,7 @@
 //  consistent across admin, hospital, and rx apps.
 // =============================================================================
 
+import bcrypt from 'bcryptjs';
 import type { SessionPayload, User, UserRole } from './types';
 import { MOCK_USERS, appendAudit, getUserById } from './mockDb';
 
@@ -40,7 +41,7 @@ export function login(opts: LoginOpts): LoginResult {
 
   const user = MOCK_USERS.find((u) => u.email.toLowerCase() === email);
   if (!user) return { ok: false, reason: 'unknown-user' };
-  if (user.password !== opts.password) return { ok: false, reason: 'wrong-password' };
+  if (!verifyPassword(user, opts.password)) return { ok: false, reason: 'wrong-password' };
   if (user.status === 'disabled') return { ok: false, reason: 'disabled' };
 
   if (opts.expectedRole !== 'any' && user.role !== opts.expectedRole) {
@@ -86,6 +87,21 @@ export function login(opts: LoginOpts): LoginResult {
   });
 
   return { ok: true, user, session };
+}
+
+/**
+ * Compare a plaintext candidate against the stored bcrypt hash. bcryptjs is
+ * async, but `login()` is sync today, so use the sync entry point. Keeping the
+ * comparison here means the credential is never compared inline, and this is
+ * the one line to swap for an API call.
+ */
+export function verifyPassword(user: User, candidate: string): boolean {
+  try {
+    return bcrypt.compareSync(candidate, user.passwordHash);
+  } catch {
+    // A malformed hash must read as "wrong password", never as a crash.
+    return false;
+  }
 }
 
 /** Tiny `loadSession`-style helpers. Apps plug these into their own storage key. */

@@ -1,0 +1,70 @@
+[
+  {
+    "id": "u_admin_001",
+    "email": "admin@swiftrx.com",
+    "passwordHash": "$2b$08$DF.igPqSGh0I2.OXsgNzYOBHGgNKe5NADfEVsYqdCo1eJZN95riz.",
+    "name": "Sarah Mitchell",
+    "role": "platform_admin",
+    "hospitalSlug": null,
+    "status": "active",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "lastLoginAt": "2025-09-26T07:30:00.000Z"
+  },
+  {
+    "id": "u_hadmin_city",
+    "email": "admin@city-hospital.com",
+    "passwordHash": "$2b$08$.H/QbBwwAizemkuCTMH8m.AfjknD8wzaUyXG.ky4gCiXCvMC22SW2",
+    "name": "Faisal Rehman",
+    "role": "hospital_admin",
+    "hospitalSlug": "city-hospital",
+    "status": "active",
+    "createdAt": "2024-08-12T10:05:00.000Z"
+  },
+  {
+    "id": "d_001",
+    "email": "ayesha@city-hospital.com",
+    "passwordHash": "$2b$08$TAAUtqfRLUtpwnmRvcsNrOTdnQ2v6UMrM4Nx/IPQWkyYrSSwppW9K",
+    "name": "Dr. Ayesha Khan",
+    "role": "doctor",
+    "hospitalSlug": "city-hospital",
+    "specialty": "Internal Medicine",
+    "licenseNo": "PMDC-44121",
+    "status": "active",
+    "createdAt": "2024-08-15T10:00:00.000Z",
+    "lastLoginAt": "2025-09-25T11:20:00.000Z"
+  },
+  {
+    "id": "d_002",
+    "email": "bilal@city-hospital.com",
+    "passwordHash": "$2b$08$OfYSxpyXWoWUMGdyV56Bm.Fs406Q.YEKNWs1Bzfin7wqC17jvaM8O",
+    "name": "Dr. Bilal Ahmed",
+    "role": "doctor",
+    "hospitalSlug": "city-hospital",
+    "specialty": "Cardiology",
+    "licenseNo": "PMDC-50211",
+    "status": "active",
+    "createdAt": "2024-09-01T10:00:00.000Z"
+  },
+  {
+    "id": "u_hadmin_ns",
+    "email": "admin@northstar-medical.com",
+    "passwordHash": "$2b$08$Blquq5bYxEL1PA..bI6TyOnuxkoaRYVRmT.w9IcCl0dmrjvV/WPiq",
+    "name": "Mehwish Tariq",
+    "role": "hospital_admin",
+    "hospitalSlug": "northstar-medical",
+    "status": "active",
+    "createdAt": "2025-01-03T08:05:00.000Z"
+  },
+  {
+    "id": "d_003",
+    "email": "sana@northstar-medical.com",
+    "passwordHash": "$2b$08$roH2AlMrwmEYk0A0C.pEg.2qhWm7phjC3CK2tBwBHZkx0wrj5GZMq",
+    "name": "Dr. Sana Iqbal",
+    "role": "doctor",
+    "hospitalSlug": "northstar-medical",
+    "specialty": "Pediatrics",
+    "licenseNo": "PMDC-37890",
+    "status": "active",
+    "createdAt": "2025-01-04T09:00:00.000Z"
+  }
+]

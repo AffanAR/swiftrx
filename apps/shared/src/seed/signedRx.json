@@ -1,0 +1,107 @@
+[
+  {
+    "id": "rx_seed_001",
+    "signedAt": "2025-09-25T11:20:00.000Z",
+    "hospitalSlug": "city-hospital",
+    "patientId": "p_001",
+    "diagnosisCode": "I10",
+    "medications": [
+      {
+        "rowId": "r_seed_1",
+        "drugId": "lisinopril",
+        "genericName": "Lisinopril",
+        "dosage": {
+          "value": 10,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 90,
+        "instructions": "Same time daily"
+      },
+      {
+        "rowId": "r_seed_2",
+        "drugId": "amlo",
+        "genericName": "Amlodipine",
+        "dosage": {
+          "value": 5,
+          "unit": "mg"
+        },
+        "frequency": "QD",
+        "durationDays": 90,
+        "instructions": "Morning"
+      }
+    ],
+    "investigations": [
+      {
+        "code": "BMP",
+        "name": "Basic Metabolic Panel",
+        "type": "lab"
+      }
+    ],
+    "doctorId": "d_001",
+    "doctorName": "Dr. Ayesha Khan",
+    "doctorLicense": "PMDC-44121"
+  },
+  {
+    "id": "rx_seed_002",
+    "signedAt": "2025-09-22T14:10:00.000Z",
+    "hospitalSlug": "city-hospital",
+    "patientId": "p_003",
+    "diagnosisCode": "J45.909",
+    "medications": [
+      {
+        "rowId": "r_seed_3",
+        "drugId": "salin",
+        "genericName": "Salbutamol",
+        "dosage": {
+          "value": 100,
+          "unit": "mcg"
+        },
+        "frequency": "PRN",
+        "durationDays": 30,
+        "instructions": "2 puffs every 4-6h"
+      }
+    ],
+    "investigations": [
+      {
+        "code": "CXR",
+        "name": "Chest X-Ray PA View",
+        "type": "imaging"
+      }
+    ],
+    "doctorId": "d_002",
+    "doctorName": "Dr. Bilal Ahmed",
+    "doctorLicense": "PMDC-50211"
+  },
+  {
+    "id": "rx_seed_003",
+    "signedAt": "2025-09-26T08:45:00.000Z",
+    "hospitalSlug": "northstar-medical",
+    "patientId": "p_004",
+    "diagnosisCode": "J02.9",
+    "medications": [
+      {
+        "rowId": "r_seed_4",
+        "drugId": "para",
+        "genericName": "Paracetamol",
+        "dosage": {
+          "value": 250,
+          "unit": "mg"
+        },
+        "frequency": "QID",
+        "durationDays": 3,
+        "instructions": "Per weight; max 4 doses/day"
+      }
+    ],
+    "investigations": [
+      {
+        "code": "ThroatSwab",
+        "name": "Throat Swab Culture",
+        "type": "lab"
+      }
+    ],
+    "doctorId": "d_003",
+    "doctorName": "Dr. Sana Iqbal",
+    "doctorLicense": "PMDC-37890"
+  }
+]

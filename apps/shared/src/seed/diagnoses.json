@@ -1,0 +1,102 @@
+[
+  {
+    "code": "J45.909",
+    "name": "Asthma, unspecified, uncomplicated",
+    "category": "Respiratory",
+    "recommendedInvestigations": [
+      {
+        "code": "Spiro",
+        "name": "Spirometry",
+        "type": "imaging"
+      },
+      {
+        "code": "PEF",
+        "name": "Peak Expiratory Flow",
+        "type": "imaging"
+      },
+      {
+        "code": "CXR",
+        "name": "Chest X-Ray PA View",
+        "type": "imaging"
+      }
+    ]
+  },
+  {
+    "code": "J02.9",
+    "name": "Acute pharyngitis, unspecified",
+    "category": "Respiratory",
+    "recommendedInvestigations": [
+      {
+        "code": "CBC",
+        "name": "Complete Blood Count",
+        "type": "lab"
+      },
+      {
+        "code": "ThroatSwab",
+        "name": "Throat Swab Culture",
+        "type": "lab"
+      }
+    ]
+  },
+  {
+    "code": "I10",
+    "name": "Essential (primary) hypertension",
+    "category": "Cardiovascular",
+    "recommendedInvestigations": [
+      {
+        "code": "BMP",
+        "name": "Basic Metabolic Panel",
+        "type": "lab"
+      },
+      {
+        "code": "Lipid",
+        "name": "Lipid Profile",
+        "type": "lab"
+      }
+    ]
+  },
+  {
+    "code": "E11.9",
+    "name": "Type 2 diabetes mellitus without complications",
+    "category": "Endocrine",
+    "recommendedInvestigations": [
+      {
+        "code": "HbA1c",
+        "name": "Glycated Hemoglobin",
+        "type": "lab"
+      },
+      {
+        "code": "FBS",
+        "name": "Fasting Blood Sugar",
+        "type": "lab"
+      }
+    ]
+  },
+  {
+    "code": "J44.9",
+    "name": "Chronic obstructive pulmonary disease, unspecified",
+    "category": "Respiratory",
+    "recommendedInvestigations": [
+      {
+        "code": "CXR",
+        "name": "Chest X-Ray PA View",
+        "type": "imaging"
+      },
+      {
+        "code": "ABG",
+        "name": "Arterial Blood Gas",
+        "type": "lab"
+      }
+    ]
+  },
+  {
+    "code": "G43.909",
+    "name": "Migraine, unspecified, not intractable, without status migrainosus",
+    "category": "Neurology"
+  },
+  {
+    "code": "R51",
+    "name": "Headache",
+    "category": "Neurology"
+  }
+]

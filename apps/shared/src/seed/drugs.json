@@ -1,0 +1,170 @@
+[
+  {
+    "id": "para",
+    "genericName": "Paracetamol",
+    "brandNames": ["Panadol", "Tylenol"],
+    "therapeuticClass": "Analgesic",
+    "defaultDosage": {
+      "value": 500,
+      "unit": "mg"
+    },
+    "defaultFrequency": "QID",
+    "defaultDurationDays": 5,
+    "contraindications": [],
+    "interactsWith": []
+  },
+  {
+    "id": "ibu",
+    "genericName": "Ibuprofen",
+    "brandNames": ["Brufen", "Advil"],
+    "therapeuticClass": "NSAID",
+    "defaultDosage": {
+      "value": 400,
+      "unit": "mg"
+    },
+    "defaultFrequency": "TID",
+    "defaultDurationDays": 5,
+    "contraindications": ["aspirin", "nsaid hypersensitivity"],
+    "interactsWith": ["aspirin", "warfarin", "lisinopril"]
+  },
+  {
+    "id": "amox",
+    "genericName": "Amoxicillin",
+    "brandNames": ["Amoxil", "Mox"],
+    "therapeuticClass": "Antibiotic — Penicillin",
+    "defaultDosage": {
+      "value": 500,
+      "unit": "mg"
+    },
+    "defaultFrequency": "TID",
+    "defaultDurationDays": 7,
+    "contraindications": ["penicillin"],
+    "interactsWith": ["methotrexate"]
+  },
+  {
+    "id": "azith",
+    "genericName": "Azithromycin",
+    "brandNames": ["Zithromax"],
+    "therapeuticClass": "Antibiotic — Macrolide",
+    "defaultDosage": {
+      "value": 500,
+      "unit": "mg"
+    },
+    "defaultFrequency": "QD",
+    "defaultDurationDays": 3,
+    "contraindications": [],
+    "interactsWith": []
+  },
+  {
+    "id": "cetiri",
+    "genericName": "Cetirizine",
+    "brandNames": ["Zyrtec"],
+    "therapeuticClass": "Antihistamine",
+    "defaultDosage": {
+      "value": 10,
+      "unit": "mg"
+    },
+    "defaultFrequency": "QD",
+    "defaultDurationDays": 7,
+    "contraindications": [],
+    "interactsWith": []
+  },
+  {
+    "id": "salin",
+    "genericName": "Salbutamol",
+    "brandNames": ["Ventolin"],
+    "therapeuticClass": "Bronchodilator",
+    "defaultDosage": {
+      "value": 100,
+      "unit": "mcg"
+    },
+    "defaultFrequency": "PRN",
+    "defaultDurationDays": 30,
+    "contraindications": [],
+    "interactsWith": []
+  },
+  {
+    "id": "pred",
+    "genericName": "Prednisone",
+    "brandNames": ["Deltasone"],
+    "therapeuticClass": "Corticosteroid",
+    "defaultDosage": {
+      "value": 10,
+      "unit": "mg"
+    },
+    "defaultFrequency": "BID",
+    "defaultDurationDays": 5,
+    "contraindications": [],
+    "interactsWith": ["aspirin", "warfarin"]
+  },
+  {
+    "id": "metformin",
+    "genericName": "Metformin",
+    "brandNames": ["Glucophage"],
+    "therapeuticClass": "Biguanide (Antidiabetic)",
+    "defaultDosage": {
+      "value": 500,
+      "unit": "mg"
+    },
+    "defaultFrequency": "BID",
+    "defaultDurationDays": 90,
+    "contraindications": ["renal impairment"],
+    "interactsWith": []
+  },
+  {
+    "id": "amlo",
+    "genericName": "Amlodipine",
+    "brandNames": ["Norvasc"],
+    "therapeuticClass": "Calcium Channel Blocker (Antihypertensive)",
+    "defaultDosage": {
+      "value": 5,
+      "unit": "mg"
+    },
+    "defaultFrequency": "QD",
+    "defaultDurationDays": 90,
+    "contraindications": [],
+    "interactsWith": []
+  },
+  {
+    "id": "lisinopril",
+    "genericName": "Lisinopril",
+    "brandNames": ["Zestril", "Prinivil"],
+    "therapeuticClass": "ACE Inhibitor (Antihypertensive)",
+    "defaultDosage": {
+      "value": 10,
+      "unit": "mg"
+    },
+    "defaultFrequency": "QD",
+    "defaultDurationDays": 90,
+    "contraindications": ["pregnancy"],
+    "interactsWith": ["ibuprofen"]
+  },
+  {
+    "id": "atorva",
+    "genericName": "Atorvastatin",
+    "brandNames": ["Lipitor"],
+    "therapeuticClass": "Statin (Antilipemic)",
+    "defaultDosage": {
+      "value": 20,
+      "unit": "mg"
+    },
+    "defaultFrequency": "QHS",
+    "defaultDurationDays": 90,
+    "contraindications": [],
+    "interactsWith": ["warfarin"]
+  },
+  {
+    "id": "ondan",
+    "genericName": "Ondansetron",
+    "brandNames": ["Zofran"],
+    "therapeuticClass": "Antiemetic",
+    "defaultDosage": {
+      "value": 4,
+      "unit": "mg"
+    },
+    "defaultFrequency": "PRN",
+    "defaultDurationDays": 5,
+    "contraindications": [],
+    "interactsWith": []
+  }
+]
