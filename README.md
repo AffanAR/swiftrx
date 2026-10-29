@@ -24,6 +24,9 @@ pad is lazy-loaded, so its code only downloads when a doctor opens `/rx`.
 # One install at the root covers every app (npm workspaces):
 npm install
 
+# First-time setup: checks Node, installs, then runs every CI check:
+npm run setup
+
 # Run the whole system (admin + portal + dev gateway on :5172):
 npm run dev:all
 
@@ -36,11 +39,15 @@ npm run dev:gateway     # Only the dev gateway on http://localhost:5172
 npm run build
 
 # Checks — the same steps CI runs (.github/workflows/ci.yml):
-npm run check           # format check, lint, type check, unit tests, build
+npm run check           # format, lint, type check, tests w/ coverage, build
 npm test                # unit tests only (npm run test:watch re-runs on save)
+npm run test:coverage   # unit tests + a coverage report in coverage/
 npm run lint            # ESLint
 npm run format          # rewrite files in Prettier style
 ```
+
+A pre-commit hook (husky + lint-staged) formats and lints staged files, so
+`npm run check` should already be clean when you commit.
 
 Unit tests (Vitest) sit next to the code they cover as `*.test.ts`: the Rx
 pad's safety checks, search and store actions, the shared print template and
@@ -77,6 +84,10 @@ browsers may need a `/etc/hosts` entry — see `deploy/DNS.md`.
 | Doctor          | `sana@northstar-medical.com`   | `demo1234`  | Northstar           |
 
 Only doctors can open the Rx pad. Riverside Clinic has no accounts yet.
+
+Passwords are stored as bcrypt hashes in `apps/shared/src/mockDb.ts` and checked
+by `verifyPassword()` in `apps/shared/src/auth.ts`, so no plaintext credential
+is kept on the `User` type.
 
 ## Repo layout
 
