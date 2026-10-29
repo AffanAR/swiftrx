@@ -1,13 +1,21 @@
 # Formatting, lint, type checks, unit tests and a production build, on every
 # push and pull request. `npm run check` runs the same steps locally.
+#
+# The steps are split into separate jobs so a lint failure is not hidden behind a
+# slow build, and each job can fail (and be re-run) on its own.
 name: CI
 
 on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  format:
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -19,17 +27,98 @@ jobs:
 
       - run: npm ci
 
-      - name: Format
+      - name: Prettier
         run: npm run format:check
 
-      - name: Lint
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: ESLint
         run: npm run lint
 
-      - name: Type check
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: tsc
         run: npm run typecheck
 
-      - name: Unit tests
-        run: npm test
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
-      - name: Build
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Vitest with coverage
+        run: npm run test:coverage
+
+      # Keep the HTML report and lcov so a reviewer can download them from the
+      # run.
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Vite's dep pre-bundling is the slow part of a cold rebuild. It depends
+      # only on package-lock.json, so it is safe to key on that.
+      - name: Cache Vite dep pre-bundling
+        uses: actions/cache@v6
+        with:
+          path: |
+            apps/*/node_modules/.vite
+            node_modules/.vite
+          key: ${{ runner.os }}-vite-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-vite-
+
+      - name: Build all apps
         run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: |
+            apps/admin/dist
+            apps/doctor-portal/dist
+          retention-days: 7
