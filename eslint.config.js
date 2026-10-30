@@ -4,6 +4,9 @@ import { defineConfig } from 'eslint/config';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+// jsx-a11y 6.10.2 (the latest release) declares ESLint ≤ 9 as its peer, so
+// `npm ci` refused ESLint 10. The `overrides` entry in package.json lets it
+// use the repo's ESLint; it works. Drop that entry once a release supports 10.
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import globals from 'globals';
 import prettier from 'eslint-config-prettier';
