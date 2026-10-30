@@ -4,7 +4,8 @@
 > It can be hosted as a public **demo**: one Render web service behind
 > Cloudflare, at `thesyndicate.bond` (section 3). The demo is a sandbox for
 > showing the UI. Nothing here is suitable for real patient data. The roadmap
-> is in [`PLAN.md`](../PLAN.md).
+> is in [`ROADMAP.md`](../ROADMAP.md), and the engineering checklist in
+> [`PLAN.md`](../PLAN.md).
 
 ---
 

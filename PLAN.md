@@ -4,6 +4,10 @@ Reviewed 2026-10-22. Covers all source in `src/` (Rx pad), `apps/shared`,
 `apps/doctor-portal`, `apps/admin`, `scripts/` and `deploy/`. Backend
 readiness re-checked 2026-10-30 (§2.7).
 
+The plan for the whole project (milestones, dates, decisions, risks and
+budget) is in [`ROADMAP.md`](ROADMAP.md). This file keeps the review
+findings and the engineering checklist for each phase.
+
 **How findings were checked:** `tsc --noEmit` passes for all three apps. A
 fresh portal build (to a temp folder) was used to confirm the Tailwind and
 React findings. Everything else was traced through the code and confirmed
@@ -424,7 +428,10 @@ the server creates a signed Rx.
       data-processing agreement with hospitals.
 - [ ] Pilot with one hospital.
 
-#### Phase 5: Later
+#### Phase 5 and later
+
+[`ROADMAP.md`](ROADMAP.md) splits these: billing and real admin analytics
+go in Phase 5 (paid launch), the rest in Phase 6 (growth).
 
 - Real pharmacy routing (a true "Send to Pharmacy").
 - FHIR/HL7 export.
@@ -436,6 +443,9 @@ the server creates a signed Rx.
 ---
 
 ## 4. Decisions needed
+
+[`ROADMAP.md`](ROADMAP.md) §7 tracks these and later decisions, each with a
+date to decide by. Items 1 and 2 have been decided since.
 
 1. **Merge the Rx pad into the portal?** Recommended: yes (§3.1-1).
 2. **Backend:** a custom Node API + Postgres (more control; recommended) or
