@@ -387,8 +387,9 @@ In this order:
     memory with no database server. `compose.yaml` and `npm run db:up` give a
     real Postgres where Docker exists. The CI job "Postgres (Docker)" runs that
     path, then the API tests again against the real server, which covers what
-    PGlite can't (it allows one connection and is its own build). That job
-    passed on GitHub on 2026-10-30; it can't run on this machine.
+    PGlite can't (it allows one connection and is its own build). It can't
+    run on this machine. Its first version (setup and health route, before the
+    test step was added) passed on GitHub on 2026-10-30.
 
   What was built:
   - **Server.** `apps/api` serves `GET /api/health` (503 when the database
