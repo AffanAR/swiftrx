@@ -20,7 +20,7 @@ export default defineConfig({
       // tests, so counting them would drag the number down without guarding
       // anything. Widen this list as DOM tests are added.
       include: [
-        'apps/shared/src/{auth,tenant,print}.ts',
+        'apps/shared/src/{api,auth,tenant,print}.ts',
         'apps/doctor-portal/src/rx/{store,safety,search}.ts',
       ],
       thresholds: {

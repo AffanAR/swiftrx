@@ -2,6 +2,11 @@
 // it needs (e.g. `import type { Hospital } from '@swiftrx/shared'`).
 
 export * from './types';
+// The data client and its query hooks are how apps read and write data. The
+// mockDb exports stay for tests and auth.ts; ESLint keeps app code off them.
+export * from './api';
+export * from './queries';
+export * from './status';
 export * from './mockDb';
 export * from './auth';
 export * from './tenant';

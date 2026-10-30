@@ -25,6 +25,15 @@ export const DEV_GATEWAY_URL: string = readEnv('VITE_DEV_GATEWAY_URL', 'http://l
 /** The domain hospitals are subdomains of, e.g. "thesyndicate.bond". */
 export const ROOT_DOMAIN: string = readEnv('VITE_ROOT_DOMAIN', 'swiftrx.com').toLowerCase();
 
+/**
+ * Delay every data-client reply (api.ts) by this many milliseconds, to see
+ * loading states before a real backend exists. 0 (the default) answers at once.
+ */
+export const MOCK_LATENCY_MS: number = Math.max(
+  0,
+  Number(readEnv('VITE_MOCK_LATENCY_MS', '0')) || 0,
+);
+
 // Demo mode marks the app as a demo: a banner on every page and a DEMO stamp
 // on every print. There is no backend yet, so it's on for every production
 // build (anything built is something someone might host) and off under
