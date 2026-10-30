@@ -10,6 +10,7 @@ import {
   appendAudit,
   DEFAULT_HOSPITAL_FEATURES,
   DEFAULT_RX_DESIGN,
+  ROOT_DOMAIN,
 } from '@swiftrx/shared';
 import { MOCK_HOSPITALS } from '@swiftrx/shared';
 
@@ -76,7 +77,7 @@ export function NewHospitalPage() {
         <p className="text-sm text-ink-400">
           The hospital will get a fresh subdomain (e.g.{' '}
           <span className="font-mono text-ink-300">
-            {normalizeSlug(name) || 'slug'}.swiftrx.com
+            {normalizeSlug(name) || 'slug'}.{ROOT_DOMAIN}
           </span>
           ), a default plan, and a hospital admin invite.
         </p>
@@ -92,7 +93,7 @@ export function NewHospitalPage() {
               placeholder="e.g. Riverside Clinic"
               required
               autoFocus
-              hint={`Subdomain: ${normalizeSlug(name) || '—'}.swiftrx.com`}
+              hint={`Subdomain: ${normalizeSlug(name) || '—'}.${ROOT_DOMAIN}`}
             />
           </div>
           <TextField label="City" value={city} onChange={setCity} placeholder="Karachi" required />

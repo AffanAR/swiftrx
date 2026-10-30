@@ -13,6 +13,10 @@ of truth. The Rx pad is a route inside the doctor portal:
 | ↳ **Rx pad**     | Keyboard-first prescription pad, | `<slug>.swiftrx.com/rx`   |
 |                  | the portal's `/rx` route         |                           |
 
+`swiftrx.com` stands for the root domain, set at build time with
+`VITE_ROOT_DOMAIN`. The hosted demo uses `thesyndicate.bond`; see
+[`deploy/ONLINE.md`](deploy/ONLINE.md).
+
 Both apps are SPAs built with **Vite + React 18 + TypeScript** and styled with
 a custom **Tailwind CSS** design system. They share data, types, auth
 primitives and UI primitives via the local `@swiftrx/shared` package. The Rx
@@ -35,8 +39,9 @@ npm run dev:portal      # Hospital portal (incl. the Rx pad) on http://localhost
 npm run dev:admin       # Admin panel on http://localhost:5175
 npm run dev:gateway     # Only the dev gateway on http://localhost:5172
 
-# Build both apps:
+# Build both apps, then serve them on :8080 like production does:
 npm run build
+npm start
 
 # Checks — the same steps CI runs (.github/workflows/ci.yml):
 npm run check           # format, lint, type check, tests w/ coverage, build
@@ -100,7 +105,9 @@ SwiftRX/
 │   └─ doctor-portal/     # per-hospital portal (port 5174)
 │       └─ src/rx/        #   the Rx pad, lazy-loaded at /rx
 ├─ scripts/dev.mjs        # dev orchestrator + subdomain gateway (port 5172)
-├─ deploy/                # nginx config + DNS / hosts file docs
+├─ scripts/serve.mjs      # production server: both builds, routed by host
+├─ deploy/                # hosting guide, nginx config, DNS / hosts file docs
+├─ render.yaml            # Render Blueprint for the hosted demo
 └─ package.json           # workspace root
 ```
 
@@ -113,8 +120,9 @@ HTTP calls; the components don't change.
 
 ## Tenant model
 
-Each hospital lives at its own subdomain. The dev gateway and the production
-reverse proxy (see `deploy/nginx.swiftrx.com.conf`) do the routing by host:
+Each hospital lives at its own subdomain. The dev gateway and, in production,
+`scripts/serve.mjs` (or the example `deploy/nginx.swiftrx.com.conf`) do the
+routing by host:
 
 ```
 admin.swiftrx.com            → admin app
@@ -122,8 +130,9 @@ city-hospital.swiftrx.com    → doctor portal
 city-hospital.swiftrx.com/rx → Rx pad (a portal route)
 ```
 
-Nothing is hosted yet; [`deploy/ONLINE.md`](deploy/ONLINE.md) explains what
-works today and what has to happen first.
+It can be hosted as a public demo (Render + Cloudflare); it isn't ready for
+real patient data. [`deploy/ONLINE.md`](deploy/ONLINE.md) has the steps and
+what has to happen first.
 
 Inside the doctor portal, login is gated to the resolved tenant — a
 doctor registered for `northstar-medical` cannot sign in at
@@ -183,6 +192,7 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/shared/src/mockDb.ts`                   | Seed data + per-tenant lookups                     |
 | `apps/shared/src/auth.ts`                     | `login` + session storage helpers                  |
 | `apps/shared/src/tenant.ts`                   | `resolveSurface()` — host / query → admin / hospital |
+| `apps/shared/src/config.ts`                   | Build-time settings: `ROOT_DOMAIN`, `DEMO_MODE`    |
 | `apps/shared/src/components.tsx`              | Reusable form + identity components                |
 | `apps/shared/src/ui.tsx`                      | UI primitives (`cx`, `LiveDot`, `Kbd`, …) for every app |
 | `apps/shared/src/shared.css`                  | The one stylesheet (Tailwind entry + `rx-*` classes) |
@@ -198,5 +208,8 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/admin/src/pages/*`                      | Admin console pages (dashboard, hospitals, audit)  |
 | `apps/doctor-portal/src/pages/*`              | Portal pages (login, dashboard, patients, …)       |
 | `scripts/dev.mjs`                             | Dev orchestrator + subdomain gateway               |
+| `scripts/serve.mjs`                           | Production server (`npm start`), routes by host    |
+| `render.yaml`                                 | Render Blueprint for the hosted demo               |
+| `deploy/ONLINE.md`                            | Hosting the demo, and what it can't do             |
 | `deploy/nginx.swiftrx.com.conf`               | Example production routing                         |
 | `deploy/DNS.md`                               | DNS / hosts-file setup instructions                |

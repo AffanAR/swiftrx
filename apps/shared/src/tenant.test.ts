@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { normalizeSlug, resolveSurface } from './tenant';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { hospitalPortalUrl, normalizeSlug, resolveSurface } from './tenant';
 
 const resolve = (host: string, path = '/', query = '') =>
   resolveSurface(host, path, new URLSearchParams(query));
@@ -45,6 +45,7 @@ describe('resolveSurface', () => {
     it('gives plain localhost and IP addresses no hospital', () => {
       expect(resolve('localhost')).toEqual(NO_HOSPITAL);
       expect(resolve('127.0.0.1')).toEqual(NO_HOSPITAL);
+      expect(resolve('192.168.1.20')).toEqual(NO_HOSPITAL);
     });
 
     it('maps admin.localhost to the admin panel', () => {
@@ -90,5 +91,65 @@ describe('resolveSurface', () => {
       hospitalSlug: null,
       source: 'none',
     });
+  });
+
+  describe('a custom root domain (VITE_ROOT_DOMAIN)', () => {
+    const onDemo = (host: string, path = '/') =>
+      resolveSurface(host, path, new URLSearchParams(), 'thesyndicate.bond');
+
+    it('sends the apex, www and admin to the admin panel', () => {
+      expect(onDemo('thesyndicate.bond')).toEqual(NO_HOSPITAL);
+      expect(onDemo('www.thesyndicate.bond')).toEqual(NO_HOSPITAL);
+      expect(onDemo('admin.thesyndicate.bond')).toMatchObject({
+        surface: 'admin',
+        subdomain: 'admin',
+      });
+    });
+
+    it('maps <slug>.<root> to that hospital, and /rx to its Rx pad', () => {
+      expect(onDemo('City-Hospital.thesyndicate.bond')).toMatchObject({
+        surface: 'hospital',
+        hospitalSlug: 'city-hospital',
+      });
+      expect(onDemo('city-hospital.thesyndicate.bond', '/rx')).toMatchObject({
+        surface: 'rx',
+        hospitalSlug: 'city-hospital',
+      });
+    });
+
+    it('reports other domains, including the default one, as unknown', () => {
+      for (const host of [
+        'city-hospital.swiftrx.com',
+        'swiftrx.onrender.com',
+        'evilthesyndicate.bond',
+      ]) {
+        expect(onDemo(host).surface).toBe('unknown');
+      }
+    });
+  });
+});
+
+describe('hospitalPortalUrl', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const openAt = (href: string) => vi.stubGlobal('window', { location: new URL(href) });
+
+  it('keeps the scheme and port of the admin.<base> host it is opened from', () => {
+    openAt('https://admin.thesyndicate.bond/hospitals/city-hospital');
+    expect(hospitalPortalUrl('city-hospital')).toBe('https://city-hospital.thesyndicate.bond');
+    openAt('http://admin.localhost:5172/hospitals/city-hospital');
+    expect(hospitalPortalUrl('city-hospital')).toBe('http://city-hospital.localhost:5172');
+  });
+
+  it('goes through the dev gateway from the admin dev server', () => {
+    openAt('http://localhost:5175/hospitals/city-hospital');
+    expect(hospitalPortalUrl('city-hospital')).toBe('http://city-hospital.localhost:5172');
+  });
+
+  it('uses the root domain everywhere else', () => {
+    openAt('https://swiftrx.com/hospitals/city-hospital');
+    expect(hospitalPortalUrl('city-hospital')).toBe('https://city-hospital.swiftrx.com');
   });
 });

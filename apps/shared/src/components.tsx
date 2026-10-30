@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import { cx, AnimatedNumber } from './ui';
+import { DEMO_MODE } from './config';
 import type { Hospital } from './types';
 
 export function TextField({
@@ -261,6 +262,27 @@ export function HospitalBadge({ hospital }: { hospital: Hospital }) {
           {hospital.city} · {hospital.plan.charAt(0).toUpperCase() + hospital.plan.slice(1)} plan
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Wraps an app in demo builds (DEMO_MODE) with a strip saying so, so nobody
+ * mistakes the demo for a working system or types in real patients. The app
+ * keeps the full remaining height. Outside demo mode it renders the app as is.
+ */
+export function DemoFrame({ children }: { children: React.ReactNode }) {
+  if (!DEMO_MODE) return <>{children}</>;
+  return (
+    <div className="h-full flex flex-col">
+      <div
+        role="note"
+        className="shrink-0 px-3 py-1.5 text-center text-xs text-amber-200 bg-amber-500/15 border-b border-amber-500/30"
+      >
+        <span className="font-semibold">Demo</span> · Nothing is saved to a server and most changes
+        reset on reload. Don't enter real patient details.
+      </div>
+      <div className="flex-1 min-h-0">{children}</div>
     </div>
   );
 }

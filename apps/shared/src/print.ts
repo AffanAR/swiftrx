@@ -9,6 +9,7 @@
 //  validated, before it lands in the HTML.
 // =============================================================================
 
+import { DEMO_MODE } from './config';
 import { DEFAULT_RX_DESIGN, type RxDesign, type SignedRx } from './types';
 
 /** Page margin used by the print @page rule and the admin preview. */
@@ -29,8 +30,9 @@ export function rxPageSizeMm(design: Pick<RxDesign, 'pageSize' | 'landscape'>): 
 }
 
 /**
- * Render a prescription as HTML for printing. `draft` marks an unsigned pad:
- * a red DRAFT watermark and banner, no signature hash and no "valid until".
+ * Render a prescription as HTML for printing. `draft` marks an unsigned pad,
+ * and every print from a demo build (DEMO_MODE) is marked DEMO. Either way it
+ * gets a red stamp watermark and banner, no signature hash and no "valid until".
  */
 export function renderRxHtml(
   rx: SignedRx,
@@ -38,6 +40,8 @@ export function renderRxHtml(
   opts: { draft?: boolean } = {},
 ): string {
   const draft = !!opts.draft;
+  // A draft says DRAFT even on a demo build; neither is a valid prescription.
+  const stamp = draft ? 'DRAFT' : DEMO_MODE ? 'DEMO' : null;
   const signedAt = new Date(rx.signedAt);
   const meds = rx.medications;
   // Older payloads may predate the investigations field.
@@ -52,9 +56,10 @@ export function renderRxHtml(
       ? `<div style="display:inline-block; margin-top: 6px; padding: 3px 8px; border: 1.5px solid #b91c1c; color: #b91c1c; border-radius: 999px; font-size: 11px; font-weight: 600;">&#9888; ALLERGIES: ${escape(rx.patient.allergies.join(', '))}</div>`
       : '';
 
-  // Drafts always carry a red DRAFT watermark in place of the hospital's own.
-  const watermarkText = draft
-    ? 'DRAFT'
+  // A stamped print always carries the red stamp in place of the hospital's
+  // own watermark.
+  const watermarkText = stamp
+    ? stamp
     : design.watermark === 'none'
       ? ''
       : design.watermark === 'confidential'
@@ -65,18 +70,18 @@ export function renderRxHtml(
 
   const watermark = watermarkText
     ? `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:0;">
-          <div style="font-size: ${draft ? 140 : 96}px; font-weight: 900; letter-spacing: 6px; color: ${draft ? '#dc2626' : accent}; opacity: ${draft ? 0.14 : 0.06}; transform: rotate(-22deg);">
+          <div style="font-size: ${stamp ? 140 : 96}px; font-weight: 900; letter-spacing: 6px; color: ${stamp ? '#dc2626' : accent}; opacity: ${stamp ? 0.14 : 0.06}; transform: rotate(-22deg);">
             ${escape(watermarkText)}
           </div>
         </div>`
     : '';
 
-  const draftBanner = draft
-    ? `<div style="margin-bottom: 12px; padding: 6px 10px; border: 2px solid #dc2626; border-radius: 6px; color: #dc2626; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-align: center;">DRAFT &mdash; NOT A VALID PRESCRIPTION &middot; unsigned, do not dispense</div>`
+  const stampBanner = stamp
+    ? `<div style="margin-bottom: 12px; padding: 6px 10px; border: 2px solid #dc2626; border-radius: 6px; color: #dc2626; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-align: center;">${stamp} &mdash; NOT A VALID PRESCRIPTION &middot; ${draft ? 'unsigned' : 'printed from a demo site'}, do not dispense</div>`
     : '';
 
-  const verification = draft
-    ? `<div style="color:#dc2626; font-weight:600;">Unsigned draft &middot; not valid for dispensing</div>`
+  const verification = stamp
+    ? `<div style="color:#dc2626; font-weight:600;">${draft ? 'Unsigned draft' : 'Demo print'} &middot; not valid for dispensing</div>`
     : `<div>Verified digitally &middot; signature hash
           <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color:${accent}; font-weight:600;">${shortHash(rx.id)}</span>
         </div>`;
@@ -98,7 +103,7 @@ export function renderRxHtml(
       ${watermark}
 
       <div style="position:relative; z-index:1;">
-        ${draftBanner}
+        ${stampBanner}
         <!-- Letterhead -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding-bottom: 10px; ${design.showAccentBand ? `margin-bottom: 4px;` : `margin-bottom: 14px; border-bottom: 2px solid ${accent};`}">
           <div style="display:flex; align-items:center; gap:10px; min-width:0;">
@@ -216,7 +221,7 @@ export function renderRxHtml(
             : ''
         }
         ${
-          design.showValidUntil && !draft
+          design.showValidUntil && !stamp
             ? `<div style="font-size: 12px; margin-top: 4px;"><span style="color:#64748b; text-transform: uppercase; letter-spacing: 1.5px; font-size: 10px;">Valid until</span> &nbsp; <strong>${escape(validUntil)}</strong></div>`
             : ''
         }

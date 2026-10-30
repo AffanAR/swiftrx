@@ -3,8 +3,9 @@
 // on first. (The Rx pad is a route inside the portal, so it needs no URL here.)
 //
 // In dev, the defaults below match the ports set in scripts/dev.mjs.
-// In prod, set VITE_ADMIN_APP_URL / VITE_PORTAL_APP_URL at build time
-// (or via Vercel project env vars). Nothing reads them yet.
+// In prod, set VITE_ROOT_DOMAIN at build time (hospitals live at
+// <slug>.<root domain>). VITE_ADMIN_APP_URL / VITE_PORTAL_APP_URL exist too,
+// but nothing reads them yet.
 
 function readEnv(name: string, fallback: string): string {
   // Vite injects env at build time under import.meta.env. We also peek
@@ -20,3 +21,14 @@ function readEnv(name: string, fallback: string): string {
 export const ADMIN_APP_URL: string = readEnv('VITE_ADMIN_APP_URL', 'http://localhost:5175');
 export const PORTAL_APP_URL: string = readEnv('VITE_PORTAL_APP_URL', 'http://localhost:5174');
 export const DEV_GATEWAY_URL: string = readEnv('VITE_DEV_GATEWAY_URL', 'http://localhost:5172');
+
+/** The domain hospitals are subdomains of, e.g. "thesyndicate.bond". */
+export const ROOT_DOMAIN: string = readEnv('VITE_ROOT_DOMAIN', 'swiftrx.com').toLowerCase();
+
+// Demo mode marks the app as a demo: a banner on every page and a DEMO stamp
+// on every print. There is no backend yet, so it's on for every production
+// build (anything built is something someone might host) and off under
+// `vite dev`. VITE_DEMO_MODE=true|false overrides either way.
+const isProdBuild = !!(import.meta as { env?: { PROD?: boolean } }).env?.PROD;
+export const DEMO_MODE: boolean =
+  readEnv('VITE_DEMO_MODE', isProdBuild ? 'true' : 'false') !== 'false';

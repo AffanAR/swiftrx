@@ -1,0 +1,18 @@
+# Render Blueprint for the hosted SwiftRx demo: one web service serves the
+# admin panel and every hospital portal, routed by hostname (scripts/serve.mjs).
+# Custom domains are added in the Render dashboard; see deploy/ONLINE.md.
+services:
+  - type: web
+    name: swiftrx
+    runtime: node
+    plan: free
+    # --include=dev: Vite and TypeScript are devDependencies.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      # Read at build time by the apps and at runtime by serve.mjs.
+      - key: VITE_ROOT_DOMAIN
+        value: thesyndicate.bond
+      - key: NODE_VERSION
+        value: '22'

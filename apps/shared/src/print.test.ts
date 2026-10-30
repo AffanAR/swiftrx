@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderRxHtml, rxPageSizeMm } from './print';
 import { DEFAULT_RX_DESIGN, type RxDesign, type SignedRx } from './types';
 
@@ -126,6 +126,38 @@ describe('renderRxHtml', () => {
     const html = renderRxHtml(old, design());
     expect(html).not.toContain('Advised Investigations');
     expect(html).toContain('Lisinopril');
+  });
+});
+
+describe('renderRxHtml on a demo build (DEMO_MODE)', () => {
+  afterEach(() => {
+    vi.doUnmock('./config');
+    vi.resetModules();
+  });
+
+  // DEMO_MODE is read once at import, so load a fresh print module with it on.
+  async function renderOnDemo(...args: Parameters<typeof renderRxHtml>) {
+    vi.resetModules();
+    vi.doMock('./config', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('./config')>()),
+      DEMO_MODE: true,
+    }));
+    const print = await import('./print');
+    return print.renderRxHtml(...args);
+  }
+
+  it('stamps a signed prescription DEMO, without the signature hash or valid-until date', async () => {
+    const html = await renderOnDemo(rx(), design());
+    expect(html).toContain('DEMO &mdash; NOT A VALID PRESCRIPTION');
+    expect(html).toContain('Demo print');
+    expect(html).not.toContain('Verified digitally');
+    expect(html).not.toContain('Valid until');
+  });
+
+  it('still marks a draft as a draft', async () => {
+    const html = await renderOnDemo(rx(), design(), { draft: true });
+    expect(html).toContain('DRAFT &mdash; NOT A VALID PRESCRIPTION');
+    expect(html).toContain('Unsigned draft');
   });
 });
 

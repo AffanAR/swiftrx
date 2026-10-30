@@ -398,7 +398,9 @@ the server creates a signed Rx.
 - [ ] PMDC license verification for doctors.
 - [ ] Urdu patient instructions (add `ur`; right-to-left print).
 - [ ] Hosting with backups, monitoring (e.g. Sentry) and logs that contain no
-      patient data.
+      patient data. (A public demo with no patient data is set up instead for
+      now: Render + Cloudflare at `thesyndicate.bond`, `scripts/serve.mjs`,
+      demo banner and DEMO print stamp. 2026-10-22; see `deploy/ONLINE.md`.)
 - [ ] Security review, privacy policy, data-retention rules and a
       data-processing agreement with hospitals.
 - [ ] Pilot with one hospital.
