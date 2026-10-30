@@ -251,8 +251,8 @@ the browser against `mockDb.ts`. What has to change, most important first:
    `scripts/check-bridge.mjs`, the nginx `/rx` alias, the per-tenant
    `RX_APP_URL` problem, and the gateway's `/rx` rule. Keep **admin** as its
    own app, since it's a different security boundary.
-2. **Add a real backend:** a TypeScript API (Fastify or Hono) with
-   PostgreSQL and Prisma.
+2. **Add a real backend:** a TypeScript API (Hono) with PostgreSQL and
+   Drizzle. (Decided 2026-10-30; the reasons are under Phase 2.)
    - Every tenant table carries `hospital_id`.
    - The server derives the tenant from Host + session, never from the client.
    - Postgres row-level security is a second fence.
@@ -336,9 +336,9 @@ tests. (Met locally. The CI result on GitHub hasn't been checked here.)
 
 #### Phase 2: Backend MVP (≈3–4 weeks)
 
-Findings are in §2.7. Recommended stack: a TypeScript API in `apps/api`
-(Hono or Fastify, Postgres, Prisma or Drizzle), with zod schemas in
-`apps/shared`. Prefer it over Supabase (§4, item 2): signing and the safety
+Findings are in §2.7. Stack: a TypeScript API in `apps/api` (Hono,
+Postgres, Drizzle), with zod schemas in `apps/shared`. It was chosen
+2026-10-30; the reasons are under the `apps/api` skeleton item below. Prefer it over Supabase (§4, item 2): signing and the safety
 rules have to run on the server, in the TypeScript that already exists.
 (GitHub `main` was merged into local `master` on 2026-10-30.)
 
@@ -363,7 +363,7 @@ In this order:
     of a hard-coded id (§2.4), and Rx ids get a random tail, so two signs in
     the same millisecond almost never share one (§2.7).
   - Sign-in still goes through `auth.ts`, which the auth step replaces.)
-- [ ] **`apps/api` skeleton:** Postgres in Docker for local dev, migrations,
+- [x] **`apps/api` skeleton:** Postgres in Docker for local dev, migrations,
       and a seed script that loads `apps/shared/src/seed/*.json`. Tables:
   - `hospitals`, `users`, `memberships` (role per hospital), `patients`
   - `patient_allergies` (status: *none known* / *not recorded* / *recorded*)
@@ -371,6 +371,74 @@ In this order:
     `investigations`
   - `audit_events` (append-only)
   - `drugs`, `diagnoses`, `quick_packs`, `hospital_settings`
+
+  (Done 2026-10-30.) The stack, and why:
+  - **Hono** (on `@hono/node-server`), not Fastify. Its handlers take and
+    return Web `Request`/`Response`, so tests call `app.request()` with no
+    socket, and the app can later be mounted under `/api` in `serve.mjs`. It
+    pulls in very few dependencies, which matters while strict `npm ci` breaks
+    on peer conflicts.
+  - **Drizzle**, not Prisma. The schema is TypeScript, and migrations are
+    plain SQL files to review and hand-edit (the audit trigger, and RLS later).
+    There is no codegen step before `tsc`, and it runs on PGlite as well as
+    Postgres.
+  - **zod 4** in `apps/shared/src/schemas.ts`, with a compile-time check that
+    each schema matches its type in `types.ts`. The seed validates against it
+    today; the API will check requests with it.
+  - **PGlite** (Postgres 17 compiled to WebAssembly) when `DATABASE_URL` is
+    unset. This machine has no Docker (virtualization is off in the BIOS), so
+    `npm run db:setup` works without installing anything, and the tests run in
+    memory with no database server. `compose.yaml` and `npm run db:up` give a
+    real Postgres where Docker exists. The CI job "Postgres (Docker)" runs that
+    path, then the API tests again against the real server, which covers what
+    PGlite can't (it allows one connection and is its own build). It can't
+    run on this machine. Its first version (setup and health route, before the
+    test step was added) passed on GitHub on 2026-10-30.
+
+  What was built:
+  - **Server.** `apps/api` serves `GET /api/health` (503 when the database
+    doesn't answer). Unknown routes and errors get a JSON 404 or 500 with no
+    details.
+  - **Migrations.** `0000_init` creates 15 tables; `0001` adds a trigger that
+    rejects UPDATE, DELETE and TRUNCATE on `audit_events`.
+  - **Seed.** It validates the JSON with zod, then writes it in one
+    transaction, and only into an empty database.
+  - **Tests.** 27 new tests cover the seed (counts, memberships, allergy status,
+    frozen Rx, append-only audit, cross-tenant refusal, rollback on bad data),
+    the health route and the shared schemas.
+
+  Decisions the next steps inherit:
+  - **Tenancy.** Every tenant table has `hospital_id`. Child rows reference
+    their parent by `(id, hospital_id)`, so the database itself refuses a
+    prescription for another hospital's patient. The catalog tables and
+    `users` are not tenant tables; users join hospitals through `memberships`.
+    Platform admins are `users.is_platform_admin` and have no membership.
+  - **Allergies.** The three-way status is `patients.allergy_status`, since
+    "none known" and "not recorded" have no allergy rows to hang it on.
+    `patient_allergies` has one row per recorded allergy. Seed patients with
+    `allergies: []` are *not recorded*, the safe guess. `types.ts` doesn't
+    carry the status yet; the read endpoints need to add it.
+  - **Investigations.** `investigations` is the catalog. The tests ordered on
+    an Rx go in `prescription_investigations`, mirroring
+    `drugs`/`prescription_items`. A diagnosis's suggested tests are in
+    `diagnosis_investigations`.
+  - **Prescriptions.** Each one freezes the patient, the diagnosis, the
+    hospital's `RxDesign`, and the doctor's name and license as signed.
+    Prescriptions are not append-only yet; `POST /prescriptions` should make
+    them so, like `audit_events`.
+  - **Usage.** `monthlyRxUsed` isn't stored. It should be counted from
+    `prescriptions` for the current month, which makes the seed's demo figures
+    (1247, 412, 31) disappear.
+  - **Patient age.** Patients still store an age, because the contract has no
+    date of birth, and an age goes stale. Switch to `date_of_birth` before
+    real patients.
+  - **Not done.** There is no row-level security yet; that belongs to the
+    server-side tenant-scoping item. The API isn't deployed: Render still runs
+    only `serve.mjs`.
+  - **npm quirk.** npm leaves `drizzle-orm` in `apps/api/node_modules`, where
+    the hoisted `drizzle-kit` can't load it, so it's also a root
+    devDependency. Keep the two version ranges the same
+    (`apps/api/drizzle.config.ts`).
 - [ ] **Auth:** `/auth/login`, `/auth/logout` and `/auth/me` with `httpOnly`,
       `Secure`, `SameSite=Lax` cookie sessions on `.swiftrx.com`, Argon2id
       hashes on the server, and the tenant taken from Host on the server.

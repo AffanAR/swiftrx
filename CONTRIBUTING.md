@@ -75,6 +75,7 @@ the client and its query hooks; ESLint rejects direct mock-db imports.
 | `apps/shared/` | Types, the data client and query hooks, mock data, auth, tenant resolution, UI primitives |
 | `apps/admin/` | Platform console (tenants, users, usage, audit) — port 5175 |
 | `apps/doctor-portal/` | Per-hospital portal and the Rx pad at `/rx` — port 5174 |
+| `apps/api/` | Hono + Postgres (Drizzle) API, not yet used by the apps — port 5176 |
 | `scripts/dev.mjs` | Dev orchestrator + subdomain gateway — port 5172 |
 | `deploy/` | nginx config and DNS / hosts instructions |
 

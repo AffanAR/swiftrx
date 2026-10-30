@@ -57,6 +57,48 @@ npm run format          # rewrite files in Prettier style
 A pre-commit hook (husky + lint-staged) formats and lints staged files, so
 `npm run check` should already be clean when you commit.
 
+### API and database (work in progress)
+
+`apps/api` is the backend that will replace the mock data: a Hono server
+with PostgreSQL through Drizzle. So far it has the schema, migrations, a seed
+and a health route. The apps don't call it yet; they still read the mock db
+through `apps/shared/src/api.ts`.
+
+One command creates the database, applies the migrations and loads the demo
+data from `apps/shared/src/seed/*.json`. Pick the line for your machine:
+
+```bash
+# No Docker needed: PGlite (Postgres compiled to WebAssembly) in apps/api/.pglite
+npm run db:setup
+
+# With Docker: Postgres 17 from compose.yaml on 127.0.0.1:5432
+npm run db:up
+```
+
+Then start the API on `http://127.0.0.1:5176` (`GET /api/health` answers
+`{"status":"ok","database":"ok"}`):
+
+```bash
+npm run dev:api
+```
+
+The API uses `DATABASE_URL` when it is set, and PGlite otherwise. To run it
+against the Docker database, copy `apps/api/.env.example` to `apps/api/.env`
+and uncomment `DATABASE_URL`.
+
+```bash
+npm run db:setup        # migrate, then seed if the database is empty (safe to re-run)
+npm run db:migrate      # apply new migrations only
+npm run db:reset        # drop everything, migrate and seed again (local databases only)
+npm run db:generate     # after editing apps/api/src/db/schema.ts: write a new migration
+docker compose down -v  # stop the Docker database and delete its data
+```
+
+The seed only fills an empty database, so it never overwrites data. The tests
+run the migrations and the seed on an in-memory PGlite, so `npm test` and CI
+need no database server. A separate CI job runs the Docker path against a real
+Postgres, then runs the API tests again against it (`TEST_DATABASE_URL`).
+
 Unit tests (Vitest) sit next to the code they cover as `*.test.ts`: the Rx
 pad's safety checks, search and store actions, the shared print template and
 the tenant resolver. Two `it.fails` tests in `safety.test.ts` track known
@@ -105,11 +147,14 @@ SwiftRX/
 ├─ apps/
 │   ├─ shared/            # types, mock db, auth, tenant resolution, UI primitives
 │   ├─ admin/             # platform console (port 5175)
-│   └─ doctor-portal/     # per-hospital portal (port 5174)
-│       └─ src/rx/        #   the Rx pad, lazy-loaded at /rx
+│   ├─ doctor-portal/     # per-hospital portal (port 5174)
+│   │   └─ src/rx/        #   the Rx pad, lazy-loaded at /rx
+│   └─ api/               # Hono + Postgres API, not wired to the apps yet (port 5176)
+│       └─ drizzle/       #   SQL migrations
 ├─ scripts/dev.mjs        # dev orchestrator + subdomain gateway (port 5172)
 ├─ scripts/serve.mjs      # production server: both builds, routed by host
 ├─ deploy/                # hosting guide, nginx config, DNS / hosts file docs
+├─ compose.yaml           # local Postgres for the API (Docker)
 ├─ render.yaml            # Render Blueprint for the hosted demo
 └─ package.json           # workspace root
 ```
@@ -191,7 +236,8 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 
 - **Database**: the data client, `apps/shared/src/api.ts`, is the seam. Each
   method answers from `mockDb.ts` today and is labelled with the HTTP endpoint
-  it becomes (backed by Postgres). ESLint keeps app code off the mock db.
+  it becomes, served by `apps/api` under `/api`. ESLint keeps app code off the
+  mock db.
 - **Auth**: replace the `login` function in `apps/shared/src/auth.ts` with
   a real API call. The portal's `SessionPayload` is the contract to keep;
   the Rx pad gets its doctor identity from that session.
@@ -208,6 +254,11 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/shared/src/status.tsx`                  | Loading, error and crash screens (`PageBoundary`)  |
 | `apps/shared/src/mockDb.ts`                   | The in-memory store `api.ts` answers from today    |
 | `apps/shared/src/seed/*.json`                 | Seed data, loaded by `seedData.ts`                 |
+| `apps/shared/src/schemas.ts`                  | zod schemas for `types.ts`, shared by the API and the apps |
+| `apps/api/src/app.ts`                         | API routes (Hono), mounted under `/api`            |
+| `apps/api/src/db/schema.ts`                   | The Postgres tables (Drizzle)                      |
+| `apps/api/src/db/seed.ts`                     | Loads the seed JSON into an empty database         |
+| `apps/api/drizzle/*.sql`                      | Migrations, generated from `schema.ts` (plus the audit-log trigger) |
 | `apps/shared/src/auth.ts`                     | `login` + session storage helpers                  |
 | `apps/shared/src/tenant.ts`                   | `resolveSurface()` — host / query → admin / hospital |
 | `apps/shared/src/config.ts`                   | Build-time settings: `ROOT_DOMAIN`, `DEMO_MODE`    |

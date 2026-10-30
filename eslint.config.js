@@ -88,6 +88,11 @@ export default defineConfig(
     },
   },
   {
+    // The API runs in Node, not a browser.
+    files: ['apps/api/**/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ['scripts/**/*.mjs', '**/*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
   },
