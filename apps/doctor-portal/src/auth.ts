@@ -65,6 +65,17 @@ export function getUserFromSession(): User | null {
 }
 
 /**
+ * Whether a stored session may be used on this hospital's portal. A session
+ * belongs to the hospital it signed in at, and on a shared origin (plain
+ * localhost with `?hospital=`) another hospital's URL must not reuse it.
+ * Platform admins have no hospital, so this doesn't restrict them (they can
+ * still sign in to any portal; PLAN.md §2.3).
+ */
+export function sessionBelongsTo(session: SessionPayload, hospital: Hospital): boolean {
+  return session.role === 'platform_admin' || session.hospitalSlug === hospital.slug;
+}
+
+/**
  * Who may open the Rx pad: active doctors with a license number, at the
  * hospital this portal is serving. (Checked in the browser for the mock; the
  * backend must enforce it too.)

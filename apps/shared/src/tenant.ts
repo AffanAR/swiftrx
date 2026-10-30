@@ -11,7 +11,8 @@
 //  (scripts/serve.mjs, or deploy/nginx.swiftrx.com.conf). In dev the same
 //  logic applies to <host>.localhost:5172 (the gateway). If the host doesn't
 //  give us a tenant, we fall back to a `?hospital=` query param so the portal
-//  can be opened from a parent domain without changing DNS.
+//  can be opened from a parent domain without changing DNS. A host that names
+//  a subdomain always wins over the query.
 // =============================================================================
 
 import { DEV_GATEWAY_URL, ROOT_DOMAIN } from './config';
@@ -47,23 +48,32 @@ export function resolveSurface(
   query: URLSearchParams,
   rootDomain: string = ROOT_DOMAIN,
 ): ResolvedTenant {
-  // 1. Query override wins (handy for dev & sharing links).
-  const qSlug = query.get('hospital');
-  const qRole = query.get('as'); // "admin" | "rx" | undefined
-  if (qSlug) {
-    const slug = normalizeSlug(qSlug);
-    // If ?as=admin, the user is testing the admin panel locally.
-    if (qRole === 'admin' || slug === 'admin') {
-      return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'query' };
-    }
-    // If the path starts with /rx, the rx app is open against this slug.
-    if (pathname.startsWith('/rx') || qRole === 'rx') {
-      return { surface: 'rx', subdomain: slug, hospitalSlug: slug, source: 'query' };
-    }
-    return { surface: 'hospital', subdomain: slug, hospitalSlug: slug, source: 'query' };
-  }
+  // 1. A host that names a subdomain (a hospital, admin or rx) decides, and
+  // the query can't override it: on <slug>.<root>, `?hospital=` must not open
+  // another hospital's portal on this hospital's origin.
+  const fromHost = resolveHost(host, pathname, rootDomain);
+  if (fromHost.subdomain !== null) return fromHost;
 
-  // 2. Subdomain from host.
+  // 2. A host that names none (the bare root, localhost, an IP address, or an
+  // unknown host such as a tunnel) falls back to `?hospital=`, so the portal
+  // opens without DNS, e.g. localhost:5174/?hospital=city-hospital.
+  const qSlug = query.get('hospital');
+  if (!qSlug) return fromHost;
+  const qRole = query.get('as'); // "admin" | "rx" | undefined
+  const slug = normalizeSlug(qSlug);
+  // If ?as=admin, the user is testing the admin panel locally.
+  if (qRole === 'admin' || slug === 'admin') {
+    return { surface: 'admin', subdomain: 'admin', hospitalSlug: null, source: 'query' };
+  }
+  // If the path starts with /rx, the rx app is open against this slug.
+  if (pathname.startsWith('/rx') || qRole === 'rx') {
+    return { surface: 'rx', subdomain: slug, hospitalSlug: slug, source: 'query' };
+  }
+  return { surface: 'hospital', subdomain: slug, hospitalSlug: slug, source: 'query' };
+}
+
+/** The surface the host alone names (step 1 of `resolveSurface`). */
+function resolveHost(host: string, pathname: string, rootDomain: string): ResolvedTenant {
   const h = host.toLowerCase();
   const parts = h.split('.');
   const last = parts[parts.length - 1];

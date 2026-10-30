@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useSession } from './useSession';
+import { useSession, type SessionState } from './useSession';
 import { useTenant } from './tenantStore';
-import { canPrescribe } from './auth';
+import { canPrescribe, sessionBelongsTo } from './auth';
 import { LoginPage } from './pages/LoginPage';
 import { PortalShell } from './components/PortalShell';
 import { DashboardPage } from './pages/DashboardPage';
@@ -17,9 +17,9 @@ const RxPad = lazy(() => import('./rx/RxPad'));
 
 export default function App() {
   const tenant = useTenant();
-  const [session, signOut, refreshSession] = useSession();
+  const [stored, signOut, refreshSession] = useSession();
 
-  if (session.status === 'loading') {
+  if (stored.status === 'loading') {
     return (
       <div className="h-full flex items-center justify-center text-ink-400 text-sm">Loading…</div>
     );
@@ -34,6 +34,13 @@ export default function App() {
   }
 
   const hospital = tenant.hospital;
+  // A session belongs to the hospital it signed in at. When the URL names a
+  // different hospital (possible on a shared origin, e.g. dev `?hospital=`),
+  // that hospital's portal treats the visitor as signed out.
+  const session: SessionState =
+    stored.status === 'signed-in' && !sessionBelongsTo(stored.session, hospital)
+      ? { status: 'signed-out' }
+      : stored;
 
   return (
     <Routes>

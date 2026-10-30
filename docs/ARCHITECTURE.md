@@ -52,16 +52,20 @@ pick the route by **path**. `/rx` wins over the host check.
 
 ## Tenant resolution
 
-Every hospital owns a subdomain, and the tenant normally comes from
-`window.location.hostname`. A `?hospital=<slug>` query overrides the host; that
-is how the portal opens on plain `localhost` without the dev gateway.
+Every hospital owns a subdomain, and the tenant comes from
+`window.location.hostname`. Only when the host names no subdomain (plain
+`localhost`, an IP address, or an unknown host such as a tunnel) does a
+`?hospital=<slug>` query pick the tenant instead; that is how the portal opens
+on `localhost:5174` without the dev gateway. On `<slug>.<root>` the host always
+wins, so editing the URL can't switch hospitals there.
 
-**Known gap (`PLAN.md` §2.3):** the portal pages don't yet check that a
-signed-in user belongs to the URL's hospital, so a signed-in user who edits
-`?hospital=` sees that hospital's portal pages. Sign-in refuses doctors and
-hospital admins of another hospital (a platform admin can sign in anywhere),
-and the Rx pad only opens for active, licensed doctors of the URL's hospital
-(`canPrescribe()`).
+A stored session only counts on the portal of the hospital it signed in at
+(`sessionBelongsTo()` in `apps/doctor-portal/src/auth.ts`). On a shared origin,
+another hospital's URL shows that hospital's sign-in page, not its pages.
+Sign-in refuses doctors and hospital admins of another hospital, and the Rx pad
+only opens for active, licensed doctors of the URL's hospital
+(`canPrescribe()`). A platform admin can still sign in to any portal
+(`PLAN.md` §2.3).
 
 ```mermaid
 sequenceDiagram

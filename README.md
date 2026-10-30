@@ -136,7 +136,9 @@ what has to happen first.
 
 Inside the doctor portal, login is gated to the resolved tenant — a
 doctor registered for `northstar-medical` cannot sign in at
-`city-hospital`. The Rx pad uses the portal's session, so there is no
+`city-hospital`. A session also only counts on its own hospital's portal,
+and `?hospital=` (for plain `localhost`) never overrides a hospital
+subdomain. The Rx pad uses the portal's session, so there is no
 separate Rx sign-in, and it only opens for active, licensed doctors of that
 hospital. The signed-Rx payload carries the hospital slug so the portal and
 admin panel stay isolated.

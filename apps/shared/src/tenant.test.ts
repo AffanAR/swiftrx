@@ -14,13 +14,34 @@ describe('normalizeSlug', () => {
 });
 
 describe('resolveSurface', () => {
-  describe('?hospital= query override', () => {
-    it('picks the hospital from the query on any host', () => {
+  describe('?hospital= query fallback', () => {
+    it('picks the hospital from the query when the host names none', () => {
       expect(resolve('demo.trycloudflare.com', '/', 'hospital=City Hospital')).toEqual({
         surface: 'hospital',
         subdomain: 'city-hospital',
         hospitalSlug: 'city-hospital',
         source: 'query',
+      });
+      expect(resolve('localhost', '/', 'hospital=northstar-medical')).toMatchObject({
+        surface: 'hospital',
+        hospitalSlug: 'northstar-medical',
+        source: 'query',
+      });
+    });
+
+    it("can't override a hospital or admin subdomain", () => {
+      expect(resolve('city-hospital.localhost', '/', 'hospital=northstar-medical')).toMatchObject({
+        surface: 'hospital',
+        hospitalSlug: 'city-hospital',
+        source: 'domain',
+      });
+      expect(
+        resolve('city-hospital.swiftrx.com', '/rx', 'hospital=northstar-medical&as=rx'),
+      ).toMatchObject({ surface: 'rx', hospitalSlug: 'city-hospital', source: 'domain' });
+      expect(resolve('admin.swiftrx.com', '/', 'hospital=city-hospital')).toMatchObject({
+        surface: 'admin',
+        hospitalSlug: null,
+        source: 'domain',
       });
     });
 

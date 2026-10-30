@@ -100,7 +100,10 @@ fix, not a UI patch.
 - **The portal doesn't check that the signed-in user belongs to the URL's
   tenant.** On a single origin (dev `?hospital=`), switching tenants shows
   another hospital's roster. `apps/doctor-portal/src/useSession.ts`,
-  `App.tsx:33`
+  `App.tsx:33`. (Fixed 2026-10-30: it also worked on real subdomains, since
+  `?hospital=` overrode the host. Now the host wins over the query, and a
+  session only counts on its own hospital's portal, `sessionBelongsTo()`.
+  Checked in the browser. The server must still enforce this in Phase 2.)
 - **A platform admin can sign in to any hospital portal**
   (`expectedRole: 'any'`). `apps/doctor-portal/src/auth.ts:43`
 - **Suspended hospitals can still sign in.** Status is checked only on
