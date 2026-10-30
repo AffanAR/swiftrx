@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
-import {
-  MOCK_HOSPITALS,
-  listDoctorsForHospital,
-  listPatientsForHospital,
-  listSignedRxForHospital,
-  LiveDot,
-  cx,
-} from '@swiftrx/shared';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { LiveDot, cx, queries } from '@swiftrx/shared';
 
 export function HospitalsListPage() {
+  const [{ data: hospitals }, { data: stats }] = useSuspenseQueries({
+    queries: [queries.hospitals(), queries.hospitalStats()],
+  });
+
   return (
     <div className="p-6 sm:p-8 max-w-6xl mx-auto space-y-6 animate-fadeIn">
       <header className="flex items-center justify-between">
@@ -28,10 +26,16 @@ export function HospitalsListPage() {
       </header>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {MOCK_HOSPITALS.map((h, i) => {
-          const doctors = listDoctorsForHospital(h.slug).length;
-          const patients = listPatientsForHospital(h.slug).length;
-          const rx = listSignedRxForHospital(h.slug).length;
+        {hospitals.map((h, i) => {
+          const {
+            doctors,
+            patients,
+            prescriptions: rx,
+          } = stats[h.slug] ?? {
+            doctors: 0,
+            patients: 0,
+            prescriptions: 0,
+          };
           return (
             <Link
               key={h.slug}

@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { PageBoundary } from '@swiftrx/shared';
 import { useAdminSession } from './useAdminSession';
 import { AdminShell } from './components/AdminShell';
 import { LoginPage } from './pages/LoginPage';
@@ -12,6 +13,7 @@ import { HospitalFeaturesPage } from './pages/HospitalFeaturesPage';
 
 export default function App() {
   const [session, signOut, signIn] = useAdminSession();
+  const { pathname } = useLocation();
 
   if (session.status === 'loading') {
     return (
@@ -25,17 +27,20 @@ export default function App() {
 
   return (
     <AdminShell session={session.session} onSignOut={signOut}>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/hospitals" element={<HospitalsListPage />} />
-        <Route path="/hospitals/new" element={<NewHospitalPage />} />
-        <Route path="/hospitals/:slug" element={<HospitalDetailPage />} />
-        <Route path="/hospitals/:slug/features" element={<HospitalFeaturesPage />} />
-        <Route path="/audit" element={<AuditLogPage />} />
-        <Route path="/settings" element={<PlatformSettingsPage />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+      {/* Keyed by path, so a failed page doesn't keep its error after navigating. */}
+      <PageBoundary key={pathname}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/hospitals" element={<HospitalsListPage />} />
+          <Route path="/hospitals/new" element={<NewHospitalPage admin={session.session} />} />
+          <Route path="/hospitals/:slug" element={<HospitalDetailPage />} />
+          <Route path="/hospitals/:slug/features" element={<HospitalFeaturesPage />} />
+          <Route path="/audit" element={<AuditLogPage />} />
+          <Route path="/settings" element={<PlatformSettingsPage />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </PageBoundary>
     </AdminShell>
   );
 }

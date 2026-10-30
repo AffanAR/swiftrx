@@ -1,8 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import {
-  DEFAULT_HOSPITAL_FEATURES,
-  DEFAULT_RX_DESIGN,
   LiveDot,
   Toggle,
   TextField,
@@ -10,13 +9,13 @@ import {
   Card,
   HospitalBadge,
   RX_PAGE_MARGIN_MM,
-  getHospital,
-  listDoctorsForHospital,
+  queries,
   renderRxHtml,
   rxPageSizeMm,
-  updateHospitalFeatures,
-  updateHospitalRxDesign,
+  useUpdateHospitalSettings,
+  type Hospital,
   type HospitalFeatures,
+  type PublicUser,
   type RxDesign,
   type RxPageSize,
   type RxWatermarkMode,
@@ -33,29 +32,16 @@ import {
  *      watermark, page size, signature line, etc.
  *
  * Includes a live preview that uses the same print template the Rx pad
- * itself uses (see preview styles below). Changes are written through to
- * the shared mock store so they immediately reflect in the hospital
- * portal and the Rx pad.
+ * itself uses (see preview styles below). Saving writes through the data
+ * client, so the hospital portal and the Rx pad pick the changes up.
  */
 export function HospitalFeaturesPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const initial = getHospital(slug);
+  const { slug = '' } = useParams<{ slug: string }>();
+  const [{ data: hospital }, { data: doctors }] = useSuspenseQueries({
+    queries: [queries.hospital(slug), queries.doctors(slug)],
+  });
 
-  const [features, setFeatures] = useState<HospitalFeatures>(
-    () => initial?.features ?? DEFAULT_HOSPITAL_FEATURES,
-  );
-  const [design, setDesign] = useState<RxDesign>(() => initial?.rxDesign ?? DEFAULT_RX_DESIGN);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
-
-  // If the admin navigates to a different hospital, reset.
-  useEffect(() => {
-    if (initial) {
-      setFeatures(initial.features);
-      setDesign(initial.rxDesign);
-    }
-  }, [initial?.slug]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!initial) {
+  if (!hospital) {
     return (
       <div className="p-8 max-w-3xl mx-auto">
         <div className="rx-card p-6 text-center animate-fadeIn">
@@ -72,14 +58,33 @@ export function HospitalFeaturesPage() {
     );
   }
 
+  // Keyed by slug: moving to another hospital starts the form from its values.
+  return <FeaturesEditor key={hospital.slug} initial={hospital} sampleDoctor={doctors[0]} />;
+}
+
+function FeaturesEditor({
+  initial,
+  sampleDoctor,
+}: {
+  /** The saved settings; updated after each save. */
+  initial: Hospital;
+  /** Signs the preview's sample prescription. */
+  sampleDoctor?: PublicUser;
+}) {
+  const [features, setFeatures] = useState<HospitalFeatures>(() => initial.features);
+  const [design, setDesign] = useState<RxDesign>(() => initial.rxDesign);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const save = useUpdateHospitalSettings();
+
   const dirty =
     JSON.stringify(features) !== JSON.stringify(initial.features) ||
     JSON.stringify(design) !== JSON.stringify(initial.rxDesign);
 
   const onSave = () => {
-    updateHospitalFeatures(initial.slug, features);
-    updateHospitalRxDesign(initial.slug, design);
-    setSavedAt(Date.now());
+    save.mutate(
+      { slug: initial.slug, features, rxDesign: design },
+      { onSuccess: () => setSavedAt(Date.now()) },
+    );
   };
 
   const onReset = () => {
@@ -113,21 +118,26 @@ export function HospitalFeaturesPage() {
             Reset
           </button>
           <button
-            className={cx('rx-btn-primary', !dirty && 'opacity-60')}
+            className={cx('rx-btn-primary', (!dirty || save.isPending) && 'opacity-60')}
             onClick={onSave}
-            disabled={!dirty}
+            disabled={!dirty || save.isPending}
             data-test="save-features"
           >
-            Save changes
+            {save.isPending ? 'Saving…' : 'Save changes'}
           </button>
         </div>
       </header>
 
       <div className="flex items-center gap-3">
         <HospitalBadge hospital={initial} />
-        {savedAt && (
+        {savedAt && !save.isError && (
           <span className="text-[11px] text-rx-accent font-mono animate-fadeIn">
             Saved · {new Date(savedAt).toLocaleTimeString()}
+          </span>
+        )}
+        {save.isError && (
+          <span role="alert" className="text-[11px] text-rx-danger font-mono animate-fadeIn">
+            Couldn't save: {save.error.message}
           </span>
         )}
         {dirty && (
@@ -354,7 +364,7 @@ export function HospitalFeaturesPage() {
             title="Live preview"
             subtitle="What the printed Rx will look like for this hospital."
           >
-            <RxPreview design={design} hospitalSlug={initial.slug} />
+            <RxPreview design={design} hospitalSlug={initial.slug} doctor={sampleDoctor} />
           </Card>
 
           <div className="mt-4 text-[11px] text-ink-500 leading-relaxed px-1">
@@ -445,8 +455,7 @@ function clampInt(v: string, lo: number, hi: number) {
 const PX_PER_MM = 96 / 25.4;
 
 /** A fixed sample prescription, so the preview always shows the same content. */
-function sampleRx(hospitalSlug: string): SignedRx {
-  const doctor = listDoctorsForHospital(hospitalSlug)[0];
+function sampleRx(hospitalSlug: string, doctor?: PublicUser): SignedRx {
   const now = new Date().toISOString();
   return {
     id: 'rx_preview',
@@ -511,8 +520,16 @@ function sampleRx(hospitalSlug: string): SignedRx {
   };
 }
 
-function RxPreview({ design, hospitalSlug }: { design: RxDesign; hospitalSlug: string }) {
-  const sample = useMemo(() => sampleRx(hospitalSlug), [hospitalSlug]);
+function RxPreview({
+  design,
+  hospitalSlug,
+  doctor,
+}: {
+  design: RxDesign;
+  hospitalSlug: string;
+  doctor?: PublicUser;
+}) {
+  const sample = useMemo(() => sampleRx(hospitalSlug, doctor), [hospitalSlug, doctor]);
   const html = useMemo(() => renderRxHtml(sample, design), [sample, design]);
   const { widthMm, heightMm } = rxPageSizeMm(design);
   const paperW = widthMm * PX_PER_MM;

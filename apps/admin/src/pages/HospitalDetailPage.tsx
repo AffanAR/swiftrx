@@ -1,22 +1,28 @@
 import { useParams, Link } from 'react-router-dom';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import {
-  getHospital,
-  listDoctorsForHospital,
-  listPatientsForHospital,
-  listSignedRxForHospital,
-  listAuditForHospital,
   Card,
   ProgressBar,
   StatTile,
   HospitalBadge,
   cx,
   hospitalPortalUrl,
+  queries,
 } from '@swiftrx/shared';
 import { auditColor, auditTitle } from '../audit';
 
 export function HospitalDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const hospital = getHospital(slug);
+  const { slug = '' } = useParams<{ slug: string }>();
+  const [{ data: hospital }, { data: doctors }, { data: patients }, { data: rx }, { data: audit }] =
+    useSuspenseQueries({
+      queries: [
+        queries.hospital(slug),
+        queries.doctors(slug),
+        queries.patients(slug),
+        queries.prescriptions(slug),
+        queries.audit(slug),
+      ],
+    });
 
   if (!hospital) {
     return (
@@ -35,10 +41,6 @@ export function HospitalDetailPage() {
     );
   }
 
-  const doctors = listDoctorsForHospital(hospital.slug);
-  const patients = listPatientsForHospital(hospital.slug);
-  const rx = listSignedRxForHospital(hospital.slug);
-  const audit = listAuditForHospital(hospital.slug);
   const usagePct = hospital.monthlyRxCap > 0 ? hospital.monthlyRxUsed / hospital.monthlyRxCap : 0;
 
   return (

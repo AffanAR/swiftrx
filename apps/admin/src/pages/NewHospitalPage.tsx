@@ -7,23 +7,23 @@ import {
   LiveDot,
   Spinner,
   normalizeSlug,
-  appendAudit,
-  DEFAULT_HOSPITAL_FEATURES,
-  DEFAULT_RX_DESIGN,
   ROOT_DOMAIN,
+  useCreateHospital,
+  type SessionPayload,
 } from '@swiftrx/shared';
-import { MOCK_HOSPITALS } from '@swiftrx/shared';
 
-export function NewHospitalPage() {
+/** `admin` is the signed-in platform admin, recorded on the audit event. */
+export function NewHospitalPage({ admin }: { admin: Pick<SessionPayload, 'userId' | 'email'> }) {
   const navigate = useNavigate();
+  const createHospital = useCreateHospital();
   const [name, setName] = React.useState('');
   const [city, setCity] = React.useState('');
   const [country, setCountry] = React.useState('PK');
   const [plan, setPlan] = React.useState<'starter' | 'clinic' | 'enterprise'>('clinic');
   const [cap, setCap] = React.useState('1000');
   const [contact, setContact] = React.useState('');
-  const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const busy = createHospital.isPending;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,38 +32,25 @@ export function NewHospitalPage() {
       setError('Name, city, and contact email are required.');
       return;
     }
-    const slug = normalizeSlug(name);
-    if (MOCK_HOSPITALS.find((h) => h.slug === slug)) {
-      setError('A hospital with a similar slug already exists.');
-      return;
-    }
-    setBusy(true);
-    setTimeout(() => {
-      MOCK_HOSPITALS.push({
-        slug,
-        name: name.trim(),
-        city: city.trim(),
-        country,
-        plan,
-        status: 'trial',
-        createdAt: new Date().toISOString(),
-        contactEmail: contact.trim(),
-        monthlyRxCap: parseInt(cap, 10) || 1000,
-        monthlyRxUsed: 0,
-        features: { ...DEFAULT_HOSPITAL_FEATURES },
-        rxDesign: { ...DEFAULT_RX_DESIGN, headerTitle: name.trim() },
-      });
-      appendAudit({
-        kind: 'create_hospital',
-        userId: 'u_admin_001',
-        userEmail: 'admin@swiftrx.com',
-        at: new Date().toISOString(),
-        hospitalSlug: slug,
-        hospitalName: name.trim(),
-      });
-      setBusy(false);
-      navigate(`/hospitals/${slug}`);
-    }, 400);
+    createHospital.mutate(
+      {
+        hospital: {
+          slug: normalizeSlug(name),
+          name: name.trim(),
+          city: city.trim(),
+          country,
+          plan,
+          contactEmail: contact.trim(),
+          monthlyRxCap: parseInt(cap, 10) || 1000,
+        },
+        by: { id: admin.userId, email: admin.email },
+      },
+      {
+        onSuccess: (hospital) => navigate(`/hospitals/${hospital.slug}`),
+        // e.g. 409 when the slug is taken.
+        onError: (err) => setError(err.message),
+      },
+    );
   };
 
   return (

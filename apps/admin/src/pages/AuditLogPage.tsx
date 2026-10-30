@@ -1,12 +1,13 @@
-import { MOCK_AUDIT, Card, LiveDot } from '@swiftrx/shared';
+import { Card, LiveDot, useAudit } from '@swiftrx/shared';
 import { useState } from 'react';
 import { auditColor, auditTitle } from '../audit';
 
 export function AuditLogPage() {
+  const audit = useAudit();
   const [filter, setFilter] = useState('');
   const [kind, setKind] = useState<string>('all');
 
-  const filtered = MOCK_AUDIT.filter((e) => {
+  const filtered = audit.filter((e) => {
     if (kind !== 'all' && e.kind !== kind) return false;
     if (!filter.trim()) return true;
     const f = filter.toLowerCase();
@@ -50,7 +51,7 @@ export function AuditLogPage() {
           <option value="invite_user">Invite user</option>
         </select>
         <div className="ml-auto text-xs text-ink-400 font-mono">
-          {filtered.length} of {MOCK_AUDIT.length}
+          {filtered.length} of {audit.length}
         </div>
       </div>
 

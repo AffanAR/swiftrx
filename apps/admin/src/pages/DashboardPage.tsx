@@ -1,28 +1,20 @@
 import { Link } from 'react-router-dom';
-import {
-  MOCK_HOSPITALS,
-  MOCK_USERS,
-  MOCK_SIGNED_RX,
-  MOCK_AUDIT,
-  StatTile,
-  LiveDot,
-  Card,
-  ProgressBar,
-  cx,
-} from '@swiftrx/shared';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { StatTile, LiveDot, Card, ProgressBar, cx, queries } from '@swiftrx/shared';
 import { auditColor, auditTitle } from '../audit';
 
 export function DashboardPage() {
-  const totalHospitals = MOCK_HOSPITALS.length;
-  const totalDoctors = MOCK_USERS.filter((u) => u.role === 'doctor').length;
-  const totalRxThisMonth =
-    MOCK_SIGNED_RX.length + MOCK_HOSPITALS.reduce((s, h) => s + h.monthlyRxUsed, 0);
-  const totalAudit = MOCK_AUDIT.length;
+  const [{ data: hospitals }, { data: users }, { data: signedRx }, { data: audit }] =
+    useSuspenseQueries({
+      queries: [queries.hospitals(), queries.users(), queries.prescriptions(), queries.audit()],
+    });
+  const totalHospitals = hospitals.length;
+  const totalDoctors = users.filter((u) => u.role === 'doctor').length;
+  const totalRxThisMonth = signedRx.length + hospitals.reduce((s, h) => s + h.monthlyRxUsed, 0);
+  const totalAudit = audit.length;
 
-  const recentAudit = MOCK_AUDIT.slice(0, 8);
-  const recentHospitals = [...MOCK_HOSPITALS].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+  const recentAudit = audit.slice(0, 8);
+  const recentHospitals = [...hospitals].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <div className="p-6 sm:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn">
@@ -143,7 +135,7 @@ export function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_HOSPITALS.map((h, i) => (
+              {hospitals.map((h, i) => (
                 <tr
                   key={h.slug}
                   className="border-b border-ink-800 hover:bg-ink-800/40 animate-fadeIn transition-colors"
