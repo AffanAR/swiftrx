@@ -191,7 +191,8 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | Path                                          | Purpose                                            |
 | --------------------------------------------- | -------------------------------------------------- |
 | `apps/shared/src/types.ts`                    | All cross-app types (Hospital, User, Patient, …)   |
-| `apps/shared/src/mockDb.ts`                   | Seed data + per-tenant lookups                     |
+| `apps/shared/src/mockDb.ts`                   | Per-tenant lookups and appends                     |
+| `apps/shared/src/seed/*.json`                 | Seed data, loaded by `seedData.ts`                 |
 | `apps/shared/src/auth.ts`                     | `login` + session storage helpers                  |
 | `apps/shared/src/tenant.ts`                   | `resolveSurface()` — host / query → admin / hospital |
 | `apps/shared/src/config.ts`                   | Build-time settings: `ROOT_DOMAIN`, `DEMO_MODE`    |
