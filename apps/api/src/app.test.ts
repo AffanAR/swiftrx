@@ -7,7 +7,9 @@ describe('GET /api/health', () => {
   let database: Database;
 
   beforeAll(async () => {
-    database = await openDatabase({}); // PGlite in memory
+    // PGlite in memory, or the real Postgres in CI's Postgres job.
+    const url = process.env.TEST_DATABASE_URL;
+    database = await openDatabase(url ? { url } : {});
   }, 60_000);
 
   afterAll(() => database.close());

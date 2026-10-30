@@ -1,7 +1,7 @@
 import { asc, count, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { openDatabase, type Database } from './client';
+import { dropEverything, openDatabase, type Database, type DatabaseConfig } from './client';
 import {
   auditEvents,
   hospitalSettings,
@@ -16,9 +16,18 @@ import {
 } from './schema';
 import { demoSeedData, seed, type SeedData } from './seed';
 
-/** A migrated, empty in-memory database. */
+/**
+ * A migrated, empty database: PGlite in memory, or, when TEST_DATABASE_URL is
+ * set (CI's Postgres job), that local Postgres wiped first. That run checks the
+ * same behaviour on the real server, which PGlite can't fully stand in for
+ * (one connection, its own build). Only this file wipes and migrates, so test
+ * files running in parallel can't trip over each other.
+ */
 async function freshDatabase(): Promise<Database> {
-  const database = await openDatabase({});
+  const url = process.env.TEST_DATABASE_URL;
+  const config: DatabaseConfig = url ? { url } : {};
+  const database = await openDatabase(config);
+  if (url) await dropEverything(database, config);
   await database.migrate();
   return database;
 }

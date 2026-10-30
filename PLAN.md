@@ -385,8 +385,10 @@ In this order:
     unset. This machine has no Docker (virtualization is off in the BIOS), so
     `npm run db:setup` works without installing anything, and the tests run in
     memory with no database server. `compose.yaml` and `npm run db:up` give a
-    real Postgres where Docker exists. A CI job runs that path, but it has not
-    been run here.
+    real Postgres where Docker exists. The CI job "Postgres (Docker)" runs that
+    path, then the API tests again against the real server, which covers what
+    PGlite can't (it allows one connection and is its own build). That job
+    passed on GitHub on 2026-10-30; it can't run on this machine.
 
   What was built:
   - **Server.** `apps/api` serves `GET /api/health` (503 when the database

@@ -97,7 +97,7 @@ docker compose down -v  # stop the Docker database and delete its data
 The seed only fills an empty database, so it never overwrites data. The tests
 run the migrations and the seed on an in-memory PGlite, so `npm test` and CI
 need no database server. A separate CI job runs the Docker path against a real
-Postgres.
+Postgres, then runs the API tests again against it (`TEST_DATABASE_URL`).
 
 Unit tests (Vitest) sit next to the code they cover as `*.test.ts`: the Rx
 pad's safety checks, search and store actions, the shared print template and

@@ -88,7 +88,8 @@ jobs:
           retention-days: 7
 
   # The unit tests run the API on PGlite. This runs the Docker path from the
-  # README on a real Postgres: start, migrate, seed, then the health route.
+  # README on a real Postgres (start, migrate, seed, the health route), then
+  # the API tests again against that Postgres.
   database:
     name: Postgres (Docker)
     runs-on: ubuntu-latest
@@ -118,6 +119,12 @@ jobs:
             sleep 1
           done
           exit 1
+
+      # Last, because the seed tests wipe the database before each suite.
+      - name: API tests against Postgres
+        env:
+          TEST_DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: npx vitest run apps/api
 
       - name: Stop Postgres
         if: always()
