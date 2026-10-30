@@ -39,6 +39,55 @@ export default defineConfig(
     },
   },
   {
+    // Apps read and write data through `api` and the query hooks, never the
+    // mock db, so swapping in the real backend only changes api.ts. Sign-in
+    // (auth.ts, useSession.ts) is exempt until the auth step replaces it.
+    files: ['apps/admin/src/**/*.{ts,tsx}', 'apps/doctor-portal/src/**/*.{ts,tsx}'],
+    ignores: [
+      '**/*.test.ts',
+      'apps/doctor-portal/src/auth.ts',
+      'apps/doctor-portal/src/useSession.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@swiftrx/shared',
+              importNames: [
+                'MOCK_HOSPITALS',
+                'MOCK_USERS',
+                'MOCK_PATIENTS',
+                'MOCK_DRUGS',
+                'MOCK_DIAGNOSES',
+                'MOCK_INVESTIGATIONS',
+                'MOCK_QUICK_PACKS',
+                'MOCK_SIGNED_RX',
+                'MOCK_AUDIT',
+                'getHospital',
+                'getUserByEmail',
+                'getUserById',
+                'listHospitals',
+                'listDoctorsForHospital',
+                'listPatientsForHospital',
+                'listSignedRxForHospital',
+                'listAuditForHospital',
+                'appendAudit',
+                'appendSignedRx',
+                'findDrug',
+                'getRxDesign',
+                'updateHospitalFeatures',
+                'updateHospitalRxDesign',
+              ],
+              message: 'Read and write data through `api` or the query hooks (queries.ts).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['scripts/**/*.mjs', '**/*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
   },
