@@ -1,13 +1,6 @@
 import { Link } from 'react-router-dom';
-import {
-  LiveDot,
-  Card,
-  HospitalBadge,
-  listPatientsForHospital,
-  listSignedRxForHospital,
-  type Hospital,
-  type User,
-} from '@swiftrx/shared';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { LiveDot, Card, HospitalBadge, queries, type Hospital, type User } from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
@@ -27,8 +20,8 @@ export function DashboardPage({ hospital, user }: Props) {
 // -----------------------------------------------------------------------------
 
 function DoctorDashboard({ hospital, user }: Props) {
-  const patients = listPatientsForHospital(hospital.slug);
-  const rx = listSignedRxForHospital(hospital.slug).filter((r) => r.doctorId === user.id);
+  const { patients, rx: hospitalRx } = useRosterAndRx(hospital.slug);
+  const rx = hospitalRx.filter((r) => r.doctorId === user.id);
 
   return (
     <div className="p-6 sm:p-8 max-w-4xl mx-auto space-y-5 animate-fadeIn">
@@ -162,8 +155,7 @@ function DoctorDashboard({ hospital, user }: Props) {
 // -----------------------------------------------------------------------------
 
 function AdminDashboard({ hospital, user }: Props) {
-  const patients = listPatientsForHospital(hospital.slug);
-  const rx = listSignedRxForHospital(hospital.slug);
+  const { patients, rx } = useRosterAndRx(hospital.slug);
 
   return (
     <div className="p-6 sm:p-8 max-w-6xl mx-auto space-y-6 animate-fadeIn">
@@ -211,4 +203,12 @@ function AdminDashboard({ hospital, user }: Props) {
       </div>
     </div>
   );
+}
+
+/** The hospital's roster and signed Rx, fetched in parallel. */
+function useRosterAndRx(slug: string) {
+  const [{ data: patients }, { data: rx }] = useSuspenseQueries({
+    queries: [queries.patients(slug), queries.prescriptions(slug)],
+  });
+  return { patients, rx };
 }

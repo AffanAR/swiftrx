@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { PageBoundary, useHospital } from '@swiftrx/shared';
 import { useSession, type SessionState } from './useSession';
-import { useTenant } from './tenantStore';
+import { useTenantSlug } from './tenantStore';
 import { canPrescribe, sessionBelongsTo } from './auth';
 import { LoginPage } from './pages/LoginPage';
 import { PortalShell } from './components/PortalShell';
@@ -16,8 +17,19 @@ import { TenantNotFound } from './pages/TenantNotFound';
 const RxPad = lazy(() => import('./rx/RxPad'));
 
 export default function App() {
-  const tenant = useTenant();
+  const slug = useTenantSlug();
+  return slug ? <TenantPortal slug={slug} /> : <NoTenant />;
+}
+
+/**
+ * The portal for one hospital. Fetching the hospital suspends; main.tsx shows
+ * the loading and error states for it.
+ */
+function TenantPortal({ slug }: { slug: string }) {
+  const hospital = useHospital(slug);
   const [stored, signOut, refreshSession] = useSession();
+
+  if (!hospital) return <NoTenant />;
 
   if (stored.status === 'loading') {
     return (
@@ -25,15 +37,6 @@ export default function App() {
     );
   }
 
-  if (tenant.status === 'unknown') {
-    return (
-      <Routes>
-        <Route path="*" element={<TenantNotFound />} />
-      </Routes>
-    );
-  }
-
-  const hospital = tenant.hospital;
   // A session belongs to the hospital it signed in at. When the URL names a
   // different hospital (possible on a shared origin, e.g. dev `?hospital=`),
   // that hospital's portal treats the visitor as signed out.
@@ -96,15 +99,10 @@ export default function App() {
           session.status !== 'signed-in' ? (
             <Navigate to="/" replace />
           ) : canPrescribe(session.user, hospital) ? (
-            <Suspense
-              fallback={
-                <div className="h-full flex items-center justify-center text-ink-400 text-sm">
-                  Loading Rx pad…
-                </div>
-              }
-            >
+            // Covers the lazy chunk and the pad's data: one loading state, one error state.
+            <PageBoundary loadingLabel="Loading Rx pad…">
               <RxPad user={session.user} hospital={hospital} onSignOut={signOut} />
-            </Suspense>
+            </PageBoundary>
           ) : (
             <Navigate to="/dashboard" replace />
           )
@@ -135,6 +133,14 @@ export default function App() {
         }
       />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
+}
+
+function NoTenant() {
+  return (
+    <Routes>
+      <Route path="*" element={<TenantNotFound />} />
     </Routes>
   );
 }

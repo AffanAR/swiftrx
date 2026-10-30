@@ -1,16 +1,9 @@
-import {
-  LiveDot,
-  Card,
-  cx,
-  listDoctorsForHospital,
-  type Hospital,
-  type User,
-} from '@swiftrx/shared';
+import { LiveDot, Card, cx, useDoctors, type Hospital, type User } from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
 export function DoctorsPage({ hospital, user }: Props) {
-  const doctors = listDoctorsForHospital(hospital.slug);
+  const doctors = useDoctors(hospital.slug);
   const isAdmin = user.role === 'hospital_admin';
 
   return (

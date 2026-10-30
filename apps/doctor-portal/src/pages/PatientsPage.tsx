@@ -4,20 +4,17 @@ import {
   Card,
   TextField,
   cx,
-  listPatientsForHospital,
-  MOCK_PATIENTS,
-  appendAudit,
+  useCreatePatient,
+  usePatients,
   type Hospital,
   type User,
-  type Patient,
 } from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
 export function PatientsPage({ hospital, user }: Props) {
-  const [patients, setPatients] = React.useState<Patient[]>(() =>
-    listPatientsForHospital(hospital.slug),
-  );
+  const patients = usePatients(hospital.slug);
+  const createPatient = useCreatePatient();
   const [query, setQuery] = React.useState('');
   const [adding, setAdding] = React.useState(false);
   const [form, setForm] = React.useState({
@@ -42,38 +39,27 @@ export function PatientsPage({ hospital, user }: Props) {
     const age = parseInt(form.age, 10);
     const weight = parseFloat(form.weight);
     if (!name || !age || !weight) return;
-    const id = 'p_' + Math.random().toString(36).slice(2, 9);
-    const p: Patient = {
-      id,
-      hospitalSlug: hospital.slug,
-      name,
-      age,
-      sex: form.sex,
-      weightKg: weight,
-      contact: form.contact.trim() || '—',
-      allergies: [],
-      activeProblems: [],
-      activeMedications: [],
-      recentVitals: [
-        { label: 'BP', value: '—' },
-        { label: 'Pulse', value: '—' },
-        { label: 'SpO2', value: '—' },
-      ],
-      createdAt: new Date().toISOString(),
-    };
-    MOCK_PATIENTS.push(p);
-    appendAudit({
-      kind: 'create_patient',
-      userId: user.id,
-      userEmail: user.email,
-      at: new Date().toISOString(),
-      hospitalSlug: hospital.slug,
-      patientId: id,
-      patientName: name,
-    });
-    setPatients(listPatientsForHospital(hospital.slug));
-    setForm({ name: '', age: '', sex: 'M', weight: '', contact: '' });
-    setAdding(false);
+    createPatient.mutate(
+      {
+        patient: {
+          hospitalSlug: hospital.slug,
+          name,
+          age,
+          sex: form.sex,
+          weightKg: weight,
+          contact: form.contact.trim() || '—',
+          allergies: [],
+          activeProblems: [],
+        },
+        by: { id: user.id, email: user.email },
+      },
+      {
+        onSuccess: () => {
+          setForm({ name: '', age: '', sex: 'M', weight: '', contact: '' });
+          setAdding(false);
+        },
+      },
+    );
   };
 
   return (
@@ -221,11 +207,20 @@ export function PatientsPage({ hospital, user }: Props) {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-ink-700 bg-ink-900/40">
+              {createPatient.isError && (
+                <span role="alert" className="mr-auto text-xs text-rx-danger">
+                  Couldn't save: {createPatient.error.message}
+                </span>
+              )}
               <button type="button" className="rx-btn-ghost" onClick={() => setAdding(false)}>
                 Cancel
               </button>
-              <button type="submit" className="rx-shine rx-btn-primary">
-                Create patient
+              <button
+                type="submit"
+                className="rx-shine rx-btn-primary"
+                disabled={createPatient.isPending}
+              >
+                {createPatient.isPending ? 'Saving…' : 'Create patient'}
               </button>
             </div>
           </form>

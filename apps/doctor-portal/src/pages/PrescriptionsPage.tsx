@@ -1,16 +1,9 @@
-import {
-  LiveDot,
-  Card,
-  cx,
-  listSignedRxForHospital,
-  type Hospital,
-  type User,
-} from '@swiftrx/shared';
+import { LiveDot, Card, cx, usePrescriptions, type Hospital, type User } from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
 export function PrescriptionsPage({ hospital }: Props) {
-  const rx = listSignedRxForHospital(hospital.slug);
+  const rx = usePrescriptions(hospital.slug);
 
   return (
     <div className="p-6 sm:p-8 max-w-6xl mx-auto space-y-4 animate-fadeIn">

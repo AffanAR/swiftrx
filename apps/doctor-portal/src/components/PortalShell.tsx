@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router-dom';
-import { LiveDot, cx, type Hospital, type User } from '@swiftrx/shared';
+import { NavLink, useLocation } from 'react-router-dom';
+import { LiveDot, PageBoundary, cx, type Hospital, type User } from '@swiftrx/shared';
 import { canPrescribe } from '../auth';
 
 export function PortalShell({
@@ -13,6 +13,7 @@ export function PortalShell({
   user: User;
   onSignOut: () => void;
 }) {
+  const { pathname } = useLocation();
   const isAdmin = user.role === 'hospital_admin';
   const nav = isAdmin
     ? NAV_ADMIN
@@ -82,7 +83,10 @@ export function PortalShell({
         </div>
       </header>
 
-      <main className="relative flex-1 min-h-0 overflow-y-auto">{children}</main>
+      <main className="relative flex-1 min-h-0 overflow-y-auto">
+        {/* Inside the shell, so loading a page never blanks the nav. */}
+        <PageBoundary key={pathname}>{children}</PageBoundary>
+      </main>
     </div>
   );
 }
