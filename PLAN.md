@@ -392,8 +392,9 @@ In this order:
     real Postgres where Docker exists. The CI job "Postgres (Docker)" runs that
     path, then the API tests again against the real server, which covers what
     PGlite can't (it allows one connection and is its own build). It can't
-    run on this machine. Its first version (setup and health route, before the
-    test step was added) passed on GitHub on 2026-10-30.
+    run on this machine. Its first version (setup and health route) passed on
+    GitHub on 2026-10-30, and the full job, with the API tests, passed in
+    run #8.
 
   What was built:
   - **Server.** `apps/api` serves `GET /api/health` (503 when the database

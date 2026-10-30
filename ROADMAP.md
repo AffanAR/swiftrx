@@ -57,11 +57,11 @@ to these keeps one developer's time on the pad.
 | --- | --- |
 | Frontend | Done to prototype quality: the admin panel, and the hospital portal with the Rx pad at `/rx`. Phases 0 and 1 are complete. |
 | Data | Every screen goes through one async data client (`apps/shared/src/api.ts`) and shows loading and error states. It still answers from an in-browser mock database, so nothing is saved or shared between visitors. |
-| Backend | The `apps/api` skeleton is built: Hono, Drizzle, Postgres (or PGlite in-process), 15 tables, an append-only audit table and a validated seed. It's on branch `claude/beautiful-visvesvaraya-1bfbad`, with CI green (run #8, including a job on real Postgres). It isn't merged, deployed or used by the apps yet. |
+| Backend | The `apps/api` skeleton is built: Hono, Drizzle, Postgres (or PGlite in-process), 15 tables, an append-only audit table and a validated seed. It was merged into `master` on 2026-10-31, and CI runs its tests on real Postgres as well as PGlite. It isn't deployed or used by the apps yet. |
 | Sign-in | Demo only. Password hashes ship in the browser bundle, and the session is unsigned JSON in localStorage. |
 | Safety checks | Interim. A critical allergy alert blocks signing until the doctor gives a reason, and a dose or duration of 0 is refused. Open gaps (`PLAN.md` §2.2): the duplicate check never fires, medicines on one Rx aren't checked against each other, there are no dose ranges, and Esc clears the pad with no confirm or undo. |
 | Drug catalog | Seed data only: 12 drugs, 7 diagnoses, 12 quick packs. |
-| Quality | Prettier, ESLint, strict TypeScript, 86 unit tests (113 on the API branch), a pre-commit hook, and CI on every push. |
+| Quality | Prettier, ESLint, strict TypeScript, 113 unit tests, a pre-commit hook, and CI on every push. |
 | Hosting | A public demo at `thesyndicate.bond`: Render's free plan behind Cloudflare, with a DEMO banner on every page and a DEMO stamp on every print. Only `thesyndicate.bond` and `city-hospital.` resolve (checked 2026-10-31). With no wildcard DNS record, the admin panel only loads at the bare domain and the other hospitals don't load at all. The first visit after 15 idle minutes waits while the free instance wakes (21 seconds on 2026-10-31; Render says up to a minute). |
 | Repo | Public on GitHub (`AffanAR/swiftrx`), though it was meant to be private. |
 
@@ -147,8 +147,7 @@ Phases 0 and 1 were finished on 2026-10-22; `PLAN.md` §3.2 has the record.
 **Engineering**, in `PLAN.md` order:
 
 1. **Async data client.** Done 2026-10-30.
-2. **`apps/api` skeleton.** Done on its branch, with CI green. Merge it into
-   `master` next.
+2. **`apps/api` skeleton.** Done, and merged into `master` on 2026-10-31.
 3. **Auth:** cookie sessions with server-enforced expiry, Argon2id on the
    server, the tenant taken from the Host header, rate-limited sign-in,
    password reset and real invites. No hash or password left in any bundle.
@@ -182,8 +181,8 @@ Phases 0 and 1 were finished on 2026-10-22; `PLAN.md` §3.2 has the record.
 - **Wildcard DNS:** add `*.thesyndicate.bond` on Render and the `*` record
   in Cloudflare (your step; `deploy/ONLINE.md` §3, step 4), so `admin.` and
   every hospital load.
-- **The skeleton's notes for later steps** (in `PLAN.md` once its branch is
-  merged): add the allergy status to `types.ts`, count each month's Rx from
+- **The skeleton's notes for later steps** (in `PLAN.md`, under the skeleton
+  item): add the allergy status to `types.ts`, count each month's Rx from
   `prescriptions`, and store a date of birth instead of an age before any
   real patient.
 
@@ -384,7 +383,7 @@ When a decision is made, write its date and the reason here.
 | # | Decision | Recommendation | Decide by | Status |
 | --- | --- | --- | --- | --- |
 | D1 | Merge the Rx pad into the portal? | Yes | — | Decided 2026-10-22; done in Phase 1 |
-| D2 | Backend stack | Hono, Drizzle and Postgres | — | Decided 2026-10-30; the reasons are in `PLAN.md`, Phase 2, once the API branch is merged |
+| D2 | Backend stack | Hono, Drizzle and Postgres | — | Decided 2026-10-30; the reasons are in `PLAN.md`, Phase 2, under the skeleton item |
 | D3 | May hospital admins prescribe? | No, unless they also hold a doctor membership with a verified license. The Rx pad already admits only active, licensed doctors (`canPrescribe()`). | Early Nov 2026, before the auth step | Open |
 | D4 | Drug and interaction data: source and yearly budget | Quotes from two or three providers in November; choose on coverage of Pakistani brands, how often it's updated, and the licence terms | Early Dec 2026 | Open |
 | D5 | Hosting region and data residency | Ask the pilot hospital and the lawyer whether data must stay in Pakistan. Render's regions are in the US, Frankfurt and Singapore. The API is plain Node and Postgres, so a Pakistani host is an option. | Dec 2026, before buying production hosting | Open |
@@ -438,8 +437,7 @@ again.
 
 **Engineering**
 
-- [ ] Merge the API skeleton (`claude/beautiful-visvesvaraya-1bfbad`, CI
-      green) into `master`, and push it.
+- [x] Merge the API skeleton into `master`, and push it (done 2026-10-31).
 - [ ] Decide D3, then start the auth step.
 - [ ] Add the wildcard domain on Render and the `*` record in Cloudflare
       (`deploy/ONLINE.md` §3, step 4).
