@@ -4,6 +4,8 @@ dist/
 coverage/
 package-lock.json
 *.tsbuildinfo
+# drizzle-kit snapshots; it rewrites them on every generate
+apps/api/drizzle/meta/
 
 # Docs keep their hand-aligned tables
 *.md

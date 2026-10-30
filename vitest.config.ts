@@ -1,13 +1,20 @@
-// Unit tests for the shared package and the doctor portal (incl. the Rx pad).
-// Everything under test is plain TypeScript, so the tests run in Node.
+// Unit tests for the shared package, the doctor portal (incl. the Rx pad) and
+// the API. Everything under test is plain TypeScript, so the tests run in Node.
+// The API tests run against PGlite (Postgres in WebAssembly), so they need no
+// database server.
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+const SHARED_SRC = fileURLToPath(new URL('./apps/shared/src/', import.meta.url));
+
 export default defineConfig({
   resolve: {
-    alias: {
-      '@swiftrx/shared': fileURLToPath(new URL('./apps/shared/src/index.ts', import.meta.url)),
-    },
+    alias: [
+      // The API imports single modules (`@swiftrx/shared/schemas`) so that it
+      // doesn't load the React half of the index.
+      { find: /^@swiftrx\/shared\/(.+)$/, replacement: `${SHARED_SRC}$1` },
+      { find: /^@swiftrx\/shared$/, replacement: `${SHARED_SRC}index.ts` },
+    ],
   },
   test: {
     include: ['apps/*/src/**/*.test.ts'],
@@ -20,8 +27,12 @@ export default defineConfig({
       // tests, so counting them would drag the number down without guarding
       // anything. Widen this list as DOM tests are added.
       include: [
-        'apps/shared/src/{api,auth,tenant,print}.ts',
+        'apps/shared/src/{api,auth,tenant,print,schemas}.ts',
         'apps/doctor-portal/src/rx/{store,safety,search}.ts',
+        // Entry points (server.ts, db/cli.ts, env.ts) are left out: they only
+        // wire these modules to the process.
+        'apps/api/src/app.ts',
+        'apps/api/src/db/{client,schema,seed}.ts',
       ],
       thresholds: {
         // Calibrated just under the measured numbers so CI fails on a

@@ -1,0 +1,26 @@
+# Local Postgres for the API (apps/api), for machines with Docker.
+#   npm run db:up      start it, wait until it's healthy, migrate and seed
+#   docker compose down        stop it (the data stays in the volume)
+#   docker compose down -v     stop it and delete the data
+#
+# Without Docker the API uses PGlite instead (`npm run db:setup`); see README.
+# The password is for this local container only, which listens on 127.0.0.1.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: swiftrx
+      POSTGRES_PASSWORD: swiftrx
+      POSTGRES_DB: swiftrx
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - swiftrx-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U swiftrx -d swiftrx']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  swiftrx-db:

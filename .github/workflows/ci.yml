@@ -87,6 +87,42 @@ jobs:
           path: coverage/
           retention-days: 7
 
+  # The unit tests run the API on PGlite. This runs the Docker path from the
+  # README on a real Postgres: start, migrate, seed, then the health route.
+  database:
+    name: Postgres (Docker)
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://swiftrx:swiftrx@localhost:5432/swiftrx
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Start Postgres, migrate and seed
+        run: npm run db:up
+
+      - name: Set up again (must skip the seed, not fail)
+        run: npm run db:setup | tee setup.log && grep -q 'seed was skipped' setup.log
+
+      - name: Health route against Postgres
+        run: |
+          npm start -w @swiftrx/api &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:5176/api/health && exit 0
+            sleep 1
+          done
+          exit 1
+
+      - name: Stop Postgres
+        if: always()
+        run: docker compose down -v
+
   build:
     name: Build
     runs-on: ubuntu-latest
