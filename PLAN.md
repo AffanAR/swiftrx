@@ -216,6 +216,8 @@ the browser against `mockDb.ts`. What has to change, most important first:
 
   Every helper is synchronous and an API is not, so each call site needs
   loading and error states. That is most of the frontend cost of Phase 2.
+  (Fixed 2026-10-30 by the async data client, Phase 2's first item. The real
+  count was 20 files: helper calls had to move as well as the `MOCK_*` reads.)
 - **Data-model gaps to settle before the schema:**
   - A prescription keeps `patient_id` *and* a frozen copy of the patient as
     signed (name, age, weight, allergies). Storing only a reference, as the
@@ -334,15 +336,29 @@ Findings are in §2.7. Recommended stack: a TypeScript API in `apps/api`
 (Hono or Fastify, Postgres, Prisma or Drizzle), with zod schemas in
 `apps/shared`. Prefer it over Supabase (§4, item 2): signing and the safety
 rules have to run on the server, in the TypeScript that already exists.
-Branch from GitHub `main`, which has the hosted-demo changes that local
-`master` lacks.
+(GitHub `main` was merged into local `master` on 2026-10-30.)
 
 In this order:
 
-- [ ] **Async data client, no server yet.** An async client in `apps/shared`
+- [x] **Async data client, no server yet.** An async client in `apps/shared`
       backed by `mockDb`. Move the 11 files from §2.7 onto it with TanStack
       Query, and add loading/error states and error boundaries. After this,
-      switching to HTTP touches one file.
+      switching to HTTP touches one file. (Done 2026-10-30, checked in the
+      browser:
+  - `api.ts` is the client. Each method is async, returns copies, notes its
+    future endpoint, never returns password hashes, and assigns ids,
+    timestamps and the audit row on writes.
+  - `queries.ts` holds the TanStack Query hooks; pages suspend, and
+    `PageBoundary` / `AppCrashBoundary` (`status.tsx`) show loading, error and
+    crash states.
+  - All 20 data-touching files moved, including the Rx store: `sign()` and
+    `createPatient()` are async, with a double-submit guard and an error banner.
+  - ESLint now rejects mock-db imports in app code.
+  - `VITE_MOCK_LATENCY_MS` adds a delay to see the loading states.
+  - Side fixes: the new-hospital audit row uses the signed-in admin instead
+    of a hard-coded id (§2.4), and Rx ids get a random tail, so two signs in
+    the same millisecond almost never share one (§2.7).
+  - Sign-in still goes through `auth.ts`, which the auth step replaces.)
 - [ ] **`apps/api` skeleton:** Postgres in Docker for local dev, migrations,
       and a seed script that loads `apps/shared/src/seed/*.json`. Tables:
   - `hospitals`, `users`, `memberships` (role per hospital), `patients`

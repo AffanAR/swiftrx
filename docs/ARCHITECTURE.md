@@ -39,7 +39,7 @@ flowchart TB
     R --> S
 
     subgraph Shared["@swiftrx/shared — no build step"]
-      S[types · mockDb · auth<br/>tenant · ui · print]
+      S[types · api · queries · auth<br/>tenant · ui · print]
     end
 
     A -.->|Vite alias<br/>tsconfig paths| S
@@ -72,12 +72,12 @@ sequenceDiagram
     participant U as Doctor
     participant B as Browser
     participant T as resolveSurface
-    participant DB as mockDb
+    participant DB as api
 
     U->>B: open city-hospital.swiftrx.com/rx
     B->>T: hostname + pathname
     T->>T: /rx ? rx : admin.* ? admin : hospital
-    T->>DB: getHospital(slug)
+    T->>DB: api.hospitals.get(slug)
     DB-->>B: Hospital (features + RxDesign)
     Note over B: login is gated to that hospital.<br/>A doctor of another tenant is refused.
 ```
@@ -87,20 +87,43 @@ tested — it is the one place the routing rule lives.
 
 ## Data and the backend seam
 
-There is **no backend**. `apps/shared/src/mockDb.ts` is an in-memory module, so
-each browser tab has its own copy of the data.
+There is **no backend** yet. Every app reads and writes data through the data
+client, `api` in `apps/shared/src/api.ts`. Today it answers from the in-memory
+mock db (`mockDb.ts`), so each browser tab has its own copy of the data.
 
-This is the seam for a real API. The helper names are the contract:
+```mermaid
+flowchart LR
+    Pg[Pages] -->|use… hooks| Q[queries.ts<br/>TanStack Query]
+    Rx[Rx store] -->|sign, new patient| A
+    Q --> A[api.ts<br/>data client]
+    A --> M[(mockDb.ts<br/>today)]
+    A -.->|later: fetch| H[(HTTP API)]
+```
 
-| Helper | Becomes |
+- **Reads:** pages use the hooks in `queries.ts`, which suspend until their data
+  is there. `<PageBoundary>` (`status.tsx`) shows the loading and error states
+  inside each app's shell; `<AppCrashBoundary>` catches anything else.
+- **Writes:** go through the client, which assigns ids and timestamps and
+  records the audit event, as the server will. Afterwards the hooks (or the Rx
+  store, via `afterWrite`) refetch what the write changed.
+- **The Rx pad** loads its roster, history and catalog through the same queries
+  and hands them to its store, so search and editing stay synchronous.
+
+`api.ts` is the seam for the real API: each method is labelled with the endpoint
+it becomes, and nothing else has to change when it does. ESLint stops app code
+from importing the mock db directly. Sign-in is the exception: it stays in
+`auth.ts` until the auth step.
+
+| Client method | Becomes |
 | --- | --- |
-| `getHospital`, `listPatientsForHospital` | `GET /hospitals/:slug`, `GET /patients` |
+| `api.hospitals.get`, `api.patients.list` | `GET /hospitals/:slug`, `GET /hospitals/:slug/patients` |
+| `api.patients.create` | `POST /hospitals/:slug/patients` |
+| `api.prescriptions.sign` | `POST /hospitals/:slug/prescriptions`, signed server-side |
+| `api.audit.list` | `GET /audit-events` (the server writes the events) |
 | `login` (`apps/shared/src/auth.ts`) | `POST /auth/login` with a cookie session |
-| `appendSignedRx` | `POST /prescriptions`, signed server-side |
-| `appendAudit` | `POST /audit-events`, append-only |
 
-Swapping `mockDb` for HTTP calls is the intended path; the components do not
-change. Until then, data does not flow between apps — see `PLAN.md` Phase 2.
+Until the backend exists, data does not flow between apps or tabs — see
+`PLAN.md` Phase 2.
 
 ## The signing path
 
@@ -133,6 +156,8 @@ from the hospital's design, so a tenant on A5 landscape prints on A5 landscape.
 | You want to change | File |
 | --- | --- |
 | Cross-app types or defaults | `apps/shared/src/types.ts` |
+| How data is read or written | `apps/shared/src/api.ts` (client), `queries.ts` (hooks) |
+| Loading, error and crash screens | `apps/shared/src/status.tsx` |
 | Seed data | `apps/shared/src/seed/*.json` (loaded by `seedData.ts`) |
 | Login / role gates | `apps/shared/src/auth.ts` |
 | Which tenant a request belongs to | `apps/shared/src/tenant.ts` |

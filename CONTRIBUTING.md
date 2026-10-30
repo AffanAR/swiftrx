@@ -54,8 +54,10 @@ If you touch safety rules, dose limits or quick packs:
 
 Every entity is keyed by `hospitalSlug`, and the hospital is resolved from the
 host, never from client input. A change that lets one tenant read another's data
-is a security bug, not a UI bug. When you add a lookup helper in `mockDb.ts`,
-scope it by slug and add a test for the cross-tenant case.
+is a security bug, not a UI bug. When you add a method to the data client
+(`apps/shared/src/api.ts`), scope it by hospital slug and add a test for the
+cross-tenant case (see `api.test.ts`). App code reads and writes only through
+the client and its query hooks; ESLint rejects direct mock-db imports.
 
 ## Code conventions
 
@@ -70,7 +72,7 @@ scope it by slug and add a test for the cross-tenant case.
 
 | Path | Purpose |
 | --- | --- |
-| `apps/shared/` | Types, mock data, auth primitives, tenant resolution, UI primitives |
+| `apps/shared/` | Types, the data client and query hooks, mock data, auth, tenant resolution, UI primitives |
 | `apps/admin/` | Platform console (tenants, users, usage, audit) — port 5175 |
 | `apps/doctor-portal/` | Per-hospital portal and the Rx pad at `/rx` — port 5174 |
 | `scripts/dev.mjs` | Dev orchestrator + subdomain gateway — port 5172 |
@@ -87,6 +89,6 @@ there is no build step. See `docs/ARCHITECTURE.md` for the full picture.
 | City Hospital doctor | `ayesha@city-hospital.com` | `demo1234` |
 | Northstar doctor | `sana@northstar-medical.com` | `demo1234` |
 
-Passwords are bcrypt hashes in `apps/shared/src/mockDb.ts`, verified by
+Passwords are bcrypt hashes in `apps/shared/src/seed/users.json`, verified by
 `verifyPassword()`. To add a user, hash the password (cost 8 is enough for a
 demo) rather than storing it in the clear.

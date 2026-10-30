@@ -39,6 +39,9 @@ npm run dev:portal      # Hospital portal (incl. the Rx pad) on http://localhost
 npm run dev:admin       # Admin panel on http://localhost:5175
 npm run dev:gateway     # Only the dev gateway on http://localhost:5172
 
+# Slow every mock-data reply down (ms), to see the loading states:
+VITE_MOCK_LATENCY_MS=800 npm run dev:portal
+
 # Build both apps, then serve them on :8080 like production does:
 npm run build
 npm start
@@ -115,8 +118,10 @@ SwiftRX/
 `paths` entry — there's no build step. The apps are npm workspaces
 (`apps/*`), so there is one `package-lock.json` and one `node_modules` at
 the root.
-Replace it with a real backend by swapping the `mockDb.ts` functions for
-HTTP calls; the components don't change.
+The apps read and write data through the data client in
+`apps/shared/src/api.ts`, using the TanStack Query hooks in `queries.ts`.
+Moving to a real backend means changing that one file (sign-in aside, see
+below); see `docs/ARCHITECTURE.md`.
 
 ## Tenant model
 
@@ -177,9 +182,9 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 
 ## Production swap-ins
 
-- **Database**: `apps/shared/src/mockDb.ts` → Postgres via Prisma. The
-  `MOCK_*` constants and `getHospital` / `listPatientsForHospital` / etc.
-  helpers are the seam.
+- **Database**: the data client, `apps/shared/src/api.ts`, is the seam. Each
+  method answers from `mockDb.ts` today and is labelled with the HTTP endpoint
+  it becomes (backed by Postgres). ESLint keeps app code off the mock db.
 - **Auth**: replace the `login` function in `apps/shared/src/auth.ts` with
   a real API call. The portal's `SessionPayload` is the contract to keep;
   the Rx pad gets its doctor identity from that session.
@@ -191,7 +196,10 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | Path                                          | Purpose                                            |
 | --------------------------------------------- | -------------------------------------------------- |
 | `apps/shared/src/types.ts`                    | All cross-app types (Hospital, User, Patient, …)   |
-| `apps/shared/src/mockDb.ts`                   | Per-tenant lookups and appends                     |
+| `apps/shared/src/api.ts`                      | The data client: every read and write goes through it |
+| `apps/shared/src/queries.ts`                  | TanStack Query hooks and query keys over `api`     |
+| `apps/shared/src/status.tsx`                  | Loading, error and crash screens (`PageBoundary`)  |
+| `apps/shared/src/mockDb.ts`                   | The in-memory store `api.ts` answers from today    |
 | `apps/shared/src/seed/*.json`                 | Seed data, loaded by `seedData.ts`                 |
 | `apps/shared/src/auth.ts`                     | `login` + session storage helpers                  |
 | `apps/shared/src/tenant.ts`                   | `resolveSurface()` — host / query → admin / hospital |
