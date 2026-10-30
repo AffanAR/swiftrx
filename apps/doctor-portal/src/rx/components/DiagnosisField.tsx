@@ -1,14 +1,7 @@
 import React from 'react';
 import { useApp, actions } from '../store';
 import { fuzzySearch } from '../search';
-import {
-  LiveDot,
-  MOCK_DIAGNOSES,
-  MOCK_INVESTIGATIONS,
-  cx,
-  type Diagnosis,
-  type Investigation,
-} from '@swiftrx/shared';
+import { LiveDot, cx, type Diagnosis, type Investigation } from '@swiftrx/shared';
 
 interface Props {
   diagnosisRef: React.RefObject<HTMLInputElement>;
@@ -18,6 +11,7 @@ export function DiagnosisField({ diagnosisRef }: Props) {
   const query = useApp((s) => s.diagnosisQuery);
   const diagnosis = useApp((s) => s.diagnosis);
   const investigations = useApp((s) => s.investigations);
+  const diagnoses = useApp((s) => s.catalog.diagnoses);
   const setQuery = actions.setDiagnosisQuery;
   const setDiagnosis = actions.setDiagnosis;
   const [open, setOpen] = React.useState(false);
@@ -25,12 +19,12 @@ export function DiagnosisField({ diagnosisRef }: Props) {
 
   const results = React.useMemo(() => {
     return fuzzySearch(
-      MOCK_DIAGNOSES,
+      diagnoses,
       query,
       (d) => [`${d.code} ${d.name}`, d.name, d.code, d.category],
       8,
     );
-  }, [query]);
+  }, [query, diagnoses]);
 
   React.useEffect(() => {
     setActiveIdx(0);
@@ -160,14 +154,15 @@ function InvestigationList({ selected }: { selected: Investigation[] }) {
   const [adding, setAdding] = React.useState(false);
   const [draft, setDraft] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const all = useApp((s) => s.catalog.investigations);
 
   const matches = React.useMemo(() => {
-    if (!draft.trim()) return MOCK_INVESTIGATIONS;
+    if (!draft.trim()) return all;
     const q = draft.trim().toLowerCase();
-    return MOCK_INVESTIGATIONS.filter(
-      (i) => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q),
-    ).slice(0, 8);
-  }, [draft]);
+    return all
+      .filter((i) => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [draft, all]);
 
   const isOn = (code: string) => selected.some((i) => i.code === code);
 

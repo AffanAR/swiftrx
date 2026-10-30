@@ -1,7 +1,6 @@
 import React from 'react';
 import { useApp, actions } from '../store';
 import {
-  MOCK_DRUGS,
   cx,
   type DoseUnit,
   type Frequency,
@@ -24,8 +23,12 @@ export function MedicationRow({ med, index }: RowProps) {
   const setActive = actions.setActiveRow;
   const update = actions.updateMedication;
   const remove = actions.removeMedication;
+  const drugs = useApp((s) => s.catalog.drugs);
 
-  const alerts = React.useMemo(() => evaluateMedication(med, patient, MOCK_DRUGS), [med, patient]);
+  const alerts = React.useMemo(
+    () => evaluateMedication(med, patient, drugs),
+    [med, patient, drugs],
+  );
   const worstSeverity = alerts.reduce<Severity | null>((acc, a) => {
     const r = severityRank(a.severity);
     if (!acc || r > severityRank(acc)) return a.severity;
@@ -72,7 +75,7 @@ export function MedicationRow({ med, index }: RowProps) {
             {med.brandName && <span className="text-xs text-ink-400">← {med.brandName}</span>}
           </div>
           <div className="text-[11px] text-ink-400 font-mono">
-            {findDrug(med.drugId, MOCK_DRUGS)?.therapeuticClass}
+            {findDrug(med.drugId, drugs)?.therapeuticClass}
           </div>
         </div>
 

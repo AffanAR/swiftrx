@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import {
   cx,
-  MOCK_QUICK_PACKS,
+  queries,
   type Hospital,
   type QuickPack,
   type SignedRx,
@@ -16,6 +17,7 @@ import {
   loadWorkspace,
   resetWorkspace,
   type DoctorIdentity,
+  type WorkspaceData,
 } from './store';
 import { useHotkeys } from './useHotkeys';
 import { TopBar } from './components/TopBar';
@@ -30,7 +32,9 @@ import './rx.css';
 /**
  * The Rx pad, mounted by the portal at /rx (lazy-loaded). The portal only
  * renders it for a signed-in, licensed doctor of this hospital and passes that
- * identity in, so there is no separate Rx session.
+ * identity in, so there is no separate Rx session. The roster, signed history
+ * and catalog load through the data client (suspending until they're there),
+ * then go into the pad's store, so searching and editing stay synchronous.
  */
 export default function RxPad({
   user,
@@ -51,13 +55,26 @@ export default function RxPad({
     }),
     [user, hospital.slug],
   );
+  const [{ data: patients }, { data: signed }, { data: catalog }] = useSuspenseQueries({
+    queries: [
+      queries.patients(hospital.slug),
+      queries.prescriptions(hospital.slug),
+      queries.catalog(),
+    ],
+  });
+  // Stable until the data itself changes, so the store only reloads on a real refetch.
+  const data = React.useMemo<WorkspaceData>(
+    () => ({ patients, signed, catalog, rxDesign: hospital.rxDesign }),
+    [patients, signed, catalog, hospital.rxDesign],
+  );
   const [loadedFor, setLoadedFor] = React.useState<DoctorIdentity | null>(null);
 
-  // Load before the first paint so the workspace never flashes empty.
+  // Load before the first paint so the workspace never flashes empty, and
+  // again when a refetch brings new data (the same doctor keeps their pad).
   React.useLayoutEffect(() => {
-    loadWorkspace(doctor);
+    loadWorkspace(doctor, data);
     setLoadedFor(doctor);
-  }, [doctor]);
+  }, [doctor, data]);
 
   const signOut = React.useCallback(() => {
     resetWorkspace();
@@ -95,9 +112,9 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
         actions.setBanner({ kind: 'warn', text: 'Select a diagnosis first.' });
         return;
       }
-      const packs = MOCK_QUICK_PACKS.filter((p) => p.diagnosisCode === dx.code).sort((a, b) =>
-        a.shortcutKey.localeCompare(b.shortcutKey),
-      );
+      const packs = getState()
+        .catalog.quickPacks.filter((p) => p.diagnosisCode === dx.code)
+        .sort((a, b) => a.shortcutKey.localeCompare(b.shortcutKey));
       if (packs[i]) applyPack(packs[i]);
       else actions.setBanner({ kind: 'info', text: `No pack #${i + 1} for ${dx.code}.` });
     },
@@ -114,7 +131,7 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
   }, []);
 
   const onSign = React.useCallback(() => {
-    signAndPrint();
+    void signAndPrint();
   }, []);
 
   const onPrint = React.useCallback(() => {

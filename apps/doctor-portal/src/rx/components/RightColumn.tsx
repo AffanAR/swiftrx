@@ -1,14 +1,6 @@
 import React from 'react';
 import { useApp } from '../store';
-import {
-  LiveDot,
-  MOCK_DRUGS,
-  MOCK_QUICK_PACKS,
-  ProgressBar,
-  cx,
-  type QuickPack,
-  type SignedRx,
-} from '@swiftrx/shared';
+import { LiveDot, ProgressBar, cx, type QuickPack, type SignedRx } from '@swiftrx/shared';
 import { evaluateMedication, severityRank } from '../safety';
 import { PreviousRx } from './PreviousRx';
 
@@ -20,13 +12,15 @@ interface Props {
 export function RightColumn({ onApply, onRepeat }: Props) {
   const diagnosis = useApp((s) => s.diagnosis);
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
+  const { drugs, quickPacks } = useApp((s) => s.catalog);
 
   const packs = React.useMemo(() => {
     if (!diagnosis) return [];
-    return MOCK_QUICK_PACKS.filter((p) => p.diagnosisCode === diagnosis.code)
+    return quickPacks
+      .filter((p) => p.diagnosisCode === diagnosis.code)
       .sort((a, b) => a.shortcutKey.localeCompare(b.shortcutKey))
       .slice(0, 3);
-  }, [diagnosis]);
+  }, [diagnosis, quickPacks]);
 
   return (
     <aside className="w-1/4 min-w-[320px] border-l border-ink-700 bg-ink-900/60 p-3 overflow-y-auto rx-bg-radial-focus">
@@ -65,7 +59,7 @@ export function RightColumn({ onApply, onRepeat }: Props) {
                 instructions: m.instructions,
               },
               patient,
-              MOCK_DRUGS,
+              drugs,
             ),
           );
           const worst = alertsByMed.reduce<number>(

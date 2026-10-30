@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   MOCK_AUDIT,
   MOCK_DIAGNOSES,
   MOCK_PATIENTS,
+  api,
   type Diagnosis,
   type Patient,
   type SignedRx,
@@ -15,9 +16,10 @@ import {
   resetWorkspace,
   store,
   type DoctorIdentity,
+  type WorkspaceData,
 } from './store';
 
-// Seed doctors and patients from apps/shared/src/mockDb.ts. City Hospital's
+// Seed doctors and patients from apps/shared/src/seed/. City Hospital's
 // p_001 (Bilal) is allergic to penicillin; p_002 (Fatima) has no allergies.
 const AYESHA: DoctorIdentity = {
   id: 'd_001',
@@ -33,6 +35,17 @@ const SANA: DoctorIdentity = {
   licenseNo: 'PMDC-37890',
   hospitalSlug: 'northstar-medical',
 };
+
+/** What RxPad fetches for a hospital, straight from the data client. */
+async function workspaceFor(slug: string): Promise<WorkspaceData> {
+  const [patients, signed, catalog, hospital] = await Promise.all([
+    api.patients.list(slug),
+    api.prescriptions.list(slug),
+    api.catalog.get(),
+    api.hospitals.get(slug),
+  ]);
+  return { patients, signed, catalog, rxDesign: hospital?.rxDesign ?? null };
+}
 
 const dx = (code: string): Diagnosis => {
   const d = MOCK_DIAGNOSES.find((x) => x.code === code);
@@ -50,13 +63,14 @@ function fillPad(patientId: string, code: string, drugIds: string[]) {
 // The mock db is shared module state; remove anything a test adds to it.
 const patientsBefore = MOCK_PATIENTS.length;
 
-beforeEach(() => {
+beforeEach(async () => {
   resetWorkspace();
-  loadWorkspace(AYESHA);
+  loadWorkspace(AYESHA, await workspaceFor('city-hospital'));
 });
 
 afterEach(() => {
   MOCK_PATIENTS.length = patientsBefore;
+  vi.restoreAllMocks();
 });
 
 describe('loadWorkspace', () => {
@@ -67,14 +81,16 @@ describe('loadWorkspace', () => {
     expect(s.patients.every((p) => p.hospitalSlug === 'city-hospital')).toBe(true);
     expect(s.signed.every((r) => r.hospitalSlug === 'city-hospital')).toBe(true);
     expect(s.patientId).toBe(s.patients[0].id);
+    expect(s.catalog.drugs.length).toBeGreaterThan(0);
+    expect(s.rxDesign).not.toBeNull();
   });
 
-  it('keeps the pad for the same doctor but re-reads the roster', () => {
+  it('keeps the pad for the same doctor but takes the new roster', async () => {
     fillPad('p_002', 'I10', ['amlo']);
     const added: Patient = { ...getState().patients[0], id: 'p_added', name: 'Added Elsewhere' };
     MOCK_PATIENTS.push(added);
 
-    loadWorkspace({ ...AYESHA });
+    loadWorkspace({ ...AYESHA }, await workspaceFor('city-hospital'));
 
     const s = getState();
     expect(s.patientId).toBe('p_002');
@@ -82,9 +98,9 @@ describe('loadWorkspace', () => {
     expect(s.patients.some((p) => p.id === 'p_added')).toBe(true);
   });
 
-  it('starts from a clean pad for a different doctor', () => {
+  it('starts from a clean pad for a different doctor', async () => {
     fillPad('p_002', 'I10', ['amlo']);
-    loadWorkspace(SANA);
+    loadWorkspace(SANA, await workspaceFor('northstar-medical'));
 
     const s = getState();
     expect(s.medications).toEqual([]);
@@ -94,14 +110,14 @@ describe('loadWorkspace', () => {
 });
 
 describe('sign', () => {
-  it('refuses an incomplete pad', () => {
-    expect(actions.sign()).toBeNull();
+  it('refuses an incomplete pad', async () => {
+    expect(await actions.sign()).toBeNull();
     expect(getState().banner).toMatchObject({ kind: 'warn' });
   });
 
-  it('signs a complete pad as the signed-in doctor, records it and clears the pad', () => {
+  it('signs a complete pad as the signed-in doctor, records it and clears the pad', async () => {
     fillPad('p_002', 'I10', ['amlo']);
-    const rx = actions.sign();
+    const rx = await actions.sign();
 
     expect(rx).toMatchObject({
       hospitalSlug: 'city-hospital',
@@ -114,45 +130,70 @@ describe('sign', () => {
     expect(getState().signed[0]).toBe(rx);
     expect(getState().medications).toEqual([]);
     expect(getState().diagnosis).toBeNull();
+    expect(getState().signing).toBe(false);
     expect(MOCK_AUDIT[0]).toMatchObject({ kind: 'sign_rx', rxId: rx?.id, userId: 'd_001' });
   });
 
-  it('refuses a dose or duration of 0', () => {
+  it('refuses a dose or duration of 0', async () => {
     fillPad('p_002', 'I10', ['amlo']);
     const row = getState().medications[0];
 
     actions.updateMedication(row.rowId, { dosage: { ...row.dosage, value: 0 } });
-    expect(actions.sign()).toBeNull();
+    expect(await actions.sign()).toBeNull();
     expect(getState().banner?.text).toContain('Row 1 (Amlodipine)');
 
     actions.updateMedication(row.rowId, { dosage: { ...row.dosage, value: 5 }, durationDays: 0 });
-    expect(actions.sign()).toBeNull();
+    expect(await actions.sign()).toBeNull();
   });
 
-  it('needs an override reason before signing past an allergy alert', () => {
+  it('needs an override reason before signing past an allergy alert', async () => {
     fillPad('p_001', 'J02.9', ['amox']);
 
-    expect(actions.sign()).toBeNull();
+    expect(await actions.sign()).toBeNull();
     expect(getState().overridePrompt?.map((a) => a.type)).toEqual(['allergy']);
-    expect(actions.sign('too short')).toBeNull();
+    expect(await actions.sign('too short')).toBeNull();
 
     const reason = 'Mild rash only on record; patient consents';
-    const rx = actions.sign(reason);
+    const rx = await actions.sign(reason);
     expect(rx?.safetyOverride?.reason).toBe(reason);
     expect(rx?.safetyOverride?.alerts).toHaveLength(1);
     expect(getState().overridePrompt).toBeNull();
     expect(MOCK_AUDIT[0]).toMatchObject({ kind: 'sign_rx', overrideReason: reason });
   });
 
-  it('refuses to sign without a doctor, or for a doctor without a license number', () => {
+  it('refuses to sign without a doctor, or for a doctor without a license number', async () => {
     fillPad('p_002', 'I10', ['amlo']);
 
     store.set({ doctor: null });
-    expect(actions.sign()).toBeNull();
+    expect(await actions.sign()).toBeNull();
     expect(getState().banner).toMatchObject({ kind: 'danger' });
 
     store.set({ doctor: { ...AYESHA, licenseNo: '' } });
-    expect(actions.sign()).toBeNull();
+    expect(await actions.sign()).toBeNull();
+  });
+
+  it('does nothing while a sign is still being saved', async () => {
+    fillPad('p_002', 'I10', ['amlo']);
+    const save = vi.spyOn(api.prescriptions, 'sign');
+    store.set({ signing: true });
+
+    expect(await actions.sign()).toBeNull();
+    expect(save).not.toHaveBeenCalled();
+    expect(getState().medications).toHaveLength(1);
+  });
+
+  it('keeps the pad and says why when saving fails', async () => {
+    fillPad('p_002', 'I10', ['amlo']);
+    const auditBefore = MOCK_AUDIT.length;
+    vi.spyOn(api.prescriptions, 'sign').mockRejectedValueOnce(new Error('network down'));
+
+    expect(await actions.sign()).toBeNull();
+    const s = getState();
+    expect(s.banner).toMatchObject({ kind: 'danger' });
+    expect(s.banner?.text).toContain('network down');
+    expect(s.medications.map((m) => m.drugId)).toEqual(['amlo']);
+    expect(s.signing).toBe(false);
+    expect(MOCK_AUDIT.length).toBe(auditBefore);
   });
 });
 
@@ -167,21 +208,33 @@ describe('createPatient', () => {
     activeProblems: [],
   };
 
-  it("adds the patient to the doctor's hospital, selects them and closes the form", () => {
+  it("adds the patient to the doctor's hospital, selects them and closes the form", async () => {
     actions.openNewPatient();
-    const id = actions.createPatient(input);
+    const id = await actions.createPatient(input);
 
     const s = getState();
     expect(s.patientId).toBe(id);
     expect(s.showNewPatient).toBe(false);
+    expect(s.savingPatient).toBe(false);
     expect(s.patients.find((p) => p.id === id)?.hospitalSlug).toBe('city-hospital');
     expect(MOCK_AUDIT[0]).toMatchObject({ kind: 'create_patient', patientId: id, userId: 'd_001' });
   });
 
-  it('refuses without a signed-in doctor', () => {
+  it('refuses without a signed-in doctor', async () => {
     store.set({ doctor: null });
-    expect(actions.createPatient(input)).toBe('');
+    expect(await actions.createPatient(input)).toBe('');
     expect(MOCK_PATIENTS.length).toBe(patientsBefore);
+  });
+
+  it('keeps the form open and says why when saving fails', async () => {
+    actions.openNewPatient();
+    vi.spyOn(api.patients, 'create').mockRejectedValueOnce(new Error('network down'));
+
+    expect(await actions.createPatient(input)).toBe('');
+    const s = getState();
+    expect(s.showNewPatient).toBe(true);
+    expect(s.savingPatient).toBe(false);
+    expect(s.banner?.text).toContain('network down');
   });
 });
 

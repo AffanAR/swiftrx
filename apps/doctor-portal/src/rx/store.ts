@@ -1,18 +1,18 @@
 import React from 'react';
 import {
-  MOCK_DRUGS,
-  MOCK_PATIENTS,
-  listPatientsForHospital,
-  listSignedRxForHospital,
-  appendSignedRx,
-  appendAudit,
+  afterWrite,
+  api,
+  type Catalog,
   type Diagnosis,
   type Investigation,
   type Patient,
+  type PrescriptionDraft,
+  type RxDesign,
   type RxMedication,
   type SafetyAlert,
   type SignedRx,
 } from '@swiftrx/shared';
+import { queryClient } from '../queryClient';
 import { evaluateAllMedications, findDrug } from './safety';
 
 /** The signed-in doctor the pad prescribes as, taken from the portal session. */
@@ -46,8 +46,15 @@ export interface AppState {
   medications: RxMedication[];
   // Signed history
   signed: SignedRx[];
+  // Drugs, diagnoses, investigations and quick packs (empty until loadWorkspace)
+  catalog: Catalog;
+  // The hospital's printed Rx design (null until loadWorkspace)
+  rxDesign: RxDesign | null;
   // Doctor (null until loadWorkspace)
   doctor: DoctorIdentity | null;
+  // A sign or a new patient is being saved
+  signing: boolean;
+  savingPatient: boolean;
   // Active focused input (for tab/keyboard management)
   focusZone: 'patient' | 'diagnosis' | 'med-search' | 'med-row' | 'sign' | null;
   activeRowId: string | null;
@@ -61,7 +68,8 @@ export interface AppState {
 
 export interface AppActions {
   setPatient: (id: string) => void;
-  createPatient: (input: NewPatientInput) => string;
+  /** Saves a patient to the doctor's hospital and selects them. Resolves to the id, or '' if it failed. */
+  createPatient: (input: NewPatientInput) => Promise<string>;
   setDiagnosisQuery: (q: string) => void;
   setDiagnosis: (d: Diagnosis | null) => void;
   setInvestigations: (list: Investigation[]) => void;
@@ -77,11 +85,12 @@ export interface AppActions {
   openNewPatient: () => void;
   closeNewPatient: () => void;
   /**
-   * Signs the current pad. Returns the signed Rx, or null if it can't be signed
-   * yet. Critical alerts need `overrideReason` (see MIN_OVERRIDE_REASON);
-   * without it this opens the override prompt instead.
+   * Signs the current pad and saves it. Resolves to the signed Rx, or null if
+   * it can't be signed yet or saving failed. Critical alerts need
+   * `overrideReason` (see MIN_OVERRIDE_REASON); without it this opens the
+   * override prompt instead.
    */
-  sign: (overrideReason?: string) => SignedRx | null;
+  sign: (overrideReason?: string) => Promise<SignedRx | null>;
   cancelOverride: () => void;
   /** Copies a previous Rx for the current patient onto the pad (see the action for merge rules). */
   repeatRx: (rx: SignedRx) => void;
@@ -93,7 +102,7 @@ export type AppStore = AppState & AppActions;
 export const MIN_OVERRIDE_REASON = 10;
 
 const newRowId = () => 'r_' + Math.random().toString(36).slice(2, 9);
-const newPatientId = () => 'p_' + Math.random().toString(36).slice(2, 9);
+const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 // Empty until loadWorkspace() loads the signed-in doctor's hospital:
 // no default patients and no default doctor identity.
@@ -105,7 +114,11 @@ const initialState: AppState = {
   investigations: [],
   medications: [],
   signed: [],
+  catalog: { drugs: [], diagnoses: [], investigations: [], quickPacks: [] },
+  rxDesign: null,
   doctor: null,
+  signing: false,
+  savingPatient: false,
   focusZone: null,
   activeRowId: null,
   showNewPatient: false,
@@ -130,42 +143,28 @@ class Store {
           medications: [],
           activeRowId: null,
         }),
-      createPatient: (input: NewPatientInput) => {
+      createPatient: async (input: NewPatientInput) => {
         // Patients always belong to the signed-in doctor's hospital — no fallback.
         const doctor = this.state.doctor;
         if (!doctor) {
           this.set({ banner: { kind: 'danger', text: 'Sign in as a doctor to add patients.' } });
           return '';
         }
-        const id = newPatientId();
-        const p: Patient = {
-          id,
-          hospitalSlug: doctor.hospitalSlug,
-          name: input.name,
-          age: input.age,
-          sex: input.sex,
-          weightKg: input.weightKg,
-          contact: input.contact,
-          allergies: input.allergies,
-          activeProblems: input.activeProblems,
-          activeMedications: [],
-          recentVitals: [
-            { label: 'BP', value: '—' },
-            { label: 'Pulse', value: '—' },
-            { label: 'SpO2', value: '—' },
-          ],
-          createdAt: new Date().toISOString(),
-        };
-        MOCK_PATIENTS.push(p);
-        appendAudit({
-          kind: 'create_patient',
-          userId: doctor.id,
-          userEmail: doctor.email,
-          at: new Date().toISOString(),
-          hospitalSlug: p.hospitalSlug,
-          patientId: p.id,
-          patientName: p.name,
-        });
+        if (this.state.savingPatient) return '';
+        this.set({ savingPatient: true });
+        let p: Patient;
+        try {
+          p = await api.patients.create(
+            { ...input, hospitalSlug: doctor.hospitalSlug },
+            { id: doctor.id, email: doctor.email },
+          );
+        } catch (err) {
+          this.set({
+            savingPatient: false,
+            banner: { kind: 'danger', text: `Couldn't add the patient: ${messageOf(err)}` },
+          });
+          return '';
+        }
         this.set({
           patients: [...this.state.patients, p],
           patientId: p.id,
@@ -175,8 +174,10 @@ class Store {
           medications: [],
           activeRowId: null,
           showNewPatient: false,
+          savingPatient: false,
         });
-        return id;
+        void afterWrite.patientCreated(queryClient);
+        return p.id;
       },
       setDiagnosisQuery: (q: string) => this.set({ diagnosisQuery: q }),
       setDiagnosis: (d: Diagnosis | null) =>
@@ -198,7 +199,7 @@ class Store {
         });
       },
       addMedication: (drugId: string, brandName?: string) => {
-        const drug = findDrug(drugId, MOCK_DRUGS);
+        const drug = findDrug(drugId, this.state.catalog.drugs);
         if (!drug) return;
         const med: RxMedication = {
           rowId: newRowId(),
@@ -248,8 +249,10 @@ class Store {
       setBanner: (banner: AppState['banner']) => this.set({ banner }),
       openNewPatient: () => this.set({ showNewPatient: true }),
       closeNewPatient: () => this.set({ showNewPatient: false }),
-      sign: (overrideReason?: string) => {
+      sign: async (overrideReason?: string) => {
         const s = this.state;
+        // One save at a time: a second Sign & Print while the first is in flight does nothing.
+        if (s.signing) return null;
         const patient = s.patients.find((p) => p.id === s.patientId);
         if (!patient || !s.diagnosis || !s.medications.length) {
           this.set({
@@ -286,7 +289,9 @@ class Store {
         }
         // Critical alerts (allergies) block signing until the doctor records
         // why they are overriding them.
-        const critical = [...evaluateAllMedications(s.medications, patient, MOCK_DRUGS).values()]
+        const critical = [
+          ...evaluateAllMedications(s.medications, patient, s.catalog.drugs).values(),
+        ]
           .flat()
           .filter((a) => a.severity === 'critical');
         const reason = overrideReason?.trim() ?? '';
@@ -294,9 +299,9 @@ class Store {
           this.set({ overridePrompt: critical });
           return null;
         }
-        const signed: SignedRx = {
-          id: 'rx_' + Date.now().toString(36),
-          signedAt: new Date().toISOString(),
+        // The server assigns the id and time, stores a frozen copy of the
+        // patient, and records the audit event.
+        const draft: PrescriptionDraft = {
           hospitalSlug: patient.hospitalSlug,
           patient,
           diagnosis: s.diagnosis,
@@ -307,19 +312,24 @@ class Store {
           doctorLicense: doctor.licenseNo,
           safetyOverride: critical.length ? { reason, alerts: critical } : undefined,
         };
-        appendSignedRx(signed);
-        appendAudit({
-          kind: 'sign_rx',
-          userId: doctor.id,
-          userEmail: doctor.email,
-          at: signed.signedAt,
-          hospitalSlug: patient.hospitalSlug,
-          rxId: signed.id,
-          patientName: patient.name,
-          overrideReason: critical.length ? reason : undefined,
-        });
+        this.set({ signing: true });
+        let signed: SignedRx;
+        try {
+          signed = await api.prescriptions.sign(draft, { id: doctor.id, email: doctor.email });
+        } catch (err) {
+          this.set({
+            signing: false,
+            banner: {
+              kind: 'danger',
+              text: `Couldn't save the prescription, so nothing was printed: ${messageOf(err)}`,
+            },
+          });
+          return null;
+        }
+        void afterWrite.rxSigned(queryClient);
         this.set({
-          signed: [signed, ...s.signed],
+          signing: false,
+          signed: [signed, ...this.state.signed],
           banner: critical.length
             ? {
                 kind: 'warn',
@@ -407,32 +417,39 @@ export function useApp<T>(selector: (s: AppState) => T): T {
 
 // -----------------------------------------------------------------------------
 //  Workspace loading. The Rx pad is a portal route, so the doctor and hospital
-//  come from the portal session (see RxPad.tsx), and the roster + signed Rx
-//  history come from the same in-memory mock db the portal pages read.
+//  come from the portal session (see RxPad.tsx). RxPad fetches the roster,
+//  signed history and catalog through the data client and hands them in here.
 // -----------------------------------------------------------------------------
 
+/** What the pad needs for one hospital. */
+export interface WorkspaceData {
+  patients: Patient[];
+  signed: SignedRx[];
+  catalog: Catalog;
+  rxDesign: RxDesign | null;
+}
+
 /**
- * Load the doctor's hospital into the store. Called each time the Rx pad
- * mounts. The same doctor keeps their in-progress pad, with the roster and
- * signed history re-read so patients or prescriptions added elsewhere in the
- * portal show up. A different doctor or hospital starts from a clean store.
+ * Load the doctor's hospital into the store. RxPad calls this when its data
+ * arrives and again whenever that data is refetched. The same doctor keeps
+ * their in-progress pad, with the roster and history replaced so patients or
+ * prescriptions added elsewhere in the portal show up. A different doctor or
+ * hospital starts from a clean store.
  */
-export function loadWorkspace(doctor: DoctorIdentity): void {
+export function loadWorkspace(doctor: DoctorIdentity, data: WorkspaceData): void {
   const prev = store.state$;
-  const patients = listPatientsForHospital(doctor.hospitalSlug);
-  const signed = listSignedRxForHospital(doctor.hospitalSlug);
+  const { patients } = data;
   const sameDoctor =
     prev.doctor?.id === doctor.id && prev.doctor.hospitalSlug === doctor.hospitalSlug;
   if (sameDoctor) {
     const keepPatient = patients.some((p) => p.id === prev.patientId);
     store.set({
       doctor,
-      patients,
-      signed,
+      ...data,
       patientId: keepPatient ? prev.patientId : (patients[0]?.id ?? ''),
     });
   } else {
-    store.set({ ...initialState, doctor, patients, signed, patientId: patients[0]?.id ?? '' });
+    store.set({ ...initialState, doctor, ...data, patientId: patients[0]?.id ?? '' });
   }
 }
 

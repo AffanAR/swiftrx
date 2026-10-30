@@ -15,6 +15,7 @@ export function CenterColumn({
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
   const diagnosis = useApp((s) => s.diagnosis);
   const banner = useApp((s) => s.banner);
+  const signing = useApp((s) => s.signing);
   const setBanner = actions.setBanner;
 
   // Auto-clear banner after a short delay.
@@ -25,7 +26,7 @@ export function CenterColumn({
   }, [banner, setBanner]);
 
   const handleSign = React.useCallback(() => {
-    signAndPrint();
+    void signAndPrint();
   }, []);
 
   // Prints the unsigned pad, watermarked DRAFT (there is no pharmacy link yet).
@@ -116,10 +117,11 @@ export function CenterColumn({
         <div className="sticky bottom-0 -mx-5 px-5 py-3 bg-ink-900/95 backdrop-blur border-t border-ink-700 flex items-center gap-2">
           <button
             onClick={handleSign}
-            className="rx-shine px-4 py-2 rounded-md bg-rx-accent text-ink-900 font-semibold hover:bg-rx-accentDark transition-colors flex items-center gap-2 animate-pulseRing"
+            disabled={signing}
+            className="rx-shine px-4 py-2 rounded-md bg-rx-accent text-ink-900 font-semibold hover:bg-rx-accentDark transition-colors flex items-center gap-2 animate-pulseRing disabled:opacity-60"
             data-action="sign"
           >
-            <span>Sign &amp; Print</span>
+            <span>{signing ? 'Signing…' : 'Sign & Print'}</span>
             <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-ink-900/30">⌘S</span>
           </button>
           <button

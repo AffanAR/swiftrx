@@ -10,6 +10,7 @@ import { signAndPrint } from '../print';
  */
 export function SafetyOverrideModal() {
   const alerts = useApp((s) => s.overridePrompt);
+  const signing = useApp((s) => s.signing);
   const open = alerts !== null;
   const [reason, setReason] = React.useState('');
   const reasonRef = React.useRef<HTMLTextAreaElement>(null);
@@ -44,9 +45,10 @@ export function SafetyOverrideModal() {
   if (!alerts) return null;
 
   const trimmed = reason.trim();
-  const canSign = trimmed.length >= MIN_OVERRIDE_REASON;
+  const reasonOk = trimmed.length >= MIN_OVERRIDE_REASON;
+  const canSign = reasonOk && !signing;
   const confirm = () => {
-    if (canSign) signAndPrint(trimmed);
+    if (canSign) void signAndPrint(trimmed);
   };
   confirmRef.current = confirm;
 
@@ -110,7 +112,7 @@ export function SafetyOverrideModal() {
         </div>
 
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-ink-700 bg-ink-900/40">
-          <div className={cx('text-xs font-mono', canSign ? 'text-rx-accent' : 'text-ink-400')}>
+          <div className={cx('text-xs font-mono', reasonOk ? 'text-rx-accent' : 'text-ink-400')}>
             {trimmed.length}/{MIN_OVERRIDE_REASON}+ characters
           </div>
           <div className="flex items-center gap-2">
@@ -130,7 +132,7 @@ export function SafetyOverrideModal() {
                   : 'bg-ink-700 text-ink-400 cursor-not-allowed',
               )}
             >
-              Override &amp; sign <Kbd dark>⌘↵</Kbd>
+              {signing ? 'Signing…' : 'Override & sign'} <Kbd dark>⌘↵</Kbd>
             </button>
           </div>
         </div>

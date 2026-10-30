@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp, actions } from '../store';
-import { LiveDot, MOCK_DRUGS, cx, type Drug } from '@swiftrx/shared';
+import { LiveDot, cx, type Drug } from '@swiftrx/shared';
 import { fuzzySearch, findBrandMatches } from '../search';
 import { findDrug, evaluateMedication, severityRank } from '../safety';
 
@@ -11,25 +11,21 @@ export function MedicationSearch() {
   const [open, setOpen] = React.useState(false);
   const [idx, setIdx] = React.useState(0);
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
+  const drugs = useApp((s) => s.catalog.drugs);
 
   const drugResults = React.useMemo(
     () =>
-      fuzzySearch(
-        MOCK_DRUGS,
-        q,
-        (d) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass],
-        6,
-      ),
-    [q],
+      fuzzySearch(drugs, q, (d) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass], 6),
+    [q, drugs],
   );
-  const brandHits = React.useMemo(() => findBrandMatches(q, MOCK_DRUGS, 3), [q]);
+  const brandHits = React.useMemo(() => findBrandMatches(q, drugs, 3), [q, drugs]);
 
   // Build a unified list, brand suggestions first (they have higher substitution priority)
   const suggestions = React.useMemo(() => {
     const out: Array<{ kind: 'brand' | 'drug'; drug: Drug; brandName?: string }> = [];
     const seen = new Set<string>();
     for (const b of brandHits) {
-      const drug = findDrug(b.drugId, MOCK_DRUGS);
+      const drug = findDrug(b.drugId, drugs);
       if (drug && !seen.has(drug.id)) {
         out.push({ kind: 'brand', drug, brandName: b.brandName });
         seen.add(drug.id);
@@ -42,7 +38,7 @@ export function MedicationSearch() {
       }
     }
     return out;
-  }, [drugResults, brandHits]);
+  }, [drugResults, brandHits, drugs]);
 
   React.useEffect(() => {
     setIdx(0);
@@ -97,7 +93,7 @@ export function MedicationSearch() {
           instructions: 'As directed',
         },
         patient,
-        MOCK_DRUGS,
+        drugs,
       )
     : [];
   const worstPreview = preview.reduce<null | ReturnType<typeof severityRank>>((acc, a) => {
@@ -180,7 +176,7 @@ export function MedicationSearch() {
                     instructions: '',
                   },
                   patient,
-                  MOCK_DRUGS,
+                  drugs,
                 );
                 const worst = sev.reduce<number>(
                   (acc, a) => Math.max(acc, severityRank(a.severity)),

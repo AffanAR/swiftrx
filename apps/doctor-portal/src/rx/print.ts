@@ -2,7 +2,6 @@ import { actions, getState } from './store';
 import {
   DEFAULT_RX_DESIGN,
   RX_PAGE_MARGIN_MM,
-  getRxDesign,
   renderRxHtml,
   rxPageSizeMm,
   type RxDesign,
@@ -21,7 +20,8 @@ export function renderPrintable(rx: SignedRx, opts?: { draft?: boolean }) {
     document.body.appendChild(target);
   }
 
-  const design = getRxDesign(rx.hospitalSlug) ?? DEFAULT_RX_DESIGN;
+  // The pad only prints its own hospital's prescriptions, so its design applies.
+  const design = getState().rxDesign ?? DEFAULT_RX_DESIGN;
 
   // Push the page geometry to the live @page rule so the print dialog picks
   // up the right paper size / orientation.
@@ -31,10 +31,11 @@ export function renderPrintable(rx: SignedRx, opts?: { draft?: boolean }) {
 }
 
 // Sign the pad and print the result — the one path for every "Sign & Print"
-// trigger. Returns null when signing was refused (incomplete pad, invalid dose,
-// or a critical alert that still needs an override reason).
-export function signAndPrint(overrideReason?: string): SignedRx | null {
-  const signed = actions.sign(overrideReason);
+// trigger. Prints only once the prescription is saved. Resolves to null when
+// signing was refused (incomplete pad, invalid dose, or a critical alert that
+// still needs an override reason) or saving failed.
+export async function signAndPrint(overrideReason?: string): Promise<SignedRx | null> {
+  const signed = await actions.sign(overrideReason);
   if (signed) printCurrent(signed);
   return signed;
 }

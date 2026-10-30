@@ -6,6 +6,7 @@ type FieldKey = 'name' | 'age' | 'sex' | 'weightKg' | 'contact' | 'allergy' | 'p
 
 export function NewPatientModal() {
   const open = useApp((s) => s.showNewPatient);
+  const saving = useApp((s) => s.savingPatient);
   const [name, setName] = React.useState('');
   const [age, setAge] = React.useState('');
   const [sex, setSex] = React.useState<'M' | 'F'>('M');
@@ -60,7 +61,7 @@ export function NewPatientModal() {
   const weightNum = parseFloat(weight);
   const ageOk = !Number.isNaN(ageNum) && ageNum > 0 && ageNum < 130;
   const weightOk = !Number.isNaN(weightNum) && weightNum > 0 && weightNum < 400;
-  const canSubmit = nameOk && ageOk && weightOk;
+  const canSubmit = nameOk && ageOk && weightOk && !saving;
 
   const addChip = (kind: 'allergy' | 'problem', value: string) => {
     const v = value.trim();
@@ -82,12 +83,13 @@ export function NewPatientModal() {
     }
   };
 
-  const submit = () => {
+  const submit = async () => {
+    if (saving) return;
     if (!canSubmit) {
       actions.setBanner({ kind: 'warn', text: 'Fill name, age, and weight to continue.' });
       return;
     }
-    actions.createPatient({
+    const id = await actions.createPatient({
       name: name.trim(),
       age: ageNum,
       sex,
@@ -96,7 +98,9 @@ export function NewPatientModal() {
       allergies,
       activeProblems: problems,
     });
-    // createPatient closes the modal; continue the keyboard flow at diagnosis.
+    // Once saved, createPatient closes the modal; continue the keyboard flow at
+    // diagnosis. If saving failed the modal stays open and a banner says why.
+    if (!id) return;
     requestAnimationFrame(() => {
       document.querySelector<HTMLInputElement>('[data-zone="diagnosis"]')?.focus();
     });
@@ -258,7 +262,7 @@ export function NewPatientModal() {
                   : 'bg-ink-700 text-ink-400 cursor-not-allowed',
               )}
             >
-              Create patient <Kbd dark>⌘↵</Kbd>
+              {saving ? 'Saving…' : 'Create patient'} <Kbd dark>⌘↵</Kbd>
             </button>
           </div>
         </div>
