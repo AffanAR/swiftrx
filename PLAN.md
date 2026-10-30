@@ -514,12 +514,13 @@ go in Phase 5 (paid launch), the rest in Phase 6 (growth).
 ## 4. Decisions needed
 
 [`ROADMAP.md`](ROADMAP.md) §7 tracks these and later decisions, each with a
-date to decide by. Items 1 and 2 have been decided since.
+date to decide by. Items 1, 2 and 3 have been decided since.
 
 1. **Merge the Rx pad into the portal?** Recommended: yes (§3.1-1).
 2. **Backend:** a custom Node API + Postgres (more control; recommended) or
    Supabase (faster; RLS and auth built in)?
 3. **Can hospital admins prescribe?** Recommended: no, unless they also hold
-   a doctor membership with a verified license.
+   a doctor membership with a verified license. (Decided 2026-10-31: no,
+   doctors only.)
 4. **Drug and interaction data:** which source, and what budget for licensing?
 5. **Hosting region and data residency** required by your target hospitals.

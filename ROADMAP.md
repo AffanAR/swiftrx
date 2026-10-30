@@ -186,8 +186,8 @@ Phases 0 and 1 were finished on 2026-10-22; `PLAN.md` §3.2 has the record.
   `prescriptions`, and store a date of birth instead of an age before any
   real patient.
 
-**Decision due:** D3, whether hospital admins may prescribe, before the auth
-step.
+**Decided:** D3, on 2026-10-31: only doctors prescribe (§7). The server
+enforces it from the auth step on.
 
 **Exit (M1):** `PLAN.md`'s Phase 2 exit (data persists and flows across the
 apps, no secrets in any bundle, only the server creates a signed Rx), live
@@ -384,7 +384,7 @@ When a decision is made, write its date and the reason here.
 | --- | --- | --- | --- | --- |
 | D1 | Merge the Rx pad into the portal? | Yes | — | Decided 2026-10-22; done in Phase 1 |
 | D2 | Backend stack | Hono, Drizzle and Postgres | — | Decided 2026-10-30; the reasons are in `PLAN.md`, Phase 2, under the skeleton item |
-| D3 | May hospital admins prescribe? | No, unless they also hold a doctor membership with a verified license. The Rx pad already admits only active, licensed doctors (`canPrescribe()`). | Early Nov 2026, before the auth step | Open |
+| D3 | May hospital admins prescribe? | No, unless they also hold a doctor membership with a verified license. The Rx pad already admits only active, licensed doctors (`canPrescribe()`). | Early Nov 2026, before the auth step | Decided 2026-10-31: doctors only, as recommended, because prescribing is a licensed act. An admin who also prescribes gets a second membership, as a doctor (the schema allows several roles per hospital). The server must enforce it when it signs (`POST /prescriptions`). |
 | D4 | Drug and interaction data: source and yearly budget | Quotes from two or three providers in November; choose on coverage of Pakistani brands, how often it's updated, and the licence terms | Early Dec 2026 | Open |
 | D5 | Hosting region and data residency | Ask the pilot hospital and the lawyer whether data must stay in Pakistan. Render's regions are in the US, Frankfurt and Singapore. The API is plain Node and Postgres, so a Pakistani host is an option. | Dec 2026, before buying production hosting | Open |
 | D6 | Product name and production domain | Check the name is free to use (trademark) and buy the domain. Decide before the first real Rx is printed: the verification link and QR code on paper can't change afterwards. | Dec 2026 | Open; `swiftrx.com` is a placeholder in the code |
@@ -438,7 +438,8 @@ again.
 **Engineering**
 
 - [x] Merge the API skeleton into `master`, and push it (done 2026-10-31).
-- [ ] Decide D3, then start the auth step.
+- [x] Decide D3 (done 2026-10-31: doctors only).
+- [ ] Start the auth step.
 - [ ] Add the wildcard domain on Render and the `*` record in Cloudflare
       (`deploy/ONLINE.md` §3, step 4).
 
