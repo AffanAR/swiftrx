@@ -148,6 +148,8 @@ admin panel stay isolated.
 | Hotkey             | Action                                                  |
 | ------------------ | ------------------------------------------------------- |
 | `⌘/Ctrl + K`       | Jump focus to patient search                            |
+| `Enter` (patient)  | Open the highlighted patient; focus moves to diagnosis  |
+| `Esc` (patient)    | Clear the patient search                                |
 | `/`                | Jump focus to diagnosis search                          |
 | `Tab` / `Shift+Tab`| Traverse fields (browser-native)                        |
 | `↑ / ↓`            | Move within an open suggestion list                     |
@@ -161,6 +163,11 @@ admin panel stay isolated.
 | `⌘/Ctrl + P`       | Print a DRAFT of the current pad (not valid to dispense)|
 | `Backspace`        | On empty input inside an open row → remove that row     |
 | `Esc`              | Clear the workspace                                     |
+
+Patient search matches a patient's name, contact or active problems. `↑ / ↓`
+move the highlight and `Enter` opens that patient: the pad starts fresh for
+them and focus moves to the diagnosis field. When nothing matches, the only
+option is **Create**, and `Enter` opens the New Patient form.
 
 Signing is refused when a dose or duration is 0, and when a critical alert
 (an allergy) is on the pad until the doctor enters an override reason; the

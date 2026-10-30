@@ -3,6 +3,11 @@ import { useApp, actions } from '../store';
 import { fuzzySearch } from '../search';
 import { LiveDot, StaggeredList, cx } from '@swiftrx/shared';
 
+// The patient search is an ARIA combobox: focus stays in the input, and
+// aria-activedescendant tells screen readers which option is highlighted.
+const RESULTS_ID = 'rx-patient-results';
+const optionId = (i: number) => `rx-patient-option-${i}`;
+
 export function LeftColumn({
   patientSearchRef,
 }: {
@@ -12,24 +17,77 @@ export function LeftColumn({
   const patientId = useApp((s) => s.patientId);
   const [query, setQuery] = React.useState('');
   const [focused, setFocused] = React.useState(false);
+  const [activeIdx, setActiveIdx] = React.useState(0);
 
   const results = React.useMemo(() => {
     if (!query.trim()) return patients;
     return fuzzySearch(patients, query, (p) => [p.name, p.contact, p.activeProblems.join(' ')], 5);
   }, [query, patients]);
 
+  React.useEffect(() => {
+    setActiveIdx(0);
+  }, [query]);
+
+  const open = focused && !!query;
+
+  const choose = (id: string) => {
+    actions.setPatient(id);
+    setQuery('');
+    // Continue the keyboard flow at diagnosis, as the new-patient flow does.
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLInputElement>('[data-zone="diagnosis"]')?.focus();
+    });
+  };
+
+  const createNew = () => {
+    actions.openNewPatient();
+    setQuery('');
+    patientSearchRef.current?.blur();
+  };
+
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setQuery('');
+      return;
+    }
+    // Arrows and Enter only act on the open list. An Enter that confirms an
+    // IME composition must not pick a patient.
+    if (!open || e.nativeEvent.isComposing) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIdx((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIdx((i) => Math.max(0, i - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      // With no matches, the list's only option creates a patient.
+      if (results[activeIdx]) choose(results[activeIdx].id);
+      else if (!results.length) createNew();
+    }
+  };
+
   const current = patients.find((p) => p.id === patientId)!;
   const recentVitals = current.recentVitals;
 
   return (
     <aside className="w-1/5 min-w-[260px] border-r border-ink-700 bg-ink-900/60 p-3 overflow-y-auto rx-bg-radial-accent">
-      <div className="text-[11px] uppercase tracking-wider text-ink-400 mb-1 flex items-center gap-1.5">
+      <label
+        htmlFor="rx-patient-search"
+        className="text-[11px] uppercase tracking-wider text-ink-400 mb-1 flex items-center gap-1.5"
+      >
         <LiveDot color="bg-rx-focus" />
         <span>Patient</span>
-      </div>
+      </label>
       <input
         ref={patientSearchRef}
+        id="rx-patient-search"
         type="text"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open}
+        aria-controls={RESULTS_ID}
+        aria-activedescendant={open ? optionId(activeIdx) : undefined}
         placeholder="Search patients…  ⌘K"
         className={cx(
           'w-full px-2.5 py-2 rounded-md text-sm bg-ink-800 border border-ink-700 transition-all duration-200',
@@ -43,48 +101,60 @@ export function LeftColumn({
           actions.setFocusZone('patient');
         }}
         onBlur={() => setFocused(false)}
+        onKeyDown={onKey}
       />
-      {focused && query && (
-        <ul className="mt-1 bg-ink-800 border border-ink-700 rounded-md overflow-hidden animate-slideUpIn shadow-xl">
+      {open && (
+        <ul
+          id={RESULTS_ID}
+          role="listbox"
+          aria-label="Patients"
+          className="mt-1 bg-ink-800 border border-ink-700 rounded-md overflow-hidden animate-slideUpIn shadow-xl"
+        >
           {results.map((p, i) => (
-            <li key={p.id} className="animate-fadeIn" style={{ animationDelay: `${i * 30}ms` }}>
-              <button
-                className={cx(
-                  'w-full text-left px-2.5 py-1.5 text-sm flex justify-between items-center transition-colors',
-                  'hover:bg-ink-700/60',
-                  p.id === patientId && 'bg-ink-700/40',
-                )}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  actions.setPatient(p.id);
-                  setQuery('');
-                  (patientSearchRef.current as HTMLInputElement | null)?.blur();
-                }}
-              >
-                <span className="truncate">{p.name}</span>
-                <span className="text-xs text-ink-400 shrink-0 ml-2">
-                  {p.age}
-                  {p.sex}
-                </span>
-              </button>
+            <li
+              key={p.id}
+              id={optionId(i)}
+              role="option"
+              aria-selected={i === activeIdx}
+              tabIndex={-1}
+              className={cx(
+                'px-2.5 py-1.5 text-sm flex justify-between items-center cursor-pointer transition-colors animate-fadeIn',
+                i === activeIdx ? 'bg-rx-focus/15 text-rx-focus' : 'hover:bg-ink-700/60',
+                i !== activeIdx && p.id === patientId && 'bg-ink-700/40',
+              )}
+              style={{ animationDelay: `${i * 30}ms` }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                choose(p.id);
+              }}
+              onMouseEnter={() => setActiveIdx(i)}
+            >
+              <span className="truncate">{p.name}</span>
+              <span className="text-xs text-ink-400 shrink-0 ml-2">
+                {p.age}
+                {p.sex}
+              </span>
             </li>
           ))}
           {!results.length && (
-            <li className="animate-fadeIn">
-              <button
-                className="w-full text-left px-2.5 py-1.5 text-sm hover:bg-ink-700/60 flex justify-between items-center text-rx-accent"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  actions.openNewPatient();
-                  setQuery('');
-                  (patientSearchRef.current as HTMLInputElement | null)?.blur();
-                }}
-              >
-                <span>+ Create &quot;{query}&quot;</span>
-                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-ink-200 border border-ink-600">
-                  Alt+N
-                </span>
-              </button>
+            <li
+              id={optionId(0)}
+              role="option"
+              aria-selected={activeIdx === 0}
+              tabIndex={-1}
+              className={cx(
+                'px-2.5 py-1.5 text-sm flex justify-between items-center cursor-pointer transition-colors animate-fadeIn text-rx-accent',
+                activeIdx === 0 ? 'bg-rx-focus/15' : 'hover:bg-ink-700/60',
+              )}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                createNew();
+              }}
+            >
+              <span>+ Create &quot;{query}&quot;</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-ink-200 border border-ink-600">
+                Alt+N
+              </span>
             </li>
           )}
         </ul>
