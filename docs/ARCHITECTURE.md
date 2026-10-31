@@ -121,7 +121,8 @@ from importing the mock db directly. Sign-in already calls the API, through
 | `api.hospitals.get`, `api.patients.list` | `GET /hospitals/:slug`, `GET /hospitals/:slug/patients` |
 | `api.patients.create` | `POST /hospitals/:slug/patients` |
 | `api.prescriptions.sign` | `POST /hospitals/:slug/prescriptions`, signed server-side |
-| `api.audit.list` | `GET /audit-events` (the server writes the events) |
+| `api.audit.list` | `GET /audit-events`, `GET /hospitals/:slug/audit-events` (done; plus this tab's mock writes) |
+| `api.users.listDoctors`, `invite`, `passwordLink` | `GET /hospitals/:slug/doctors`, `POST /auth/invites`, `POST /auth/reset-links` (done) |
 | `signIn`, `signOut`, `fetchSession` (`apps/shared/src/auth.ts`) | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` (done) |
 
 Until the backend exists, data does not flow between apps or tabs — see
