@@ -75,7 +75,7 @@ the client and its query hooks; ESLint rejects direct mock-db imports.
 | `apps/shared/` | Types, the data client and query hooks, mock data, auth, tenant resolution, UI primitives |
 | `apps/admin/` | Platform console (tenants, users, usage, audit) — port 5175 |
 | `apps/doctor-portal/` | Per-hospital portal and the Rx pad at `/rx` — port 5174 |
-| `apps/api/` | Hono + Postgres (Drizzle) API, not yet used by the apps — port 5176 |
+| `apps/api/` | Hono + Postgres (Drizzle) API; the apps sign in through it — port 5176 |
 | `scripts/dev.mjs` | Dev orchestrator + subdomain gateway — port 5172 |
 | `deploy/` | nginx config and DNS / hosts instructions |
 
@@ -90,6 +90,8 @@ there is no build step. See `docs/ARCHITECTURE.md` for the full picture.
 | City Hospital doctor | `ayesha@city-hospital.com` | `demo1234` |
 | Northstar doctor | `sana@northstar-medical.com` | `demo1234` |
 
-Passwords are bcrypt hashes in `apps/shared/src/seed/users.json`, verified by
-`verifyPassword()`. To add a user, hash the password (cost 8 is enough for a
-demo) rather than storing it in the clear.
+Passwords never go in `apps/shared`: the apps bundle it. To add a demo user,
+add them to `apps/shared/src/seed/users.json` and their password to
+`apps/api/src/db/demo-passwords.json` (the API's seed stores it as an
+Argon2id hash). `npm run check:bundles` fails if a password or hash reaches
+a bundle.

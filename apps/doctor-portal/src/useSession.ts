@@ -1,62 +1,46 @@
 import { useCallback, useEffect, useState } from 'react';
-import { loadSession, logout } from './auth';
-import {
-  getUserById,
-  getHospital,
-  type SessionPayload,
-  type User,
-  type Hospital,
-} from '@swiftrx/shared';
+import { fetchSession, signOut as endSession, type AuthSession } from '@swiftrx/shared';
 
 export type SessionState =
-  | { status: 'loading' }
-  | { status: 'signed-out' }
-  | { status: 'signed-in'; session: SessionPayload; user: User; hospital: Hospital };
+  { status: 'loading' } | { status: 'signed-out' } | ({ status: 'signed-in' } & AuthSession);
 
 /**
- * Read the stored session, refresh the user from the shared mock db so role /
- * status changes take effect, and validate the tenant is still alive. Clears
- * the stored session when it is no longer valid.
+ * The portal's session, as the server holds it. On mount it asks the API who
+ * is signed in at this hospital (GET /api/auth/me), which checks the session
+ * cookie, its expiry, the user and their role here. Returns the state,
+ * `signOut`, and `signedIn`, which the login page calls with the session the
+ * server just made, so the router sees it without another round trip.
  */
-function readSession(): SessionState {
-  const s = loadSession();
-  if (!s) return { status: 'signed-out' };
-  const user = getUserById(s.userId);
-  if (!user || user.status === 'disabled') {
-    logout();
-    return { status: 'signed-out' };
-  }
-  let hospital: Hospital | null = null;
-  if (s.role !== 'platform_admin') {
-    hospital = getHospital(s.hospitalSlug);
-    if (!hospital || hospital.status === 'suspended') {
-      logout();
-      return { status: 'signed-out' };
-    }
-  }
-  return { status: 'signed-in', session: s, user, hospital: hospital! };
-}
-
-/**
- * Session hook. Reads localStorage on mount and exposes sign-out plus
- * `refresh`, which the login page calls after writing a new session so the
- * router sees the signed-in state without a page reload.
- */
-export function useSession(): [SessionState, () => void, () => void] {
+export function useSession(
+  hospitalSlug: string,
+): [SessionState, () => Promise<void>, (auth: AuthSession) => void] {
   const [state, setState] = useState<SessionState>({ status: 'loading' });
 
   useEffect(() => {
-    setState(readSession());
-  }, []);
+    let live = true;
+    fetchSession(hospitalSlug).then(
+      (auth) =>
+        live && setState(auth ? { status: 'signed-in', ...auth } : { status: 'signed-out' }),
+      // Can't reach the API: show the sign-in page, which says so if they try.
+      () => live && setState({ status: 'signed-out' }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [hospitalSlug]);
 
-  const signOut = useCallback(() => {
-    logout();
+  const signOut = useCallback(async () => {
+    try {
+      await endSession(hospitalSlug);
+    } catch {
+      // The page signs out anyway; the server's copy still expires on time.
+    }
     setState({ status: 'signed-out' });
+  }, [hospitalSlug]);
+
+  const signedIn = useCallback((auth: AuthSession) => {
+    setState({ status: 'signed-in', ...auth });
   }, []);
 
-  const refresh = useCallback(() => {
-    setState(readSession());
-  }, []);
-
-  return [state, signOut, refresh];
+  return [state, signOut, signedIn];
 }

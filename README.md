@@ -60,9 +60,15 @@ A pre-commit hook (husky + lint-staged) formats and lints staged files, so
 ### API and database (work in progress)
 
 `apps/api` is the backend that will replace the mock data: a Hono server
-with PostgreSQL through Drizzle. So far it has the schema, migrations, a seed
-and a health route. The apps don't call it yet; they still read the mock db
-through `apps/shared/src/api.ts`.
+with PostgreSQL through Drizzle. It has the schema, migrations, a seed, a
+health route and sign-in (`/api/auth`). Both apps sign in through it; their
+data still comes from the mock db through `apps/shared/src/api.ts`.
+
+`npm run dev:all` starts it with the apps (it sets up its database first),
+and the gateway and both Vite servers pass `/api` to it, so the apps call it
+on their own origin. In production `scripts/serve.mjs` serves it under
+`/api`; without `DATABASE_URL` it runs on a PGlite in memory, started from
+the seeded snapshot that `npm run build` writes.
 
 One command creates the database, applies the migrations and loads the demo
 data from `apps/shared/src/seed/*.json`. Pick the line for your machine:
@@ -135,10 +141,13 @@ browsers may need a `/etc/hosts` entry — see `deploy/DNS.md`.
 
 Only doctors can open the Rx pad. Riverside Clinic has no accounts yet.
 
-Passwords are stored as bcrypt hashes in `apps/shared/src/seed/users.json` and
-checked by `verifyPassword()` in `apps/shared/src/auth.ts`, so no plaintext
-credential is kept on the `User` type. The hashes still ship in the browser
-bundle, so this is not real authentication yet (see `PLAN.md` §2.7).
+The server checks passwords (Argon2id) and keeps the sessions: a 12-hour,
+httpOnly cookie for that one host. The demo passwords are in
+`apps/api/src/db/demo-passwords.json`, which only the API reads; the seed
+hashes them, and the sign-in pages list them by asking the API, in demo mode
+only. No browser bundle holds a password or a hash (`npm run check:bundles`).
+A dev database seeded before Argon2id has bcrypt hashes that can't sign in:
+`npm run db:reset` reseeds it.
 
 ## Repo layout
 
@@ -149,7 +158,7 @@ SwiftRX/
 │   ├─ admin/             # platform console (port 5175)
 │   ├─ doctor-portal/     # per-hospital portal (port 5174)
 │   │   └─ src/rx/        #   the Rx pad, lazy-loaded at /rx
-│   └─ api/               # Hono + Postgres API, not wired to the apps yet (port 5176)
+│   └─ api/               # Hono + Postgres API: sign-in so far (port 5176)
 │       └─ drizzle/       #   SQL migrations
 ├─ scripts/dev.mjs        # dev orchestrator + subdomain gateway (port 5172)
 ├─ scripts/serve.mjs      # production server: both builds, routed by host
@@ -165,8 +174,8 @@ SwiftRX/
 the root.
 The apps read and write data through the data client in
 `apps/shared/src/api.ts`, using the TanStack Query hooks in `queries.ts`.
-Moving to a real backend means changing that one file (sign-in aside, see
-below); see `docs/ARCHITECTURE.md`.
+Moving to a real backend means changing that one file (sign-in already goes
+to the API); see `docs/ARCHITECTURE.md`.
 
 ## Tenant model
 
@@ -238,9 +247,9 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
   method answers from `mockDb.ts` today and is labelled with the HTTP endpoint
   it becomes, served by `apps/api` under `/api`. ESLint keeps app code off the
   mock db.
-- **Auth**: replace the `login` function in `apps/shared/src/auth.ts` with
-  a real API call. The portal's `SessionPayload` is the contract to keep;
-  the Rx pad gets its doctor identity from that session.
+- **Auth**: done for sign-in (`/api/auth`, `PLAN.md` Phase 2). Password
+  reset and invites are next. The Rx pad gets its doctor identity from the
+  portal's session.
 - **Pharmacy / EHR**: `sign()` already returns a `SignedRx`. Wire it to a
   POST endpoint instead of `window.print()`.
 
@@ -259,7 +268,7 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/api/src/db/schema.ts`                   | The Postgres tables (Drizzle)                      |
 | `apps/api/src/db/seed.ts`                     | Loads the seed JSON into an empty database         |
 | `apps/api/drizzle/*.sql`                      | Migrations, generated from `schema.ts` (plus the audit-log trigger) |
-| `apps/shared/src/auth.ts`                     | `login` + session storage helpers                  |
+| `apps/shared/src/auth.ts`                     | Sign-in client for `/api/auth`                     |
 | `apps/shared/src/tenant.ts`                   | `resolveSurface()` — host / query → admin / hospital |
 | `apps/shared/src/config.ts`                   | Build-time settings: `ROOT_DOMAIN`, `DEMO_MODE`    |
 | `apps/shared/src/components.tsx`              | Reusable form + identity components                |
@@ -267,7 +276,7 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/shared/src/shared.css`                  | The one stylesheet (Tailwind entry + `rx-*` classes) |
 | `apps/shared/tailwind-preset.js`              | Shared Tailwind theme (colors, keyframes)          |
 | `apps/doctor-portal/src/App.tsx`              | Portal routes, incl. the lazy `/rx` route          |
-| `apps/doctor-portal/src/auth.ts`              | Portal session + `canPrescribe()`                  |
+| `apps/doctor-portal/src/auth.ts`              | `sessionBelongsTo()` + `canPrescribe()`            |
 | `apps/doctor-portal/src/rx/RxPad.tsx`         | Rx pad entry (loads the doctor's workspace)        |
 | `apps/doctor-portal/src/rx/store.ts`          | Rx pad state + `useApp` hook                       |
 | `apps/doctor-portal/src/rx/safety.ts`         | Allergy / interaction / duplicate checks           |

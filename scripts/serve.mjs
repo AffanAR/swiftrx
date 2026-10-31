@@ -11,7 +11,20 @@
 //    anything else (e.g. *.onrender.com) → admin
 //  <root> is VITE_ROOT_DOMAIN, the same variable the apps are built with.
 //
-//  Paths without a file extension fall back to the app's index.html
+//  /api on every host is the API (apps/api, see its src/listener.ts), so
+//  sign-in cookies stay on the apps' own origin. Without DATABASE_URL, as on
+//  the hosted demo, the API runs on a PGlite in memory with the demo data,
+//  started from the snapshot `npm run build` writes.
+//
+//  Memory, for Render's free instance (512 MB). Measured on Windows, Node 24,
+//  2026-10-31, as the OS's peak working set while the API starts:
+//    - 398 MB from the snapshot, with `node --liftoff-only` (`npm start`);
+//    - 931 MB without that flag: V8's optimizing compiler for WebAssembly
+//      briefly takes over 500 MB on PGlite's largest functions. Liftoff
+//      alone runs this small database fast enough;
+//    - 748 MB without the snapshot, which builds the database at boot.
+//
+//  Other paths without a file extension fall back to the app's index.html
 //  (client-side routing); a missing file is a real 404. Run `npm run build`
 //  first. Listens on $PORT (Render sets it), default 8080.
 // =============================================================================
@@ -21,6 +34,7 @@ import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tsImport } from 'tsx/esm/api';
 
 const REPO = fileURLToPath(new URL('..', import.meta.url));
 const DIST = {
@@ -107,17 +121,51 @@ for (const [app, dir] of Object.entries(DIST)) {
     process.exit(1);
   }
 }
+if (!process.env.DATABASE_URL && !existsSync(path.join(REPO, 'apps/api/dist/demo-db.tgz'))) {
+  console.warn(
+    '[serve] No demo database snapshot (apps/api/dist/demo-db.tgz), so the API builds one at boot,',
+    'which takes far more memory. `npm run build` writes it.',
+  );
+}
+
+// The API is TypeScript; tsx compiles it as it loads, with the API's own
+// tsconfig for its @swiftrx/shared paths. That, and starting its database,
+// takes a while on a small instance, so the apps are served meanwhile and
+// /api requests wait.
+const api = tsImport('../apps/api/src/listener.ts', {
+  parentURL: import.meta.url,
+  tsconfig: path.join(REPO, 'apps', 'api', 'tsconfig.json'),
+}).then(({ createApiListener }) => createApiListener());
+api
+  .then((loaded) => loaded.ready)
+  .then(
+    (where) => console.log(`[serve] API ready: ${where}`),
+    (error) => console.error('[serve] The API could not start, so /api answers 503.', error),
+  );
 
 const server = createServer(async (req, res) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    return sendText(res, 405, 'Method not allowed', { Allow: 'GET, HEAD' });
-  }
-
   let urlPath;
   try {
     urlPath = decodeURIComponent(new URL(req.url || '/', 'http://x').pathname);
   } catch {
     return sendText(res, 400, 'Bad request');
+  }
+
+  // Before the static rules: the API takes every method, and an unknown /api
+  // path must be its JSON 404, not the app's index.html.
+  if (urlPath === '/api' || urlPath.startsWith('/api/')) {
+    for (const [name, value] of Object.entries(BASE_HEADERS)) res.setHeader(name, value);
+    return api.then(
+      (loaded) => loaded.listener(req, res),
+      () => {
+        res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'The API is unavailable.' }));
+      },
+    );
+  }
+
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return sendText(res, 405, 'Method not allowed', { Allow: 'GET, HEAD' });
   }
   if (urlPath === '/healthz') return sendText(res, 200, 'ok');
 
@@ -145,7 +193,17 @@ server.listen(PORT, '0.0.0.0', () => {
       `[serve] SwiftRx on port ${PORT}`,
       `[serve]   admin      ${ROOT_DOMAIN}, admin.${ROOT_DOMAIN}`,
       `[serve]   hospitals  <slug>.${ROOT_DOMAIN} (Rx pad at /rx)`,
+      `[serve]   API        /api on every host`,
       `[serve]   locally    http://admin.localhost:${PORT}, http://city-hospital.localhost:${PORT}`,
     ].join('\n'),
   );
 });
+
+// Render sends SIGTERM before it replaces the instance.
+async function shutdown() {
+  server.close();
+  await api.then((loaded) => loaded.close()).catch(() => {});
+  process.exit(0);
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

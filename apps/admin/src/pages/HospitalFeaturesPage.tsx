@@ -15,11 +15,11 @@ import {
   useUpdateHospitalSettings,
   type Hospital,
   type HospitalFeatures,
-  type PublicUser,
   type RxDesign,
   type RxPageSize,
   type RxWatermarkMode,
   type SignedRx,
+  type User,
   cx,
 } from '@swiftrx/shared';
 
@@ -69,7 +69,7 @@ function FeaturesEditor({
   /** The saved settings; updated after each save. */
   initial: Hospital;
   /** Signs the preview's sample prescription. */
-  sampleDoctor?: PublicUser;
+  sampleDoctor?: User;
 }) {
   const [features, setFeatures] = useState<HospitalFeatures>(() => initial.features);
   const [design, setDesign] = useState<RxDesign>(() => initial.rxDesign);
@@ -455,7 +455,7 @@ function clampInt(v: string, lo: number, hi: number) {
 const PX_PER_MM = 96 / 25.4;
 
 /** A fixed sample prescription, so the preview always shows the same content. */
-function sampleRx(hospitalSlug: string, doctor?: PublicUser): SignedRx {
+function sampleRx(hospitalSlug: string, doctor?: User): SignedRx {
   const now = new Date().toISOString();
   return {
     id: 'rx_preview',
@@ -527,7 +527,7 @@ function RxPreview({
 }: {
   design: RxDesign;
   hospitalSlug: string;
-  doctor?: PublicUser;
+  doctor?: User;
 }) {
   const sample = useMemo(() => sampleRx(hospitalSlug, doctor), [hospitalSlug, doctor]);
   const html = useMemo(() => renderRxHtml(sample, design), [sample, design]);

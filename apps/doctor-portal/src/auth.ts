@@ -1,90 +1,37 @@
 // =============================================================================
-//  Hospital Portal — auth wiring
+//  Hospital Portal — who may do what
 // =============================================================================
-//  Thin wrapper over `@swiftrx/shared` that persists the session under
-//  `swiftrx.portal.session` (this app only). The Rx pad is a route inside the
-//  portal (/rx), so it uses this same session — there is no separate hand-off.
+//  Sign-in itself is the server's (apps/shared/src/auth.ts calls /api/auth,
+//  and useSession.ts holds the result). These are the portal's gates on what
+//  the server answered. The server already refuses a session at any hospital
+//  but its own; it will check the prescribing rule again when signing moves
+//  to it (POST /prescriptions).
 // =============================================================================
 
-import {
-  login as sharedLogin,
-  writeSessionToStorage,
-  readSessionFromStorage,
-  clearSessionFromStorage,
-  getUserById,
-  type Hospital,
-  type SessionPayload,
-  type User,
-} from '@swiftrx/shared';
-
-const SESSION_KEY = 'swiftrx.portal.session';
-
-export type LoginResult =
-  | { ok: true; session: SessionPayload; user: User }
-  | {
-      ok: false;
-      reason:
-        | 'no-hospital'
-        | 'unknown-user'
-        | 'wrong-password'
-        | 'wrong-hospital'
-        | 'wrong-role'
-        | 'disabled';
-    };
-
-export function login(opts: {
-  email: string;
-  password: string;
-  hospitalSlug: string;
-}): LoginResult {
-  if (!opts.hospitalSlug) return { ok: false, reason: 'no-hospital' };
-  const r = sharedLogin({
-    email: opts.email,
-    password: opts.password,
-    expectedRole: 'any', // could be 'doctor' or 'hospital_admin' — accept either
-    hospitalSlug: opts.hospitalSlug,
-  });
-  if (!r.ok) return { ok: false, reason: r.reason };
-
-  writeSessionToStorage(SESSION_KEY, r.session);
-  return { ok: true, session: r.session, user: r.user };
-}
-
-export function logout() {
-  clearSessionFromStorage(SESSION_KEY);
-}
-
-export function loadSession(): SessionPayload | null {
-  return readSessionFromStorage<SessionPayload>(SESSION_KEY);
-}
-
-export function getUserFromSession(): User | null {
-  const s = loadSession();
-  if (!s) return null;
-  return getUserById(s.userId) ?? null;
-}
+import type { AuthSession, Hospital, SessionPayload } from '@swiftrx/shared';
 
 /**
- * Whether a stored session may be used on this hospital's portal. A session
- * belongs to the hospital it signed in at, and on a shared origin (plain
- * localhost with `?hospital=`) another hospital's URL must not reuse it.
- * Platform admins have no hospital, so this doesn't restrict them (they can
- * still sign in to any portal; PLAN.md §2.3).
+ * Whether a session may be used on this hospital's portal: only the one it
+ * signed in at. Platform admins sign in at the admin panel and have no
+ * hospital, so a portal never takes their session.
  */
 export function sessionBelongsTo(session: SessionPayload, hospital: Hospital): boolean {
-  return session.role === 'platform_admin' || session.hospitalSlug === hospital.slug;
+  return session.role !== 'platform_admin' && session.hospitalSlug === hospital.slug;
 }
 
 /**
- * Who may open the Rx pad: active doctors with a license number, at the
- * hospital this portal is serving. (Checked in the browser for the mock; the
- * backend must enforce it too.)
+ * Who may open the Rx pad (decision D3, ROADMAP.md §7): active users with a
+ * license number who hold a doctor role at this hospital. A hospital admin
+ * who also prescribes holds a second, doctor role there; the admin role
+ * alone never prescribes.
  */
-export function canPrescribe(user: User, hospital: Hospital): boolean {
+export function canPrescribe(
+  auth: Pick<AuthSession, 'user' | 'memberships'>,
+  hospital: Hospital,
+): boolean {
   return (
-    user.role === 'doctor' &&
-    user.status === 'active' &&
-    !!user.licenseNo &&
-    user.hospitalSlug === hospital.slug
+    auth.user.status === 'active' &&
+    !!auth.user.licenseNo?.trim() &&
+    auth.memberships.some((m) => m.role === 'doctor' && m.hospitalSlug === hospital.slug)
   );
 }

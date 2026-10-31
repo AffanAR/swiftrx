@@ -1,25 +1,24 @@
 import * as React from 'react';
-import { TextField, LiveDot, Spinner } from '@swiftrx/shared';
+import { DemoAccounts, TextField, LiveDot, Spinner } from '@swiftrx/shared';
 
 export function LoginPage({
   onSignIn,
 }: {
-  onSignIn: (email: string, password: string) => string | null;
+  onSignIn: (email: string, password: string) => Promise<string | null>;
 }) {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setBusy(true);
-    setTimeout(() => {
-      const err = onSignIn(email, password);
-      setBusy(false);
-      if (err) setError(err);
-    }, 300);
+    // The server checks the password and sets the cookie.
+    const err = await onSignIn(email, password);
+    setBusy(false);
+    if (err) setError(err);
   };
 
   return (
@@ -145,17 +144,7 @@ export function LoginPage({
               )}
             </button>
 
-            <details
-              className="mt-6 text-xs text-ink-500 animate-fadeIn"
-              style={{ animationDelay: '380ms' }}
-            >
-              <summary className="cursor-pointer text-ink-400 hover:text-ink-300 select-none transition-colors">
-                Demo credentials
-              </summary>
-              <div className="mt-3 rounded-md border border-ink-700 bg-ink-800/60 p-3 font-mono text-[11px] animate-slideUpIn">
-                <div className="text-ink-300">admin@swiftrx.com / admin1234</div>
-              </div>
-            </details>
+            <DemoAccounts />
           </form>
         </div>
       </div>

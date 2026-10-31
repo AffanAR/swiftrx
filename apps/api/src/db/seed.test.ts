@@ -1,7 +1,8 @@
 import { asc, count, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { dropEverything, openDatabase, type Database, type DatabaseConfig } from './client';
+import { verifyPassword } from '../auth/passwords';
+import type { Database } from './client';
 import {
   auditEvents,
   hospitalSettings,
@@ -14,25 +15,8 @@ import {
   prescriptions,
   users,
 } from './schema';
-import { demoSeedData, seed, type SeedData } from './seed';
-
-/**
- * A migrated, empty database: PGlite in memory, or, when TEST_DATABASE_URL is
- * set (CI's Postgres job), that local Postgres wiped first. That run checks the
- * same behaviour on the real server, which PGlite can't fully stand in for
- * (one connection, its own build). Only this file wipes and migrates, so test
- * files running in parallel can't trip over each other.
- */
-async function freshDatabase(): Promise<Database> {
-  const url = process.env.TEST_DATABASE_URL;
-  const config: DatabaseConfig = url ? { url } : {};
-  const database = await openDatabase(config);
-  if (url) await dropEverything(database, config);
-  await database.migrate();
-  return database;
-}
-
-const SLOW = 60_000; // PGlite boots a WebAssembly Postgres per database
+import { DEMO_PASSWORDS, demoSeedData, seed, type SeedData } from './seed';
+import { SLOW, freshDatabase } from './testDatabase';
 
 describe('seed', () => {
   const data = demoSeedData();
@@ -80,7 +64,7 @@ describe('seed', () => {
     expect(n).toBe(data.hospitals.length);
   });
 
-  it('keeps the bcrypt hashes and turns roles into memberships', async () => {
+  it('stores the demo passwords as Argon2id hashes and turns roles into memberships', async () => {
     const rows = await database.db
       .select({
         id: users.id,
@@ -96,8 +80,11 @@ describe('seed', () => {
     expect(rows).toHaveLength(data.users.length);
     for (const u of data.users) {
       const row = rows.find((r) => r.id === u.id)!;
-      expect(row.passwordHash).toBe(u.passwordHash);
-      expect(row.passwordHash).toMatch(/^\$2[aby]\$/);
+      // Every demo account has a password, and the README's is the right one.
+      const demoPassword = DEMO_PASSWORDS[u.id];
+      expect(demoPassword).toBe(u.role === 'platform_admin' ? 'admin1234' : 'demo1234');
+      expect(row.passwordHash).toMatch(/^\$argon2id\$v=19\$m=19456,t=2,p=1\$/);
+      expect(await verifyPassword(row.passwordHash, demoPassword)).toBe(true);
       if (u.role === 'platform_admin') {
         expect(row).toMatchObject({ isPlatformAdmin: true, slug: null, role: null });
       } else {
@@ -251,5 +238,13 @@ describe('seed with bad data', () => {
       }),
     });
     expect(await hospitalCount()).toBe(0);
+  });
+
+  // Last: this one leaves data behind.
+  it('gives a user with no demo password no password at all', async () => {
+    expect(await seed(database.db, demoSeedData(), {})).toMatchObject({ seeded: true });
+    const hashes = await database.db.select({ hash: users.passwordHash }).from(users);
+    expect(hashes.length).toBeGreaterThan(0);
+    expect(hashes.every((h) => h.hash === null)).toBe(true);
   });
 });

@@ -112,7 +112,6 @@ export const userSchema = z
   .object({
     id: text,
     email: z.email(),
-    passwordHash: text,
     name: text,
     role: userRoleSchema,
     hospitalSlug: slug.nullable(),

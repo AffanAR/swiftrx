@@ -5,17 +5,31 @@
 //    tsx src/db/cli.ts migrate   apply pending migrations
 //    tsx src/db/cli.ts seed      load the demo data into an empty database
 //    tsx src/db/cli.ts reset     drop everything, migrate and seed (local only)
+//    tsx src/db/cli.ts snapshot  write the demo database to dist/demo-db.tgz
 //
 //  The database is DATABASE_URL (from the shell or apps/api/.env), else PGlite
 //  in apps/api/.pglite. `--url <postgres-url>` overrides both; `npm run db:up`
 //  uses it to point at the Docker database.
+//
+//  `snapshot` (part of `npm run build`) always works on a fresh PGlite in
+//  memory: it migrates and seeds one and saves its files, so the production
+//  server can start from them instead of building a database at every boot.
 // =============================================================================
 
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+
 import { loadLocalEnv } from '../env';
-import { databaseConfigFromEnv, dropEverything, openDatabase, type DatabaseConfig } from './client';
+import {
+  DEMO_SNAPSHOT,
+  databaseConfigFromEnv,
+  dropEverything,
+  openDatabase,
+  type DatabaseConfig,
+} from './client';
 import { seed } from './seed';
 
-const COMMANDS = ['setup', 'migrate', 'seed', 'reset'] as const;
+const COMMANDS = ['setup', 'migrate', 'seed', 'reset', 'snapshot'] as const;
 type Command = (typeof COMMANDS)[number];
 
 async function main(args: string[]): Promise<void> {
@@ -23,6 +37,7 @@ async function main(args: string[]): Promise<void> {
   if (!COMMANDS.includes(command as Command)) {
     throw new Error(`Usage: cli.ts <${COMMANDS.join('|')}> [--url <postgres-url>]`);
   }
+  if (command === 'snapshot') return writeDemoSnapshot();
 
   loadLocalEnv();
   const urlFlag = rest.indexOf('--url');
@@ -52,6 +67,22 @@ async function main(args: string[]): Promise<void> {
           : 'Already has data, so the seed was skipped. `npm run db:reset` starts over.',
       );
     }
+  } finally {
+    await database.close();
+  }
+}
+
+async function writeDemoSnapshot(): Promise<void> {
+  const database = await openDatabase({});
+  try {
+    await database.migrate();
+    await seed(database.db);
+    const bytes = await database.dump!();
+    await mkdir(dirname(DEMO_SNAPSHOT), { recursive: true });
+    await writeFile(DEMO_SNAPSHOT, bytes);
+    console.log(
+      `Wrote the demo database (${(bytes.length / 1e6).toFixed(1)} MB) to ${DEMO_SNAPSHOT}`,
+    );
   } finally {
     await database.close();
   }

@@ -9,11 +9,10 @@
 //
 //  Like JSON over HTTP, every method is async and returns copies, so a caller
 //  can't change stored data by mutating a result. Writes assign ids and
-//  timestamps and record the audit event, as the server will. Users never come
-//  back with their password hash.
+//  timestamps and record the audit event, as the server will.
 //
-//  Sign-in and the session stay in auth.ts until the auth step of Phase 2
-//  (PLAN.md).
+//  Sign-in already goes to the server (auth.ts, /api/auth). Passwords live
+//  only there, so the mock users here have none.
 // =============================================================================
 
 import { MOCK_LATENCY_MS } from './config';
@@ -53,9 +52,6 @@ import {
   type SignedRx,
   type User,
 } from './types';
-
-/** A user as the API returns them: never with the password hash. */
-export type PublicUser = Omit<User, 'passwordHash'>;
 
 /**
  * Who is making a change, for the audit row. A real backend takes this from
@@ -148,11 +144,10 @@ export const api = {
 
   users: {
     /** GET /users — every account, for the platform admin. */
-    list: (): Promise<PublicUser[]> => reply(MOCK_USERS.map(withoutHash)),
+    list: (): Promise<User[]> => reply(MOCK_USERS),
 
     /** GET /hospitals/:slug/doctors */
-    listDoctors: (slug: string): Promise<PublicUser[]> =>
-      reply(listDoctorsForHospital(slug).map(withoutHash)),
+    listDoctors: (slug: string): Promise<User[]> => reply(listDoctorsForHospital(slug)),
   },
 
   patients: {
@@ -248,9 +243,3 @@ const newId = (prefix: string) =>
   `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 const audit = (e: AuditEvent) => appendAudit(structuredClone(e));
-
-function withoutHash(user: User): PublicUser {
-  const copy: Partial<User> = { ...user };
-  delete copy.passwordHash;
-  return copy as PublicUser;
-}

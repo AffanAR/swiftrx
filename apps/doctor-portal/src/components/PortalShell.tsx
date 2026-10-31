@@ -1,25 +1,25 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { LiveDot, PageBoundary, cx, type Hospital, type User } from '@swiftrx/shared';
-import { canPrescribe } from '../auth';
 
 export function PortalShell({
   children,
   hospital,
   user,
+  prescriber,
   onSignOut,
 }: {
   children: React.ReactNode;
   hospital: Hospital;
   user: User;
+  /** Whether the user may open the Rx pad (canPrescribe). */
+  prescriber: boolean;
   onSignOut: () => void;
 }) {
   const { pathname } = useLocation();
   const isAdmin = user.role === 'hospital_admin';
-  const nav = isAdmin
-    ? NAV_ADMIN
-    : canPrescribe(user, hospital)
-      ? [NAV_DOCTOR[0], NAV_RX, ...NAV_DOCTOR.slice(1)]
-      : NAV_DOCTOR;
+  const base = isAdmin ? NAV_ADMIN : NAV_DOCTOR;
+  // An admin who is also one of the hospital's doctors gets the pad too.
+  const nav = prescriber ? [base[0], NAV_RX, ...base.slice(1)] : base;
 
   return (
     <div className="h-full flex flex-col bg-ink-900 text-ink-100 relative overflow-hidden">
@@ -109,5 +109,5 @@ const NAV_DOCTOR = [
   { to: '/prescriptions', label: 'My Rx' },
 ];
 
-// Shown to doctors who can prescribe (see canPrescribe).
+// Shown to whoever may prescribe here (canPrescribe in ../auth.ts).
 const NAV_RX = { to: '/rx', label: 'Rx pad' };

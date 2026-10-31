@@ -129,13 +129,11 @@ export interface Hospital {
 
 export type UserRole = 'platform_admin' | 'hospital_admin' | 'doctor';
 
+// A user as the apps see them. Passwords and their hashes stay on the server
+// (apps/api), so no browser code can hold one.
 export interface User {
   id: string;
   email: string;
-  // bcrypt hash, never the plaintext. `login()` compares against this, so the
-  // credential stays out of UI state, session payloads and anything that
-  // renders a User.
-  passwordHash: string;
   name: string;
   role: UserRole;
   hospitalSlug: string | null; // null for platform_admin
@@ -302,14 +300,69 @@ export type AuditEvent =
 
 // --- Sessions ----------------------------------------------------------------
 
+/**
+ * A signed-in session. The server keeps it and checks it on every request;
+ * the browser only holds an httpOnly cookie. `issuedAt` and `expiresAt` are
+ * epoch milliseconds.
+ */
 export type SessionPayload =
-  | { role: 'platform_admin'; userId: string; issuedAt: number; email: string; name: string }
   | {
+      role: 'platform_admin';
+      userId: string;
+      issuedAt: number;
+      expiresAt: number;
+      email: string;
+      name: string;
+    }
+  | {
+      /** The user's role at this hospital; `hospital_admin` if they are an admin and a doctor. */
       role: 'hospital_admin' | 'doctor';
       userId: string;
       hospitalSlug: string;
       issuedAt: number;
+      expiresAt: number;
       email: string;
       name: string;
       licenseNo?: string;
     };
+
+/** A user's role at one hospital (the API's `memberships` table). */
+export interface Membership {
+  hospitalSlug: string;
+  role: 'hospital_admin' | 'doctor';
+}
+
+/**
+ * Why the server refused a sign-in. Wrong email and wrong password are one
+ * reason, so the answer doesn't tell whether an account exists; the reasons
+ * after it are only given once the password was right.
+ */
+export type SignInRefusal =
+  | 'invalid-credentials'
+  | 'rate-limited'
+  | 'no-hospital'
+  | 'disabled'
+  | 'invited'
+  | 'wrong-role'
+  | 'wrong-hospital'
+  | 'hospital-suspended';
+
+/** A demo account, for the hint on the demo's sign-in pages (`GET /api/auth/demo-accounts`). */
+export interface DemoAccount {
+  email: string;
+  password: string;
+  name: string;
+  role: UserRole;
+}
+
+/** Who is signed in, as `POST /api/auth/login` and `GET /api/auth/me` answer. */
+export interface AuthSession {
+  session: SessionPayload;
+  /** At a hospital, `role` and `hospitalSlug` are the session's. */
+  user: User;
+  /**
+   * The user's roles at the session's hospital: one user can be its admin
+   * and one of its doctors. Empty for a platform admin.
+   */
+  memberships: Membership[];
+}

@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PageBoundary, useHospital } from '@swiftrx/shared';
 import { useSession, type SessionState } from './useSession';
@@ -27,7 +27,7 @@ export default function App() {
  */
 function TenantPortal({ slug }: { slug: string }) {
   const hospital = useHospital(slug);
-  const [stored, signOut, refreshSession] = useSession();
+  const [stored, signOut, signedIn] = useSession(slug);
 
   if (!hospital) return <NoTenant />;
 
@@ -37,71 +37,47 @@ function TenantPortal({ slug }: { slug: string }) {
     );
   }
 
-  // A session belongs to the hospital it signed in at. When the URL names a
-  // different hospital (possible on a shared origin, e.g. dev `?hospital=`),
-  // that hospital's portal treats the visitor as signed out.
+  // The server only answers with a session made at this hospital. Checked
+  // here too, so a page never shows another hospital's signed-in state.
   const session: SessionState =
     stored.status === 'signed-in' && !sessionBelongsTo(stored.session, hospital)
       ? { status: 'signed-out' }
       : stored;
 
+  if (session.status !== 'signed-in') {
+    return (
+      <Routes>
+        <Route path="/" element={<LoginPage hospital={hospital} onSignedIn={signedIn} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  const { user } = session;
+  const isAdmin = user.role === 'hospital_admin';
+  const prescriber = canPrescribe(session, hospital);
+  const shell = (page: ReactNode) => (
+    <PortalShell hospital={hospital} user={user} prescriber={prescriber} onSignOut={signOut}>
+      {page}
+    </PortalShell>
+  );
+
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          session.status === 'signed-in' ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <LoginPage hospital={hospital} onSignedIn={refreshSession} />
-          )
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          session.status === 'signed-in' ? (
-            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-              <DashboardPage hospital={hospital} user={session.user} />
-            </PortalShell>
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
-      <Route
-        path="/patients"
-        element={
-          session.status === 'signed-in' ? (
-            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-              <PatientsPage hospital={hospital} user={session.user} />
-            </PortalShell>
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={shell(<DashboardPage hospital={hospital} user={user} />)} />
+      <Route path="/patients" element={shell(<PatientsPage hospital={hospital} user={user} />)} />
       <Route
         path="/prescriptions"
-        element={
-          session.status === 'signed-in' ? (
-            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-              <PrescriptionsPage hospital={hospital} user={session.user} />
-            </PortalShell>
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
+        element={shell(<PrescriptionsPage hospital={hospital} user={user} />)}
       />
       <Route
         path="/rx"
         element={
-          session.status !== 'signed-in' ? (
-            <Navigate to="/" replace />
-          ) : canPrescribe(session.user, hospital) ? (
+          prescriber ? (
             // Covers the lazy chunk and the pad's data: one loading state, one error state.
             <PageBoundary loadingLabel="Loading Rx pad…">
-              <RxPad user={session.user} hospital={hospital} onSignOut={signOut} />
+              <RxPad user={user} hospital={hospital} onSignOut={signOut} />
             </PageBoundary>
           ) : (
             <Navigate to="/dashboard" replace />
@@ -111,10 +87,8 @@ function TenantPortal({ slug }: { slug: string }) {
       <Route
         path="/doctors"
         element={
-          session.status === 'signed-in' && session.user.role === 'hospital_admin' ? (
-            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-              <DoctorsPage hospital={hospital} user={session.user} />
-            </PortalShell>
+          isAdmin ? (
+            shell(<DoctorsPage hospital={hospital} user={user} />)
           ) : (
             <Navigate to="/dashboard" replace />
           )
@@ -123,10 +97,8 @@ function TenantPortal({ slug }: { slug: string }) {
       <Route
         path="/settings"
         element={
-          session.status === 'signed-in' && session.user.role === 'hospital_admin' ? (
-            <PortalShell hospital={hospital} user={session.user} onSignOut={signOut}>
-              <HospitalSettingsPage hospital={hospital} user={session.user} />
-            </PortalShell>
+          isAdmin ? (
+            shell(<HospitalSettingsPage hospital={hospital} user={user} />)
           ) : (
             <Navigate to="/dashboard" replace />
           )
