@@ -7,8 +7,8 @@
     "recommendationReason": "First-line bronchodilator + inhaled steroid for adult asthma.",
     "medications": [
       {
-        "drugId": "salin",
-        "genericName": "Salbutamol",
+        "drugId": "g1317",
+        "genericName": "Salbutamol (Inhaler)",
         "dosage": {
           "value": 100,
           "unit": "mcg"
@@ -18,8 +18,8 @@
         "instructions": "2 puffs every 4-6h when needed"
       },
       {
-        "drugId": "pred",
-        "genericName": "Prednisone",
+        "drugId": "g918",
+        "genericName": "Prednisolone",
         "dosage": {
           "value": 10,
           "unit": "mg"
@@ -38,8 +38,8 @@
     "recommendationReason": "Rescue inhaler only — mild intermittent asthma.",
     "medications": [
       {
-        "drugId": "salin",
-        "genericName": "Salbutamol",
+        "drugId": "g1317",
+        "genericName": "Salbutamol (Inhaler)",
         "dosage": {
           "value": 100,
           "unit": "mcg"
@@ -58,8 +58,8 @@
     "recommendationReason": "Adjunct antihistamine for allergic-trigger asthma.",
     "medications": [
       {
-        "drugId": "salin",
-        "genericName": "Salbutamol",
+        "drugId": "g1317",
+        "genericName": "Salbutamol (Inhaler)",
         "dosage": {
           "value": 100,
           "unit": "mcg"
@@ -69,8 +69,8 @@
         "instructions": "2 puffs every 4-6h when needed"
       },
       {
-        "drugId": "cetiri",
-        "genericName": "Cetirizine",
+        "drugId": "g234",
+        "genericName": "Cetirizine Hydrochloride",
         "dosage": {
           "value": 10,
           "unit": "mg"
@@ -89,7 +89,7 @@
     "recommendationReason": "Symptomatic relief + first-line antibiotic for strep suspicion.",
     "medications": [
       {
-        "drugId": "para",
+        "drugId": "g860",
         "genericName": "Paracetamol",
         "dosage": {
           "value": 500,
@@ -100,8 +100,8 @@
         "instructions": "Every 6 hours, max 4 doses/day"
       },
       {
-        "drugId": "amox",
-        "genericName": "Amoxicillin",
+        "drugId": "g69",
+        "genericName": "Amoxicillin Trihydrate",
         "dosage": {
           "value": 500,
           "unit": "mg"
@@ -120,7 +120,7 @@
     "recommendationReason": "Penicillin-allergic alternative.",
     "medications": [
       {
-        "drugId": "para",
+        "drugId": "g860",
         "genericName": "Paracetamol",
         "dosage": {
           "value": 500,
@@ -131,8 +131,8 @@
         "instructions": "Every 6 hours, max 4 doses/day"
       },
       {
-        "drugId": "azith",
-        "genericName": "Azithromycin",
+        "drugId": "g100",
+        "genericName": "Azithromycin Dihydrate",
         "dosage": {
           "value": 500,
           "unit": "mg"
@@ -151,7 +151,7 @@
     "recommendationReason": "Supportive care only — viral etiology likely.",
     "medications": [
       {
-        "drugId": "para",
+        "drugId": "g860",
         "genericName": "Paracetamol",
         "dosage": {
           "value": 500,
@@ -162,8 +162,8 @@
         "instructions": "As needed for pain/fever"
       },
       {
-        "drugId": "cetiri",
-        "genericName": "Cetirizine",
+        "drugId": "g234",
+        "genericName": "Cetirizine Hydrochloride",
         "dosage": {
           "value": 10,
           "unit": "mg"
@@ -182,7 +182,7 @@
     "recommendationReason": "First-line ACE inhibitor for uncomplicated HTN.",
     "medications": [
       {
-        "drugId": "lisinopril",
+        "drugId": "g691",
         "genericName": "Lisinopril",
         "dosage": {
           "value": 10,
@@ -202,8 +202,8 @@
     "recommendationReason": "CCB alternative for ACE-intolerant patients.",
     "medications": [
       {
-        "drugId": "amlo",
-        "genericName": "Amlodipine",
+        "drugId": "g62",
+        "genericName": "Amlodipine Besilate",
         "dosage": {
           "value": 5,
           "unit": "mg"
@@ -222,8 +222,8 @@
     "recommendationReason": "Combination therapy for stage 2 HTN.",
     "medications": [
       {
-        "drugId": "amlo",
-        "genericName": "Amlodipine",
+        "drugId": "g62",
+        "genericName": "Amlodipine Besilate",
         "dosage": {
           "value": 5,
           "unit": "mg"
@@ -233,7 +233,7 @@
         "instructions": "Morning"
       },
       {
-        "drugId": "lisinopril",
+        "drugId": "g691",
         "genericName": "Lisinopril",
         "dosage": {
           "value": 10,
@@ -253,8 +253,8 @@
     "recommendationReason": "First-line biguanide for T2DM without renal impairment.",
     "medications": [
       {
-        "drugId": "metformin",
-        "genericName": "Metformin",
+        "drugId": "g734",
+        "genericName": "Metformin Hydrochloride",
         "dosage": {
           "value": 500,
           "unit": "mg"
@@ -273,8 +273,8 @@
     "recommendationReason": "Add-on statin for diabetic dyslipidemia.",
     "medications": [
       {
-        "drugId": "metformin",
-        "genericName": "Metformin",
+        "drugId": "g734",
+        "genericName": "Metformin Hydrochloride",
         "dosage": {
           "value": 500,
           "unit": "mg"
@@ -284,8 +284,8 @@
         "instructions": "With meals"
       },
       {
-        "drugId": "atorva",
-        "genericName": "Atorvastatin",
+        "drugId": "g92",
+        "genericName": "Atorvastatin Calcium",
         "dosage": {
           "value": 20,
           "unit": "mg"
@@ -304,8 +304,8 @@
     "recommendationReason": "Triple therapy for uncontrolled T2DM.",
     "medications": [
       {
-        "drugId": "metformin",
-        "genericName": "Metformin",
+        "drugId": "g734",
+        "genericName": "Metformin Hydrochloride",
         "dosage": {
           "value": 1,
           "unit": "g"
@@ -315,8 +315,8 @@
         "instructions": "With meals"
       },
       {
-        "drugId": "amlo",
-        "genericName": "Amlodipine",
+        "drugId": "g62",
+        "genericName": "Amlodipine Besilate",
         "dosage": {
           "value": 5,
           "unit": "mg"
@@ -326,8 +326,8 @@
         "instructions": "For BP if needed"
       },
       {
-        "drugId": "atorva",
-        "genericName": "Atorvastatin",
+        "drugId": "g92",
+        "genericName": "Atorvastatin Calcium",
         "dosage": {
           "value": 20,
           "unit": "mg"

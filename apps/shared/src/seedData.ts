@@ -23,6 +23,7 @@ import hospitalsJson from './seed/hospitals.json';
 import usersJson from './seed/users.json';
 import patientsJson from './seed/patients.json';
 import drugsJson from './seed/drugs.json';
+import brandsJson from './seed/brands.json';
 import diagnosesJson from './seed/diagnoses.json';
 import investigationsJson from './seed/investigations.json';
 import quickPacksJson from './seed/quickPacks.json';
@@ -31,6 +32,8 @@ import auditJson from './seed/audit.json';
 
 import type {
   AuditEvent,
+  Brand,
+  Catalog,
   Diagnosis,
   Drug,
   Hospital,
@@ -62,6 +65,7 @@ function rebase(daysAgo: number): string {
 export const MOCK_HOSPITALS: Hospital[] = hospitalsJson as Hospital[];
 export const MOCK_USERS: User[] = usersJson as User[];
 export const MOCK_DRUGS: Drug[] = drugsJson as Drug[];
+export const MOCK_BRANDS: Brand[] = brandsJson as Brand[];
 export const MOCK_DIAGNOSES: Diagnosis[] = diagnosesJson as Diagnosis[];
 export const MOCK_INVESTIGATIONS: Investigation[] = investigationsJson as Investigation[];
 export const MOCK_QUICK_PACKS: QuickPack[] = quickPacksJson as QuickPack[];
@@ -88,3 +92,17 @@ export const MOCK_SIGNED_RX: SignedRx[] = (signedRxJson as SignedRxSeed[]).map((
   }
   return { ...rest, patient, diagnosis };
 });
+
+/**
+ * The seeded catalog, for tests: what GET /api/catalog answers. The apps fetch
+ * it instead, since the brand list is too big to bundle.
+ */
+export function demoCatalog(): Catalog {
+  return structuredClone({
+    drugs: MOCK_DRUGS,
+    brands: MOCK_BRANDS,
+    diagnoses: MOCK_DIAGNOSES,
+    investigations: MOCK_INVESTIGATIONS,
+    quickPacks: MOCK_QUICK_PACKS,
+  });
+}

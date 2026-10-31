@@ -19,6 +19,8 @@
 //  Memory, for Render's free instance (512 MB). Measured on Windows, Node 24,
 //  2026-10-31, as the OS's peak working set while the API starts:
 //    - 398 MB from the snapshot, with `node --liftoff-only` (`npm start`);
+//      457 MB once the Bangladesh brand list (21,712 rows) was added, the
+//      same day. Serving GET /api/catalog didn't raise the peak;
 //    - 931 MB without that flag: V8's optimizing compiler for WebAssembly
 //      briefly takes over 500 MB on PGlite's largest functions. Liftoff
 //      alone runs this small database fast enough;

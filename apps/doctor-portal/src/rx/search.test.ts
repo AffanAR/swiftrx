@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { MOCK_DIAGNOSES, MOCK_DRUGS, type Drug } from '@swiftrx/shared';
-import { findBrandMatches, fuzzySearch } from './search';
+import { MOCK_DIAGNOSES, type Brand, type Drug } from '@swiftrx/shared';
+import { demoCatalog } from '@swiftrx/shared/seedData';
+import { buildMedicineIndex, fuzzySearch, searchMedicines, type MedicineHit } from './search';
 
-const drugFields = (d: Drug) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass];
 const self = (s: string) => [s];
+const label = (h: MedicineHit) =>
+  h.kind === 'brand' ? `${h.brand.name} ${h.brand.strength ?? ''}`.trim() : h.drug.genericName;
 
 describe('fuzzySearch', () => {
   it('returns nothing for a blank query', () => {
-    expect(fuzzySearch(MOCK_DRUGS, '   ', drugFields)).toEqual([]);
+    expect(fuzzySearch(['Asthma'], '   ', self)).toEqual([]);
   });
 
   it('ranks a match at the start above one later in the text', () => {
@@ -21,15 +23,15 @@ describe('fuzzySearch', () => {
     expect(fuzzySearch(['Paracetamol'], 'PARACÉTAMOL', self)).toEqual(['Paracetamol']);
   });
 
-  it('matches on any field and drops items that do not match', () => {
-    expect(fuzzySearch(MOCK_DRUGS, 'ace inhibitor', drugFields).map((d) => d.id)).toEqual([
-      'lisinopril',
-    ]);
-    expect(fuzzySearch(MOCK_DRUGS, 'zzz', drugFields)).toEqual([]);
-  });
-
-  it('respects the limit', () => {
-    expect(fuzzySearch(MOCK_DRUGS, 'a', drugFields, 3)).toHaveLength(3);
+  it('matches on any field, drops items that do not match and respects the limit', () => {
+    const items = [
+      { a: 'Alpha', b: 'one' },
+      { a: 'Beta', b: 'two' },
+      { a: 'Gamma', b: 'three' },
+    ];
+    expect(fuzzySearch(items, 'two', (i) => [i.a, i.b]).map((i) => i.a)).toEqual(['Beta']);
+    expect(fuzzySearch(items, 'zzz', (i) => [i.a, i.b])).toEqual([]);
+    expect(fuzzySearch(items, 'a', (i) => [i.a], 2)).toHaveLength(2);
   });
 
   it('finds a diagnosis by its ICD-10 code', () => {
@@ -38,23 +40,48 @@ describe('fuzzySearch', () => {
   });
 });
 
-describe('findBrandMatches', () => {
-  it('maps a brand name to its generic drug', () => {
-    expect(findBrandMatches('Panadol', MOCK_DRUGS)).toEqual([
-      { drugId: 'para', genericName: 'Paracetamol', brandName: 'Panadol' },
-    ]);
+describe('searchMedicines', () => {
+  const index = buildMedicineIndex(demoCatalog());
+
+  it('finds a Bangladeshi brand by name, with its strengths and forms', () => {
+    const hits = searchMedicines(index, 'napa');
+    expect(hits[0]).toMatchObject({ kind: 'brand', brand: { name: 'Napa' } });
+    expect(hits[0].drug.genericName).toBe('Paracetamol');
+    expect(hits.map(label)).toContain('Napa 500 mg');
   });
 
-  it('puts an exact brand match before partial ones', () => {
-    const drugs = [
-      { id: 'a', genericName: 'Alpha', brandNames: ['Fooplus'] },
-      { id: 'b', genericName: 'Beta', brandNames: ['Foo'] },
-    ];
-    expect(findBrandMatches('foo', drugs).map((m) => m.brandName)).toEqual(['Foo', 'Fooplus']);
+  it('finds a generic by name, and some of its brands', () => {
+    const hits = searchMedicines(index, 'paracetamol');
+    const generic = hits.find((h) => h.kind === 'generic' && h.drug.genericName === 'Paracetamol');
+    expect(generic).toBeDefined();
+    expect(hits.some((h) => h.kind === 'brand' && h.drug.genericName === 'Paracetamol')).toBe(true);
+  });
+
+  it('puts an exact name before a longer one', () => {
+    const drug: Drug = {
+      id: 'g1',
+      genericName: 'Alpha',
+      therapeuticClass: 'X',
+      safetyReviewed: false,
+      contraindications: [],
+      interactsWith: [],
+    };
+    const brand = (id: string, name: string): Brand => ({
+      id,
+      name,
+      drugId: 'g1',
+      form: 'Tablet',
+      manufacturer: 'M',
+    });
+    const small = buildMedicineIndex({
+      drugs: [drug],
+      brands: [brand('b1', 'Fooplus'), brand('b2', 'Foo')],
+    });
+    expect(searchMedicines(small, 'foo').map(label)).toEqual(['Foo', 'Fooplus']);
   });
 
   it('returns nothing for a blank query and respects the limit', () => {
-    expect(findBrandMatches('  ', MOCK_DRUGS)).toEqual([]);
-    expect(findBrandMatches('o', MOCK_DRUGS, 2)).toHaveLength(2);
+    expect(searchMedicines(index, '  ')).toEqual([]);
+    expect(searchMedicines(index, 'a', 5)).toHaveLength(5);
   });
 });

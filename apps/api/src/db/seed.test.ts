@@ -40,6 +40,7 @@ describe('seed', () => {
         users: data.users.length,
         memberships: data.users.filter((u) => u.role !== 'platform_admin').length,
         drugs: data.drugs.length,
+        brands: data.brands.length,
         investigations: data.investigations.length,
         diagnoses: data.diagnoses.length,
         diagnosis_investigations: data.diagnoses.flatMap((d) => d.recommendedInvestigations ?? [])

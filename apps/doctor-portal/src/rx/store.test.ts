@@ -8,6 +8,7 @@ import {
   type Patient,
   type SignedRx,
 } from '@swiftrx/shared';
+import { demoCatalog } from '@swiftrx/shared/seedData';
 import {
   actions,
   getState,
@@ -18,6 +19,11 @@ import {
   type DoctorIdentity,
   type WorkspaceData,
 } from './store';
+
+// Generic ids from the Bangladesh list (scripts/bd-medicines/reviewed.json).
+const AMLODIPINE = 'g62';
+const AMOXICILLIN = 'g69';
+const LISINOPRIL = 'g691';
 
 // Seed doctors and patients from apps/shared/src/seed/. City Hospital's
 // p_001 (Bilal) is allergic to penicillin; p_002 (Fatima) has no allergies.
@@ -41,7 +47,7 @@ async function workspaceFor(slug: string): Promise<WorkspaceData> {
   const [patients, signed, catalog, hospital] = await Promise.all([
     api.patients.list(slug),
     api.prescriptions.list(slug),
-    api.catalog.get(),
+    demoCatalog(),
     api.hospitals.get(slug),
   ]);
   return { patients, signed, catalog, rxDesign: hospital?.rxDesign ?? null };
@@ -86,7 +92,7 @@ describe('loadWorkspace', () => {
   });
 
   it('keeps the pad for the same doctor but takes the new roster', async () => {
-    fillPad('p_002', 'I10', ['amlo']);
+    fillPad('p_002', 'I10', [AMLODIPINE]);
     const added: Patient = { ...getState().patients[0], id: 'p_added', name: 'Added Elsewhere' };
     MOCK_PATIENTS.push(added);
 
@@ -94,18 +100,41 @@ describe('loadWorkspace', () => {
 
     const s = getState();
     expect(s.patientId).toBe('p_002');
-    expect(s.medications.map((m) => m.drugId)).toEqual(['amlo']);
+    expect(s.medications.map((m) => m.drugId)).toEqual([AMLODIPINE]);
     expect(s.patients.some((p) => p.id === 'p_added')).toBe(true);
   });
 
   it('starts from a clean pad for a different doctor', async () => {
-    fillPad('p_002', 'I10', ['amlo']);
+    fillPad('p_002', 'I10', [AMLODIPINE]);
     loadWorkspace(SANA, await workspaceFor('northstar-medical'));
 
     const s = getState();
     expect(s.medications).toEqual([]);
     expect(s.diagnosis).toBeNull();
     expect(s.patients.every((p) => p.hospitalSlug === 'northstar-medical')).toBe(true);
+  });
+});
+
+describe('addMedication', () => {
+  it('adds a brand with its strength, form and dose', () => {
+    const napa = getState().catalog.brands.find(
+      (b) => b.name === 'Napa' && b.form === 'Tablet' && b.strength === '500 mg',
+    )!;
+    actions.addMedication(napa.drugId, napa);
+    expect(getState().medications).toEqual([
+      expect.objectContaining({
+        genericName: 'Paracetamol',
+        brandName: 'Napa',
+        form: 'Tablet',
+        strength: '500 mg',
+        dosage: { value: 500, unit: 'mg' },
+      }),
+    ]);
+  });
+
+  it('ignores a drug that is not in the catalog', () => {
+    actions.addMedication('not-a-drug');
+    expect(getState().medications).toEqual([]);
   });
 });
 
@@ -116,7 +145,7 @@ describe('sign', () => {
   });
 
   it('signs a complete pad as the signed-in doctor, records it and clears the pad', async () => {
-    fillPad('p_002', 'I10', ['amlo']);
+    fillPad('p_002', 'I10', [AMLODIPINE]);
     const rx = await actions.sign();
 
     expect(rx).toMatchObject({
@@ -135,19 +164,19 @@ describe('sign', () => {
   });
 
   it('refuses a dose or duration of 0', async () => {
-    fillPad('p_002', 'I10', ['amlo']);
+    fillPad('p_002', 'I10', [AMLODIPINE]);
     const row = getState().medications[0];
 
     actions.updateMedication(row.rowId, { dosage: { ...row.dosage, value: 0 } });
     expect(await actions.sign()).toBeNull();
-    expect(getState().banner?.text).toContain('Row 1 (Amlodipine)');
+    expect(getState().banner?.text).toContain('Row 1 (Amlodipine Besilate)');
 
     actions.updateMedication(row.rowId, { dosage: { ...row.dosage, value: 5 }, durationDays: 0 });
     expect(await actions.sign()).toBeNull();
   });
 
   it('needs an override reason before signing past an allergy alert', async () => {
-    fillPad('p_001', 'J02.9', ['amox']);
+    fillPad('p_001', 'J02.9', [AMOXICILLIN]);
 
     expect(await actions.sign()).toBeNull();
     expect(getState().overridePrompt?.map((a) => a.type)).toEqual(['allergy']);
@@ -162,7 +191,7 @@ describe('sign', () => {
   });
 
   it('refuses to sign without a doctor, or for a doctor without a license number', async () => {
-    fillPad('p_002', 'I10', ['amlo']);
+    fillPad('p_002', 'I10', [AMLODIPINE]);
 
     store.set({ doctor: null });
     expect(await actions.sign()).toBeNull();
@@ -173,7 +202,7 @@ describe('sign', () => {
   });
 
   it('does nothing while a sign is still being saved', async () => {
-    fillPad('p_002', 'I10', ['amlo']);
+    fillPad('p_002', 'I10', [AMLODIPINE]);
     const save = vi.spyOn(api.prescriptions, 'sign');
     store.set({ signing: true });
 
@@ -183,7 +212,7 @@ describe('sign', () => {
   });
 
   it('keeps the pad and says why when saving fails', async () => {
-    fillPad('p_002', 'I10', ['amlo']);
+    fillPad('p_002', 'I10', [AMLODIPINE]);
     const auditBefore = MOCK_AUDIT.length;
     vi.spyOn(api.prescriptions, 'sign').mockRejectedValueOnce(new Error('network down'));
 
@@ -191,7 +220,7 @@ describe('sign', () => {
     const s = getState();
     expect(s.banner).toMatchObject({ kind: 'danger' });
     expect(s.banner?.text).toContain('network down');
-    expect(s.medications.map((m) => m.drugId)).toEqual(['amlo']);
+    expect(s.medications.map((m) => m.drugId)).toEqual([AMLODIPINE]);
     expect(s.signing).toBe(false);
     expect(MOCK_AUDIT.length).toBe(auditBefore);
   });
@@ -240,7 +269,7 @@ describe('createPatient', () => {
 
 describe('setPatient', () => {
   it('clears the pad and the diagnosis search when switching patients', () => {
-    fillPad('p_001', 'I10', ['amlo']);
+    fillPad('p_001', 'I10', [AMLODIPINE]);
     actions.setPatient('p_002');
 
     const s = getState();
@@ -266,17 +295,17 @@ describe('repeatRx', () => {
     const s = getState();
     expect(s.diagnosis?.code).toBe('I10');
     expect(s.investigations.map((i) => i.code)).toEqual(['BMP']);
-    expect(s.medications.map((m) => m.drugId)).toEqual(['lisinopril', 'amlo']);
+    expect(s.medications.map((m) => m.drugId)).toEqual([LISINOPRIL, AMLODIPINE]);
     expect(s.medications.map((m) => m.rowId)).not.toEqual(seed().medications.map((m) => m.rowId));
   });
 
   it('keeps the current diagnosis and skips medicines already on the pad', () => {
-    fillPad('p_001', 'E11.9', ['amlo']);
+    fillPad('p_001', 'E11.9', [AMLODIPINE]);
     actions.repeatRx(seed());
 
     const s = getState();
     expect(s.diagnosis?.code).toBe('E11.9');
-    expect(s.medications.map((m) => m.drugId)).toEqual(['amlo', 'lisinopril']);
+    expect(s.medications.map((m) => m.drugId)).toEqual([AMLODIPINE, LISINOPRIL]);
     expect(s.banner?.text).toContain('1 med added, 1 already on the pad');
   });
 

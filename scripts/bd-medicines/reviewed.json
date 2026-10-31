@@ -1,0 +1,101 @@
+{
+  "note": "Generics whose dose defaults and safety lists a person entered by hand. import.mjs copies these onto the generics it imports and marks them safetyReviewed. Keys are the generic ids import.mjs assigns (g + the dataset's generic id). contraindications are lowercase words matched against a patient's allergies; interactsWith are lowercase generic names (the first word is enough: 'warfarin' matches Warfarin Sodium). These were carried over from the earlier demo list and still need a clinician's review.",
+  "drugs": {
+    "g860": {
+      "genericName": "Paracetamol",
+      "defaultDosage": { "value": 500, "unit": "mg" },
+      "defaultFrequency": "QID",
+      "defaultDurationDays": 5,
+      "contraindications": [],
+      "interactsWith": []
+    },
+    "g593": {
+      "genericName": "Ibuprofen",
+      "defaultDosage": { "value": 400, "unit": "mg" },
+      "defaultFrequency": "TID",
+      "defaultDurationDays": 5,
+      "contraindications": ["aspirin", "nsaid hypersensitivity"],
+      "interactsWith": ["aspirin", "warfarin", "lisinopril"]
+    },
+    "g69": {
+      "genericName": "Amoxicillin Trihydrate",
+      "defaultDosage": { "value": 500, "unit": "mg" },
+      "defaultFrequency": "TID",
+      "defaultDurationDays": 7,
+      "contraindications": ["penicillin"],
+      "interactsWith": ["methotrexate"]
+    },
+    "g100": {
+      "genericName": "Azithromycin Dihydrate",
+      "defaultDosage": { "value": 500, "unit": "mg" },
+      "defaultFrequency": "QD",
+      "defaultDurationDays": 3,
+      "contraindications": [],
+      "interactsWith": []
+    },
+    "g234": {
+      "genericName": "Cetirizine Hydrochloride",
+      "defaultDosage": { "value": 10, "unit": "mg" },
+      "defaultFrequency": "QD",
+      "defaultDurationDays": 7,
+      "contraindications": [],
+      "interactsWith": []
+    },
+    "g1317": {
+      "genericName": "Salbutamol (Inhaler)",
+      "defaultDosage": { "value": 100, "unit": "mcg" },
+      "defaultFrequency": "PRN",
+      "defaultDurationDays": 30,
+      "contraindications": [],
+      "interactsWith": []
+    },
+    "g918": {
+      "genericName": "Prednisolone",
+      "defaultDosage": { "value": 10, "unit": "mg" },
+      "defaultFrequency": "BID",
+      "defaultDurationDays": 5,
+      "contraindications": [],
+      "interactsWith": ["aspirin", "warfarin"]
+    },
+    "g734": {
+      "genericName": "Metformin Hydrochloride",
+      "defaultDosage": { "value": 500, "unit": "mg" },
+      "defaultFrequency": "BID",
+      "defaultDurationDays": 90,
+      "contraindications": ["renal impairment"],
+      "interactsWith": []
+    },
+    "g62": {
+      "genericName": "Amlodipine Besilate",
+      "defaultDosage": { "value": 5, "unit": "mg" },
+      "defaultFrequency": "QD",
+      "defaultDurationDays": 90,
+      "contraindications": [],
+      "interactsWith": []
+    },
+    "g691": {
+      "genericName": "Lisinopril",
+      "defaultDosage": { "value": 10, "unit": "mg" },
+      "defaultFrequency": "QD",
+      "defaultDurationDays": 90,
+      "contraindications": ["pregnancy"],
+      "interactsWith": ["ibuprofen"]
+    },
+    "g92": {
+      "genericName": "Atorvastatin Calcium",
+      "defaultDosage": { "value": 20, "unit": "mg" },
+      "defaultFrequency": "QHS",
+      "defaultDurationDays": 90,
+      "contraindications": [],
+      "interactsWith": ["warfarin"]
+    },
+    "g827": {
+      "genericName": "Ondansetron",
+      "defaultDosage": { "value": 4, "unit": "mg" },
+      "defaultFrequency": "PRN",
+      "defaultDurationDays": 5,
+      "contraindications": [],
+      "interactsWith": []
+    }
+  }
+}

@@ -1,8 +1,9 @@
 import React from 'react';
 import { useApp, actions } from '../store';
-import { LiveDot, cx, type Drug } from '@swiftrx/shared';
-import { fuzzySearch, findBrandMatches } from '../search';
-import { findDrug, evaluateMedication, severityRank } from '../safety';
+import { LiveDot, cx, type Drug, type Patient } from '@swiftrx/shared';
+import { buildMedicineIndex, searchMedicines, type MedicineHit } from '../search';
+import { evaluateMedication, severityRank } from '../safety';
+import { NO_SAFETY_DATA, medicationFor } from '../dosing';
 
 export function MedicationSearch() {
   // Search query is intentionally local — the draft is ephemeral and we don't
@@ -12,40 +13,18 @@ export function MedicationSearch() {
   const [idx, setIdx] = React.useState(0);
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
   const drugs = useApp((s) => s.catalog.drugs);
+  const brands = useApp((s) => s.catalog.brands);
 
-  const drugResults = React.useMemo(
-    () =>
-      fuzzySearch(drugs, q, (d) => [d.genericName, d.brandNames.join(' '), d.therapeuticClass], 6),
-    [q, drugs],
-  );
-  const brandHits = React.useMemo(() => findBrandMatches(q, drugs, 3), [q, drugs]);
-
-  // Build a unified list, brand suggestions first (they have higher substitution priority)
-  const suggestions = React.useMemo(() => {
-    const out: Array<{ kind: 'brand' | 'drug'; drug: Drug; brandName?: string }> = [];
-    const seen = new Set<string>();
-    for (const b of brandHits) {
-      const drug = findDrug(b.drugId, drugs);
-      if (drug && !seen.has(drug.id)) {
-        out.push({ kind: 'brand', drug, brandName: b.brandName });
-        seen.add(drug.id);
-      }
-    }
-    for (const d of drugResults) {
-      if (!seen.has(d.id)) {
-        out.push({ kind: 'drug', drug: d });
-        seen.add(d.id);
-      }
-    }
-    return out;
-  }, [drugResults, brandHits, drugs]);
+  // Built once per catalog: about 21,700 brands, searched on every keystroke.
+  const index = React.useMemo(() => buildMedicineIndex({ drugs, brands }), [drugs, brands]);
+  const suggestions = React.useMemo(() => searchMedicines(index, q), [index, q]);
 
   React.useEffect(() => {
     setIdx(0);
   }, [q]);
 
-  const add = (s: (typeof suggestions)[number]) => {
-    actions.addMedication(s.drug.id, s.kind === 'brand' ? s.brandName : undefined);
+  const add = (s: MedicineHit) => {
+    actions.addMedication(s.drug.id, s.kind === 'brand' ? s.brand : undefined);
     setQ('');
     setOpen(false);
     actions.setFocusZone('med-row');
@@ -80,22 +59,7 @@ export function MedicationSearch() {
   };
 
   // Preview alerts for the highlighted suggestion
-  const preview = enterAccepts
-    ? evaluateMedication(
-        {
-          rowId: 'preview',
-          drugId: enterAccepts.drug.id,
-          genericName: enterAccepts.drug.genericName,
-          brandName: enterAccepts.brandName,
-          dosage: { ...enterAccepts.drug.defaultDosage },
-          frequency: enterAccepts.drug.defaultFrequency,
-          durationDays: enterAccepts.drug.defaultDurationDays,
-          instructions: 'As directed',
-        },
-        patient,
-        drugs,
-      )
-    : [];
+  const preview = enterAccepts ? alertsFor(enterAccepts, patient, drugs) : [];
   const worstPreview = preview.reduce<null | ReturnType<typeof severityRank>>((acc, a) => {
     const r = severityRank(a.severity);
     if (acc === null || r > acc) return r;
@@ -116,7 +80,7 @@ export function MedicationSearch() {
             id="rx-med-search"
             data-zone="med-search"
             type="text"
-            placeholder="Add drug · e.g. 'Lipitor' (brand) or 'atorvastatin' (generic)"
+            placeholder="Add drug · e.g. 'Napa' (brand) or 'paracetamol' (generic)"
             className={cx(
               'w-full px-3 py-2 rounded-md text-sm bg-ink-800 border border-ink-700 transition-all duration-200',
               'focus:border-rx-focus focus:shadow-glow',
@@ -165,26 +129,15 @@ export function MedicationSearch() {
           {open && q && (
             <ul className="absolute z-20 mt-1 left-0 right-0 bg-ink-800 border border-ink-700 rounded-md overflow-hidden shadow-2xl animate-slideUpIn max-h-72 overflow-y-auto">
               {suggestions.map((s, i) => {
-                const sev = evaluateMedication(
-                  {
-                    rowId: 'p',
-                    drugId: s.drug.id,
-                    genericName: s.drug.genericName,
-                    dosage: { ...s.drug.defaultDosage },
-                    frequency: s.drug.defaultFrequency,
-                    durationDays: s.drug.defaultDurationDays,
-                    instructions: '',
-                  },
-                  patient,
-                  drugs,
-                );
+                const start = medicationFor(s.drug, s.kind === 'brand' ? s.brand : undefined);
+                const sev = evaluateMedication({ rowId: 'p', ...start }, patient, drugs);
                 const worst = sev.reduce<number>(
                   (acc, a) => Math.max(acc, severityRank(a.severity)),
                   0,
                 );
                 return (
                   <li
-                    key={`${s.kind}-${s.drug.id}`}
+                    key={s.kind === 'brand' ? s.brand.id : s.drug.id}
                     className="animate-fadeIn"
                     style={{ animationDelay: `${i * 22}ms` }}
                   >
@@ -202,30 +155,62 @@ export function MedicationSearch() {
                       }}
                       onMouseEnter={() => setIdx(i)}
                     >
-                      <div className="min-w-0">
+                      <div
+                        className="min-w-0"
+                        title={
+                          s.kind === 'brand'
+                            ? [s.drug.genericName, s.brand.manufacturer, s.brand.price]
+                                .filter(Boolean)
+                                .join(' · ')
+                            : s.drug.therapeuticClass
+                        }
+                      >
                         <div className="font-medium truncate">
                           {s.kind === 'brand' ? (
                             <>
-                              <span className="font-mono text-ink-300">{s.brandName}</span>
-                              <span className="mx-1.5 text-ink-400">→</span>
-                              <span className="text-rx-accent">{s.drug.genericName}</span>
-                              <span className="ml-2 text-[10px] text-ink-400 uppercase tracking-wider">
-                                brand→generic
-                              </span>
+                              <span>{s.brand.name}</span>
+                              {s.brand.strength && (
+                                <span className="ml-1.5 font-mono text-ink-300">
+                                  {s.brand.strength}
+                                </span>
+                              )}
+                              <span className="ml-1.5 text-ink-400">{s.brand.form}</span>
                             </>
                           ) : (
-                            <span>{s.drug.genericName}</span>
+                            <>
+                              <span>{s.drug.genericName}</span>
+                              <span className="ml-2 text-[10px] text-ink-400 uppercase tracking-wider">
+                                generic
+                              </span>
+                            </>
                           )}
                         </div>
                         <div className="text-[11px] text-ink-400 truncate">
-                          {s.drug.therapeuticClass}
+                          {s.kind === 'brand' ? (
+                            <>
+                              <span className="text-rx-accent">{s.drug.genericName}</span>
+                              {' · '}
+                              {[s.brand.manufacturer, s.brand.price].filter(Boolean).join(' · ')}
+                            </>
+                          ) : (
+                            s.drug.therapeuticClass
+                          )}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-[11px] font-mono text-ink-300">
-                          {s.drug.defaultDosage.value}
-                          {s.drug.defaultDosage.unit} · {s.drug.defaultFrequency}
-                        </div>
+                        {s.drug.safetyReviewed ? (
+                          <div className="text-[11px] font-mono text-ink-300">
+                            {start.dosage.value}
+                            {start.dosage.unit} · {start.frequency}
+                          </div>
+                        ) : (
+                          <div
+                            className="text-[10px] text-ink-400 uppercase tracking-wider"
+                            title={NO_SAFETY_DATA}
+                          >
+                            no safety data
+                          </div>
+                        )}
                         {worst >= 3 && (
                           <div className="text-[10px] text-rx-danger font-semibold animate-breathe">
                             ⚠ ALLERGY
@@ -278,5 +263,15 @@ export function MedicationSearch() {
         </div>
       )}
     </div>
+  );
+}
+
+/** The safety alerts a search hit would raise once added, at its starting dose. */
+function alertsFor(hit: MedicineHit, patient: Patient, drugs: Drug[]) {
+  const brand = hit.kind === 'brand' ? hit.brand : undefined;
+  return evaluateMedication(
+    { rowId: 'preview', ...medicationFor(hit.drug, brand) },
+    patient,
+    drugs,
   );
 }

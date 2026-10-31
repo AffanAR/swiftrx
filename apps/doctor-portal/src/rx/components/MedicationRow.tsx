@@ -7,6 +7,7 @@ import {
   type RxMedication,
   type Severity,
 } from '@swiftrx/shared';
+import { NO_SAFETY_DATA } from '../dosing';
 import { evaluateMedication, findDrug, severityRank } from '../safety';
 
 interface RowProps {
@@ -24,6 +25,7 @@ export function MedicationRow({ med, index }: RowProps) {
   const update = actions.updateMedication;
   const remove = actions.removeMedication;
   const drugs = useApp((s) => s.catalog.drugs);
+  const drug = findDrug(med.drugId, drugs);
 
   const alerts = React.useMemo(
     () => evaluateMedication(med, patient, drugs),
@@ -71,11 +73,28 @@ export function MedicationRow({ med, index }: RowProps) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 truncate">
-            <span className="font-semibold text-sm">{med.genericName}</span>
-            {med.brandName && <span className="text-xs text-ink-400">← {med.brandName}</span>}
+            {med.brandName ? (
+              <>
+                <span className="font-semibold text-sm">
+                  {med.brandName}
+                  {med.strength && ` ${med.strength}`}
+                </span>
+                <span className="text-xs text-ink-400">
+                  {med.form && `${med.form} · `}
+                  {med.genericName}
+                </span>
+              </>
+            ) : (
+              <span className="font-semibold text-sm">{med.genericName}</span>
+            )}
           </div>
           <div className="text-[11px] text-ink-400 font-mono">
-            {findDrug(med.drugId, drugs)?.therapeuticClass}
+            {drug?.therapeuticClass}
+            {drug && !drug.safetyReviewed && (
+              <span className="ml-2 text-rx-warn" title={NO_SAFETY_DATA}>
+                no safety data · check dose
+              </span>
+            )}
           </div>
         </div>
 

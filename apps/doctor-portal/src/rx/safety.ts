@@ -3,31 +3,50 @@ import type { Drug, Patient, RxMedication, SafetyAlert } from '@swiftrx/shared';
 // Normalize for comparison
 const norm = (s: string) => s.trim().toLowerCase();
 
-// Token-based allergy match — patient says "Penicillin", drug has "penicillin" in contraindication list.
-function allergyMatches(allergy: string, contraindications: string[]): boolean {
+// The name a generic goes by without its salt or form: "Metformin
+// Hydrochloride" → "metformin", "Salbutamol (Inhaler)" → "salbutamol". A
+// patient's medication list says "Metformin"; the catalog says the full name.
+export const baseName = (s: string) => norm(s).split(/[\s(+,/]/)[0];
+
+// Token-based allergy match: the patient says "Penicillin" and the drug lists
+// "penicillin" as a contraindication, or the allergy's word is in the drug's
+// generic name or class ("Sulfa drugs" → Sulfamethoxazole; "Penicillin" →
+// "Broad spectrum penicillins"). Imported generics have no contraindication
+// list, so the name and class are what catch them.
+function allergyMatches(allergy: string, drug: Drug): boolean {
   const a = norm(allergy);
-  return contraindications.some((c) => a.includes(c) || c.includes(a));
+  if (!a) return false;
+  if (drug.contraindications.some((c) => a.includes(c) || c.includes(a))) return true;
+  const word = a.split(/\s+/)[0].replace(/s$/, '');
+  if (word.length < 4) return false;
+  return norm(drug.genericName).includes(word) || norm(drug.therapeuticClass).includes(word);
 }
 
-// Match by drug.id, genericName, or brandName
+// Match by drug.id or generic name
 function drugKeyMatches(needle: string, drug: Drug): boolean {
   const n = norm(needle);
-  if (norm(drug.id) === n) return true;
-  if (norm(drug.genericName) === n) return true;
-  return drug.brandNames.some((b) => norm(b) === n);
+  return norm(drug.id) === n || norm(drug.genericName) === n;
 }
 
-// Find a drug in the catalog by any known identifier (id/generic/brand)
+// Find a drug in the catalog by id or generic name
 function findDrug(needle: string, catalog: Drug[]): Drug | undefined {
-  const n = norm(needle);
-  return catalog.find(
-    (d) => norm(d.id) === n || norm(d.genericName) === n || d.brandNames.some((b) => norm(b) === n),
-  );
+  return catalog.find((d) => drugKeyMatches(needle, d));
+}
+
+// The catalog generic a patient's medication most likely is: the same full
+// name, else the plain generic of the same base name ("Aspirin", not
+// "Aspirin + Dipyridamole").
+function findByBaseName(name: string, catalog: Drug[]): Drug | undefined {
+  const exact = findDrug(name, catalog);
+  if (exact) return exact;
+  const base = baseName(name);
+  const same = catalog.filter((d) => baseName(d.genericName) === base);
+  return same.find((d) => !/[+(]/.test(d.genericName)) ?? same[0];
 }
 
 export function checkAllergy(drug: Drug, patient: Patient): SafetyAlert | null {
   for (const allergy of patient.allergies) {
-    if (allergyMatches(allergy, drug.contraindications)) {
+    if (allergyMatches(allergy, drug)) {
       return {
         severity: 'critical',
         type: 'allergy',
@@ -41,49 +60,57 @@ export function checkAllergy(drug: Drug, patient: Patient): SafetyAlert | null {
 
 export function checkInteraction(drug: Drug, patient: Patient, catalog: Drug[]): SafetyAlert[] {
   const alerts: SafetyAlert[] = [];
-  const activeGenericNames = patient.activeMedications.map((m) => norm(m.name));
-
-  for (const interactToken of drug.interactsWith) {
-    // Direct token match against active generic names
-    const direct = activeGenericNames.find((n) => norm(interactToken) === n);
-    if (direct) {
+  const own = baseName(drug.genericName);
+  for (const med of patient.activeMedications) {
+    const base = baseName(med.name);
+    if (base === own) continue; // the same drug is a duplicate, not an interaction
+    const other = findByBaseName(med.name, catalog);
+    // Either side's list counts: Ibuprofen lists lisinopril, and Lisinopril ibuprofen.
+    const listed =
+      drug.interactsWith.some((t) => baseName(t) === base) ||
+      (other?.interactsWith.some((t) => baseName(t) === own) ?? false);
+    if (listed) {
       alerts.push({
         severity: 'moderate',
         type: 'drug_interaction',
-        message: `Potential interaction between ${drug.genericName} and existing ${interactToken}.`,
+        message: `Potential interaction between ${drug.genericName} and existing ${med.name}.`,
         drugId: drug.id,
       });
-      continue;
-    }
-    // Or look up the token as a drug in catalog
-    const other = findDrug(interactToken, catalog);
-    if (other) {
-      const activeHasOther = activeGenericNames.some((n) => norm(other.genericName) === n);
-      if (activeHasOther) {
-        alerts.push({
-          severity: 'moderate',
-          type: 'drug_interaction',
-          message: `Potential interaction between ${drug.genericName} and ${other.genericName}.`,
-          drugId: drug.id,
-        });
-      }
     }
   }
   return alerts;
 }
 
-export function checkDuplicateTherapy(drug: Drug, patient: Patient): SafetyAlert | null {
-  const cls = norm(drug.therapeuticClass.split(' ')[0]); // e.g. "Antibiotic", "NSAID", "Statin"
-  const dup = patient.activeMedications.find(
-    (m) => norm(m.name).includes(cls) || cls.includes(norm(m.name)),
-  );
-  if (dup) {
-    return {
-      severity: 'low',
-      type: 'duplicate_therapy',
-      message: `Patient already on ${dup.name} (${dup.dose}). Same therapeutic class as ${drug.genericName}.`,
-      drugId: drug.id,
-    };
+// The same generic, or another generic of the same class, that the patient
+// already takes. Needs the catalog to know an existing medication's class.
+export function checkDuplicateTherapy(
+  drug: Drug,
+  patient: Patient,
+  catalog: Drug[],
+): SafetyAlert | null {
+  const own = baseName(drug.genericName);
+  for (const med of patient.activeMedications) {
+    if (baseName(med.name) === own) {
+      return {
+        severity: 'low',
+        type: 'duplicate_therapy',
+        message: `Patient already on ${med.name} (${med.dose}).`,
+        drugId: drug.id,
+      };
+    }
+    const other = findByBaseName(med.name, catalog);
+    if (
+      other &&
+      other.therapeuticClass !== 'Unclassified' &&
+      other.therapeuticClass === drug.therapeuticClass
+    ) {
+      return {
+        severity: 'low',
+        type: 'duplicate_therapy',
+        message: `Patient already on ${med.name} (${med.dose}). Same therapeutic class as ${drug.genericName}: ${drug.therapeuticClass}.`,
+        drugId: drug.id,
+      };
+    }
   }
   return null;
 }
@@ -100,7 +127,7 @@ export function evaluateMedication(
   const a = checkAllergy(drug, patient);
   if (a) alerts.push(a);
   alerts.push(...checkInteraction(drug, patient, catalog));
-  const dup = checkDuplicateTherapy(drug, patient);
+  const dup = checkDuplicateTherapy(drug, patient, catalog);
   if (dup) alerts.push(dup);
   return alerts;
 }

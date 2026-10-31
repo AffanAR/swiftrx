@@ -61,10 +61,12 @@ shows up for the hospital and the platform) can't work end to end yet.
 - **Critical alerts don't block signing.** An allergy-contraindicated drug
   can be signed in one keystroke. Example: Bilal Ahmed (penicillin allergy)
   plus J02.9 Quick Pack #1, which contains Amoxicillin. `src/store.ts:229`
-- **The duplicate-therapy check never fires.** It compares the first word of
-  the drug class ("Calcium", "Biguanide") with the patient's medication
-  *names*. Prescribing Amlodipine to Bilal, who already takes Amlodipine,
-  raises no alert. `src/safety.ts:86-87`
+- ~~**The duplicate-therapy check never fires.**~~ Fixed 2026-10-31 with the
+  Bangladesh medicine list: it now matches the same generic by name
+  ("Amlodipine" = Amlodipine Besilate) and other generics by drug class.
+  Classes come from the dataset and are uneven (statins are filed under
+  "Other Anti-anginal & Anti-ischaemic drugs"), so it still needs the Phase 3
+  drug model.
 - **Interactions are only checked against the patient's existing meds,** not
   between drugs on the same Rx. Ibuprofen + Lisinopril on one pad gives no
   alert. `src/safety.ts:51`
@@ -582,8 +584,13 @@ the server creates a signed Rx.
   - pregnancy and renal flags.
 - [ ] Override workflow with a mandatory reason, stored on the Rx and in the
       audit log.
-- [ ] Catalog source: DRAP-registered brands plus an interaction dataset
-      (a licensing decision; see §4).
+- [ ] Catalog source: DGDA-registered brands plus an interaction dataset
+      (a licensing decision; see §4). Until then the demo uses the Kaggle
+      "Assorted Medicine Dataset of Bangladesh" (scraped from MedEx, about
+      2022, licence unconfirmed), imported by `scripts/bd-medicines/import.mjs`:
+      21,712 brands and 1,661 generics. Only the 12 generics in
+      `scripts/bd-medicines/reviewed.json` have dose defaults and safety lists;
+      the pad marks the rest "no safety data".
 - [ ] Paediatric quick packs, and quick packs configurable per hospital.
 - [ ] A clinician signs off on all rules before any pilot.
 

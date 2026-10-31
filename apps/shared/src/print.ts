@@ -10,6 +10,7 @@
 // =============================================================================
 
 import { DEMO_MODE } from './config';
+import { medicineLabel } from './medicine';
 import { DEFAULT_RX_DESIGN, type RxDesign, type SignedRx } from './types';
 
 /** Page margin used by the print @page rule and the admin preview. */
@@ -199,10 +200,10 @@ export function renderRxHtml(
                   (m, i) => `
                 <tr style="${i % 2 === 1 ? 'background:#fafafa;' : ''}">
                   <td style="padding: 6px 8px; color:#64748b; font-family:'JetBrains Mono',ui-monospace,monospace;">${i + 1}</td>
-                  <td style="padding: 6px 8px;"><strong>${escape(m.genericName)}</strong>${
+                  <td style="padding: 6px 8px;">${
                     m.brandName
-                      ? ` <span style="color:#64748b; font-size:10px;">(${escape(m.brandName)})</span>`
-                      : ''
+                      ? `<strong>${escape(medicineLabel(m))}</strong> <span style="color:#64748b; font-size:10px;">(${escape(m.genericName)})</span>`
+                      : `<strong>${escape(m.genericName)}</strong>`
                   }</td>
                   <td style="padding: 6px 8px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight:600;">${num(m.dosage.value)}${escape(m.dosage.unit)}</td>
                   <td style="padding: 6px 8px; font-family: 'JetBrains Mono', ui-monospace, monospace;">${escape(m.frequency)}</td>

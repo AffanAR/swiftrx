@@ -314,19 +314,20 @@ export const drugs = pgTable(
   {
     id: text('id').primaryKey(),
     genericName: text('generic_name').notNull(),
-    brandNames: text('brand_names')
-      .array()
-      .notNull()
-      .default(sql`'{}'`),
     therapeuticClass: text('therapeutic_class').notNull(),
+    /**
+     * Whether a person entered the dose defaults and safety lists. Imported
+     * generics have neither, and empty lists then mean "not filled in".
+     */
+    safetyReviewed: boolean('safety_reviewed').notNull().default(false),
     defaultDoseValue: numeric('default_dose_value', {
       precision: 10,
       scale: 3,
       mode: 'number',
-    }).notNull(),
-    defaultDoseUnit: text('default_dose_unit', { enum: DOSE_UNITS }).notNull(),
-    defaultFrequency: text('default_frequency', { enum: FREQUENCIES }).notNull(),
-    defaultDurationDays: integer('default_duration_days').notNull(),
+    }),
+    defaultDoseUnit: text('default_dose_unit', { enum: DOSE_UNITS }),
+    defaultFrequency: text('default_frequency', { enum: FREQUENCIES }),
+    defaultDurationDays: integer('default_duration_days'),
     contraindications: text('contraindications')
       .array()
       .notNull()
@@ -342,7 +343,30 @@ export const drugs = pgTable(
     check('drugs_default_dose_unit_valid', oneOf(t.defaultDoseUnit, DOSE_UNITS)),
     check('drugs_default_frequency_valid', oneOf(t.defaultFrequency, FREQUENCIES)),
     check('drugs_default_duration_positive', sql`${t.defaultDurationDays} > 0`),
+    check(
+      'drugs_reviewed_has_defaults',
+      sql`not ${t.safetyReviewed} or (${t.defaultDoseValue} is not null and ${t.defaultDoseUnit} is not null and ${t.defaultFrequency} is not null and ${t.defaultDurationDays} is not null)`,
+    ),
   ],
+);
+
+/** Brand products of each generic, as sold in Bangladesh ("Napa 500 mg Tablet"). */
+export const brands = pgTable(
+  'brands',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    drugId: text('drug_id')
+      .notNull()
+      .references(() => drugs.id, { onDelete: 'restrict' }),
+    form: text('form').notNull(),
+    manufacturer: text('manufacturer').notNull(),
+    strength: text('strength'),
+    /** A display label, not a number to compute with: "৳1.20 per unit". */
+    price: text('price'),
+    herbal: boolean('herbal').notNull().default(false),
+  },
+  (t) => [index('brands_drug_idx').on(t.drugId)],
 );
 
 export const investigations = pgTable(
@@ -463,6 +487,8 @@ export const prescriptionItems = pgTable(
       .references(() => drugs.id, { onDelete: 'restrict' }),
     genericName: text('generic_name').notNull(),
     brandName: text('brand_name'),
+    form: text('form'),
+    strength: text('strength'),
     doseValue: numeric('dose_value', { precision: 10, scale: 3, mode: 'number' }).notNull(),
     doseUnit: text('dose_unit', { enum: DOSE_UNITS }).notNull(),
     frequency: text('frequency', { enum: FREQUENCIES }).notNull(),

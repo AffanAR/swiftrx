@@ -334,6 +334,8 @@ function StatusLine() {
   const [now, setNow] = React.useState(() => new Date());
   const medCount = useApp((s) => s.medications.length);
   const banner = useApp((s) => s.banner);
+  const brandCount = useApp((s) => s.catalog.brands.length);
+  const genericCount = useApp((s) => s.catalog.drugs.length);
   React.useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
@@ -353,7 +355,9 @@ function StatusLine() {
           <span className="text-rx-accent animate-breathe">●</span> SwiftRx
         </span>
         <span>v0.1</span>
-        <span className="hidden lg:inline">1,500+ drugs · 200+ ICD-10 · 50+ Quick Packs</span>
+        <span className="hidden lg:inline">
+          {brandCount.toLocaleString()} brands · {genericCount.toLocaleString()} generics
+        </span>
         {medCount > 0 && (
           <span className="font-mono text-rx-accent animate-fadeIn">
             · {medCount} med{medCount === 1 ? '' : 's'} on pad

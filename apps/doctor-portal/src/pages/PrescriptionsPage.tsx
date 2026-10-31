@@ -1,4 +1,12 @@
-import { LiveDot, Card, cx, usePrescriptions, type Hospital, type User } from '@swiftrx/shared';
+import {
+  LiveDot,
+  Card,
+  cx,
+  medicineLabel,
+  usePrescriptions,
+  type Hospital,
+  type User,
+} from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
@@ -67,8 +75,8 @@ export function PrescriptionsPage({ hospital }: Props) {
                       'bg-ink-900/40 border-ink-700 text-ink-200',
                     )}
                   >
-                    <span className="font-semibold text-ink-100">{m.genericName}</span>
-                    {m.brandName && <span className="text-ink-400"> ({m.brandName})</span>}
+                    <span className="font-semibold text-ink-100">{medicineLabel(m)}</span>
+                    {m.brandName && <span className="text-ink-400"> ({m.genericName})</span>}
                     <span className="text-ink-400">
                       {' '}
                       · {m.dosage.value}

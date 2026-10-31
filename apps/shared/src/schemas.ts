@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import type {
   AuditEvent,
+  Brand,
   Diagnosis,
   Drug,
   Hospital,
@@ -148,16 +149,34 @@ export const patientSchema = z.object({
 
 const dosage = z.object({ value: z.number().positive(), unit: doseUnitSchema });
 
-export const drugSchema = z.object({
+export const drugSchema = z
+  .object({
+    id: text,
+    genericName: text,
+    therapeuticClass: text,
+    safetyReviewed: z.boolean(),
+    defaultDosage: dosage.optional(),
+    defaultFrequency: frequencySchema.optional(),
+    defaultDurationDays: z.int().positive().optional(),
+    contraindications: z.array(text),
+    interactsWith: z.array(text),
+  })
+  .refine(
+    (d) =>
+      !d.safetyReviewed ||
+      (d.defaultDosage && d.defaultFrequency && d.defaultDurationDays !== undefined),
+    { message: 'A reviewed generic needs its dose defaults.', path: ['defaultDosage'] },
+  );
+
+export const brandSchema = z.object({
   id: text,
-  genericName: text,
-  brandNames: z.array(text),
-  therapeuticClass: text,
-  defaultDosage: dosage,
-  defaultFrequency: frequencySchema,
-  defaultDurationDays: z.int().positive(),
-  contraindications: z.array(text),
-  interactsWith: z.array(text),
+  name: text,
+  drugId: text,
+  form: text,
+  manufacturer: text,
+  strength: text.optional(),
+  price: text.optional(),
+  herbal: z.literal(true).optional(),
 });
 
 export const investigationSchema = z.object({
@@ -198,6 +217,8 @@ export const rxMedicationSchema = z.object({
   drugId: text,
   genericName: text,
   brandName: z.string().optional(),
+  form: z.string().optional(),
+  strength: z.string().optional(),
   dosage,
   frequency: frequencySchema,
   durationDays: z.int().positive(),
@@ -283,6 +304,7 @@ export type SchemasMatchTypes = [
   Check<Same<z.infer<typeof userSchema>, User>>,
   Check<Same<z.infer<typeof patientSchema>, Patient>>,
   Check<Same<z.infer<typeof drugSchema>, Drug>>,
+  Check<Same<z.infer<typeof brandSchema>, Brand>>,
   Check<Same<z.infer<typeof investigationSchema>, Investigation>>,
   Check<Same<z.infer<typeof diagnosisSchema>, Diagnosis>>,
   Check<Same<z.infer<typeof quickPackMedSchema>, QuickPackMed>>,

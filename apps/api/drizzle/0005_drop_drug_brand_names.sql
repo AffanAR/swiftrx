@@ -1,0 +1,1 @@
+ALTER TABLE "drugs" DROP COLUMN "brand_names";

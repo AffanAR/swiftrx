@@ -18,12 +18,8 @@
 import { MOCK_LATENCY_MS } from './config';
 import { ApiError, callApi } from './http';
 import {
-  MOCK_DIAGNOSES,
-  MOCK_DRUGS,
   MOCK_HOSPITALS,
-  MOCK_INVESTIGATIONS,
   MOCK_PATIENTS,
-  MOCK_QUICK_PACKS,
   MOCK_SIGNED_RX,
   MOCK_USERS,
   appendAudit,
@@ -39,13 +35,10 @@ import {
   DEFAULT_HOSPITAL_FEATURES,
   DEFAULT_RX_DESIGN,
   type AuditEvent,
-  type Diagnosis,
-  type Drug,
+  type Catalog,
   type Hospital,
   type HospitalFeatures,
-  type Investigation,
   type Patient,
-  type QuickPack,
   type RxDesign,
   type SignedRx,
   type User,
@@ -58,14 +51,6 @@ import {
 export interface Actor {
   id: string;
   email: string;
-}
-
-/** Everything the Rx pad searches and checks against. */
-export interface Catalog {
-  drugs: Drug[];
-  diagnoses: Diagnosis[];
-  investigations: Investigation[];
-  quickPacks: QuickPack[];
 }
 
 /** The patient fields a client sends; the server assigns the id and creation time. */
@@ -237,14 +222,11 @@ export const api = {
   },
 
   catalog: {
-    /** GET /catalog — the drugs, diagnoses, investigations and quick packs. */
-    get: (): Promise<Catalog> =>
-      reply({
-        drugs: MOCK_DRUGS,
-        diagnoses: MOCK_DIAGNOSES,
-        investigations: MOCK_INVESTIGATIONS,
-        quickPacks: MOCK_QUICK_PACKS,
-      }),
+    /**
+     * GET /catalog — the generics, brands, diagnoses, investigations and quick
+     * packs, from the server: the brand list is too big to bundle.
+     */
+    get: (): Promise<Catalog> => callApi<Catalog>('/catalog'),
   },
 };
 

@@ -33,6 +33,7 @@ import { z } from 'zod';
 
 import {
   auditEventSchema,
+  brandSchema,
   diagnosisSchema,
   drugSchema,
   hospitalSchema,
@@ -44,6 +45,7 @@ import {
 } from '@swiftrx/shared/schemas';
 import {
   MOCK_AUDIT,
+  MOCK_BRANDS,
   MOCK_DIAGNOSES,
   MOCK_DRUGS,
   MOCK_HOSPITALS,
@@ -59,6 +61,7 @@ import type { Db } from './client';
 import demoPasswords from './demo-passwords.json';
 import {
   auditEvents,
+  brands,
   diagnoses,
   diagnosisInvestigations,
   drugs,
@@ -80,6 +83,7 @@ export const seedDataSchema = z.object({
   users: z.array(userSchema),
   patients: z.array(patientSchema),
   drugs: z.array(drugSchema),
+  brands: z.array(brandSchema),
   investigations: z.array(investigationSchema),
   diagnoses: z.array(diagnosisSchema),
   quickPacks: z.array(quickPackSchema),
@@ -88,6 +92,9 @@ export const seedDataSchema = z.object({
 });
 
 export type SeedData = z.infer<typeof seedDataSchema>;
+
+/** Rows per INSERT; with the widest table's columns, well under Postgres's parameter limit. */
+const INSERT_BATCH = 2000;
 
 /** Rows written per table. */
 export type SeedCounts = Record<string, number>;
@@ -104,6 +111,7 @@ export function demoSeedData(): SeedData {
     users: MOCK_USERS,
     patients: MOCK_PATIENTS,
     drugs: MOCK_DRUGS,
+    brands: MOCK_BRANDS,
     investigations: MOCK_INVESTIGATIONS,
     diagnoses: MOCK_DIAGNOSES,
     quickPacks: MOCK_QUICK_PACKS,
@@ -135,7 +143,11 @@ export async function seed(
 
     const counts: SeedCounts = {};
     async function insertAll<T extends Table>(table: T, rows: T['$inferInsert'][]) {
-      if (rows.length > 0) await tx.insert(table).values(rows);
+      // In batches: one statement can carry at most 65,535 parameters, and
+      // the brand list alone is about 150,000.
+      for (let i = 0; i < rows.length; i += INSERT_BATCH) {
+        await tx.insert(table).values(rows.slice(i, i + INSERT_BATCH));
+      }
       counts[getTableName(table)] = rows.length;
     }
 
@@ -215,14 +227,27 @@ export async function seed(
       d.drugs.map((g) => ({
         id: g.id,
         genericName: g.genericName,
-        brandNames: g.brandNames,
         therapeuticClass: g.therapeuticClass,
-        defaultDoseValue: g.defaultDosage.value,
-        defaultDoseUnit: g.defaultDosage.unit,
-        defaultFrequency: g.defaultFrequency,
-        defaultDurationDays: g.defaultDurationDays,
+        safetyReviewed: g.safetyReviewed,
+        defaultDoseValue: g.defaultDosage?.value ?? null,
+        defaultDoseUnit: g.defaultDosage?.unit ?? null,
+        defaultFrequency: g.defaultFrequency ?? null,
+        defaultDurationDays: g.defaultDurationDays ?? null,
         contraindications: g.contraindications,
         interactsWith: g.interactsWith,
+      })),
+    );
+    await insertAll(
+      brands,
+      d.brands.map((b) => ({
+        id: b.id,
+        name: b.name,
+        drugId: b.drugId,
+        form: b.form,
+        manufacturer: b.manufacturer,
+        strength: b.strength ?? null,
+        price: b.price ?? null,
+        herbal: b.herbal ?? false,
       })),
     );
     await insertAll(investigations, d.investigations);
@@ -311,6 +336,8 @@ export async function seed(
           drugId: m.drugId,
           genericName: m.genericName,
           brandName: m.brandName ?? null,
+          form: m.form ?? null,
+          strength: m.strength ?? null,
           doseValue: m.dosage.value,
           doseUnit: m.dosage.unit,
           frequency: m.frequency,

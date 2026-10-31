@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, api, type Actor, type NewHospital, type NewPatient } from './api';
 import { onSessionEnded } from './http';
-import { MOCK_AUDIT, MOCK_HOSPITALS, MOCK_PATIENTS, MOCK_SIGNED_RX } from './mockDb';
+import {
+  MOCK_AUDIT,
+  MOCK_DIAGNOSES,
+  MOCK_HOSPITALS,
+  MOCK_PATIENTS,
+  MOCK_SIGNED_RX,
+} from './mockDb';
 
 const AYESHA: Actor = { id: 'd_001', email: 'ayesha@city-hospital.com' };
 const ADMIN: Actor = { id: 'u_admin_001', email: 'admin@swiftrx.com' };
@@ -93,11 +99,10 @@ describe('patients.create', () => {
 describe('prescriptions.sign', () => {
   it('assigns each Rx its own id and time, stores it, counts it and audits it', async () => {
     const [patient] = await api.patients.list('city-hospital');
-    const { diagnoses } = await api.catalog.get();
     const draft = {
       hospitalSlug: 'city-hospital',
       patient,
-      diagnosis: diagnoses[0],
+      diagnosis: MOCK_DIAGNOSES[0],
       medications: [],
       investigations: [],
       doctorId: 'd_001',

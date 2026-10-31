@@ -6,6 +6,10 @@ package-lock.json
 *.tsbuildinfo
 # drizzle-kit snapshots; it rewrites them on every generate
 apps/api/drizzle/meta/
+# The drug catalog scripts/bd-medicines/import.mjs writes, one row per line
+apps/shared/src/seed/drugs.json
+apps/shared/src/seed/brands.json
+data/
 
 # Docs keep their hand-aligned tables
 *.md

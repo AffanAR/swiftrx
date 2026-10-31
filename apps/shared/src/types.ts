@@ -167,16 +167,37 @@ export type DoseUnit = 'mg' | 'ml' | 'g' | 'mcg' | 'tablets';
 export type Frequency = 'QD' | 'BID' | 'TID' | 'QID' | 'PRN' | 'QHS';
 export type Severity = 'low' | 'moderate' | 'critical';
 
+/**
+ * A generic, from the Bangladesh medicine list (scripts/bd-medicines). Only
+ * generics a person has reviewed have dose defaults and safety lists; for the
+ * rest `safetyReviewed` is false and the lists are empty because nobody has
+ * filled them in, not because nothing applies.
+ */
 export interface Drug {
   id: string;
   genericName: string;
-  brandNames: string[];
   therapeuticClass: string;
-  defaultDosage: { value: number; unit: DoseUnit };
-  defaultFrequency: Frequency;
-  defaultDurationDays: number;
+  safetyReviewed: boolean;
+  defaultDosage?: { value: number; unit: DoseUnit };
+  defaultFrequency?: Frequency;
+  defaultDurationDays?: number;
+  /** Lowercase words matched against a patient's allergies. */
   contraindications: string[];
+  /** Lowercase generic names; the first word is enough ("warfarin"). */
   interactsWith: string[];
+}
+
+/** A brand product of a generic, as sold in Bangladesh: "Napa 500 mg Tablet". */
+export interface Brand {
+  id: string;
+  name: string;
+  drugId: string;
+  form: string;
+  manufacturer: string;
+  strength?: string;
+  /** A display label: "৳1.20 per unit", "৳35.00 per 60 ml bottle". */
+  price?: string;
+  herbal?: true;
 }
 
 // --- Diagnosis / Quick packs -------------------------------------------------
@@ -213,6 +234,15 @@ export interface QuickPack {
   medications: QuickPackMed[];
 }
 
+/** Everything the Rx pad searches and checks against (GET /api/catalog). */
+export interface Catalog {
+  drugs: Drug[];
+  brands: Brand[];
+  diagnoses: Diagnosis[];
+  investigations: Investigation[];
+  quickPacks: QuickPack[];
+}
+
 // --- Rx medication row + signed Rx ------------------------------------------
 
 export interface RxMedication {
@@ -220,6 +250,9 @@ export interface RxMedication {
   drugId: string;
   genericName: string;
   brandName?: string;
+  /** The brand's dosage form and strength, when one was picked: "Tablet", "500 mg". */
+  form?: string;
+  strength?: string;
   dosage: { value: number; unit: DoseUnit };
   frequency: Frequency;
   durationDays: number;

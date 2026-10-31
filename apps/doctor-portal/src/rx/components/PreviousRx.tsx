@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp, previousRxForPatient } from '../store';
-import { LiveDot, type SignedRx } from '@swiftrx/shared';
+import { LiveDot, medicineLabel, type SignedRx } from '@swiftrx/shared';
 
 const MAX_SHOWN = 5;
 
@@ -72,7 +72,7 @@ export function PreviousRx({ onRepeat }: { onRepeat: (rx: SignedRx) => void }) {
                     key={m.rowId}
                     className="text-[11px] font-mono text-ink-300 flex justify-between gap-2"
                   >
-                    <span className="truncate">· {m.genericName}</span>
+                    <span className="truncate">· {medicineLabel(m)}</span>
                     <span className="text-ink-400 shrink-0">
                       {m.dosage.value}
                       {m.dosage.unit} · {m.frequency} · {m.durationDays}d

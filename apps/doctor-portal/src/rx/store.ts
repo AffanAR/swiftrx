@@ -2,6 +2,7 @@ import React from 'react';
 import {
   afterWrite,
   api,
+  type Brand,
   type Catalog,
   type Diagnosis,
   type Investigation,
@@ -13,6 +14,7 @@ import {
   type SignedRx,
 } from '@swiftrx/shared';
 import { queryClient } from '../queryClient';
+import { medicationFor } from './dosing';
 import { evaluateAllMedications, findDrug } from './safety';
 
 /** The signed-in doctor the pad prescribes as, taken from the portal session. */
@@ -74,7 +76,8 @@ export interface AppActions {
   setDiagnosis: (d: Diagnosis | null) => void;
   setInvestigations: (list: Investigation[]) => void;
   toggleInvestigation: (inv: Investigation) => void;
-  addMedication: (drugId: string, brandName?: string) => void;
+  /** Add a generic, or one of its brands, with its starting dose. */
+  addMedication: (drugId: string, brand?: Brand) => void;
   addMedications: (rows: Omit<RxMedication, 'rowId'>[]) => void;
   updateMedication: (rowId: string, patch: Partial<RxMedication>) => void;
   removeMedication: (rowId: string) => void;
@@ -114,7 +117,7 @@ const initialState: AppState = {
   investigations: [],
   medications: [],
   signed: [],
-  catalog: { drugs: [], diagnoses: [], investigations: [], quickPacks: [] },
+  catalog: { drugs: [], brands: [], diagnoses: [], investigations: [], quickPacks: [] },
   rxDesign: null,
   doctor: null,
   signing: false,
@@ -198,19 +201,10 @@ class Store {
             : [...this.state.investigations, inv],
         });
       },
-      addMedication: (drugId: string, brandName?: string) => {
+      addMedication: (drugId: string, brand?: Brand) => {
         const drug = findDrug(drugId, this.state.catalog.drugs);
         if (!drug) return;
-        const med: RxMedication = {
-          rowId: newRowId(),
-          drugId: drug.id,
-          genericName: drug.genericName,
-          brandName,
-          dosage: { ...drug.defaultDosage },
-          frequency: drug.defaultFrequency,
-          durationDays: drug.defaultDurationDays,
-          instructions: 'As directed',
-        };
+        const med: RxMedication = { rowId: newRowId(), ...medicationFor(drug, brand) };
         this.set({
           medications: [...this.state.medications, med],
           activeRowId: med.rowId,

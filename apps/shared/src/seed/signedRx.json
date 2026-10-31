@@ -8,8 +8,11 @@
     "medications": [
       {
         "rowId": "r_seed_1",
-        "drugId": "lisinopril",
+        "drugId": "g691",
         "genericName": "Lisinopril",
+        "brandName": "Lipril",
+        "form": "Tablet",
+        "strength": "10 mg",
         "dosage": {
           "value": 10,
           "unit": "mg"
@@ -20,8 +23,11 @@
       },
       {
         "rowId": "r_seed_2",
-        "drugId": "amlo",
-        "genericName": "Amlodipine",
+        "drugId": "g62",
+        "genericName": "Amlodipine Besilate",
+        "brandName": "Camlodin",
+        "form": "Tablet",
+        "strength": "5 mg",
         "dosage": {
           "value": 5,
           "unit": "mg"
@@ -51,8 +57,11 @@
     "medications": [
       {
         "rowId": "r_seed_3",
-        "drugId": "salin",
-        "genericName": "Salbutamol",
+        "drugId": "g1317",
+        "genericName": "Salbutamol (Inhaler)",
+        "brandName": "Sultolin",
+        "form": "Inhaler",
+        "strength": "100 mcg/puff",
         "dosage": {
           "value": 100,
           "unit": "mcg"
@@ -82,8 +91,11 @@
     "medications": [
       {
         "rowId": "r_seed_4",
-        "drugId": "para",
+        "drugId": "g860",
         "genericName": "Paracetamol",
+        "brandName": "Ace",
+        "form": "Suppository",
+        "strength": "250 mg",
         "dosage": {
           "value": 250,
           "unit": "mg"

@@ -5,6 +5,7 @@ export * from './types';
 // The data client and its query hooks are how apps read and write data. The
 // mockDb exports stay for tests and auth.ts; ESLint keeps app code off them.
 export * from './api';
+export * from './medicine';
 export { onSessionEnded } from './http';
 export * from './queries';
 export * from './status';
