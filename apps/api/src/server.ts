@@ -36,7 +36,7 @@ try {
   if (n > 0) {
     console.warn(
       `${n} account(s) have a password hash from before Argon2id and can't sign in.`,
-      'On a dev database, `npm run db:reset` seeds it again.',
+      'For demo accounts, `npm run db:setup` upgrades them; `npm run db:reset` starts over.',
     );
   }
 } catch (error) {

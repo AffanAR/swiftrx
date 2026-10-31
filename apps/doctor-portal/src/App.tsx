@@ -1,8 +1,8 @@
 import { lazy, type ReactNode } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { PageBoundary, useHospital } from '@swiftrx/shared';
 import { useSession, type SessionState } from './useSession';
-import { useTenantSlug } from './tenantStore';
+import { useKeepTenantQuery, useTenantSlug } from './tenantStore';
 import { canPrescribe, sessionBelongsTo } from './auth';
 import { LoginPage } from './pages/LoginPage';
 import { PortalShell } from './components/PortalShell';
@@ -11,6 +11,7 @@ import { PatientsPage } from './pages/PatientsPage';
 import { PrescriptionsPage } from './pages/PrescriptionsPage';
 import { DoctorsPage } from './pages/DoctorsPage';
 import { HospitalSettingsPage } from './pages/HospitalSettingsPage';
+import { SetPasswordPage } from './pages/SetPasswordPage';
 import { TenantNotFound } from './pages/TenantNotFound';
 
 // The Rx pad is its own chunk, loaded only when a doctor opens /rx.
@@ -28,6 +29,8 @@ export default function App() {
 function TenantPortal({ slug }: { slug: string }) {
   const hospital = useHospital(slug);
   const [stored, signOut, signedIn] = useSession(slug);
+  useKeepTenantQuery(slug);
+  const { pathname } = useLocation();
 
   if (!hospital) return <NoTenant />;
 
@@ -47,8 +50,19 @@ function TenantPortal({ slug }: { slug: string }) {
   if (session.status !== 'signed-in') {
     return (
       <Routes>
-        <Route path="/" element={<LoginPage hospital={hospital} onSignedIn={signedIn} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/"
+          element={
+            <LoginPage
+              hospital={hospital}
+              onSignedIn={signedIn}
+              ended={session.status === 'signed-out' && !!session.ended}
+            />
+          }
+        />
+        <Route path="/set-password" element={<SetPasswordPage hospital={hospital} />} />
+        {/* Remember where they were going: sign-in sends them back there. */}
+        <Route path="*" element={<Navigate to="/" replace state={{ returnTo: pathname }} />} />
       </Routes>
     );
   }
@@ -65,6 +79,7 @@ function TenantPortal({ slug }: { slug: string }) {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/set-password" element={<SetPasswordPage hospital={hospital} />} />
       <Route path="/dashboard" element={shell(<DashboardPage hospital={hospital} user={user} />)} />
       <Route path="/patients" element={shell(<PatientsPage hospital={hospital} user={user} />)} />
       <Route

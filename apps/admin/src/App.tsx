@@ -22,7 +22,7 @@ export default function App() {
   }
 
   if (session.status === 'signed-out') {
-    return <LoginPage onSignIn={signIn} />;
+    return <LoginPage onSignIn={signIn} ended={!!session.ended} />;
   }
 
   return (

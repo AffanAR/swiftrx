@@ -6,7 +6,8 @@
 //  database rather than opening one, so tests hand it an in-memory PGlite and
 //  call `app.request()` without a network socket.
 //
-//  Sign-in is under /api/auth (auth/routes.ts). The routes to come take the
+//  Sign-in is under /api/auth (auth/routes.ts, auth/invites.ts), and the first
+//  reads, doctors and the audit log, are in reads.ts. The routes to come take the
 //  paths that apps/shared/src/api.ts notes beside each data-client method,
 //  under /api: GET /api/hospitals/:slug, GET /api/hospitals/:slug/patients,
 //  GET /api/catalog, and so on.
@@ -18,10 +19,12 @@ import { Hono, type Context } from 'hono';
 
 import { ROOT_DOMAIN } from '@swiftrx/shared/config';
 
+import { inviteRoutes } from './auth/invites';
 import { authRoutes } from './auth/routes';
 import { SIGN_IN_LIMITS, type SignInLimits } from './auth/rateLimit';
 import type { Db } from './db/client';
 import demoPasswords from './db/demo-passwords.json';
+import { readRoutes } from './reads';
 
 export interface AppDeps {
   db: Db;
@@ -106,6 +109,9 @@ export function createApp({
       signInLimits,
     }),
   );
+
+  app.route('/auth', inviteRoutes({ db, now, rootDomain, secureCookies }));
+  app.route('/', readRoutes({ db, now, rootDomain, secureCookies }));
 
   app.notFound((c) => c.json({ error: 'Not found.' }, 404));
 

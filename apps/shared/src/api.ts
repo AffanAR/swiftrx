@@ -16,8 +16,8 @@
 // =============================================================================
 
 import { MOCK_LATENCY_MS } from './config';
+import { ApiError, callApi } from './http';
 import {
-  MOCK_AUDIT,
   MOCK_DIAGNOSES,
   MOCK_DRUGS,
   MOCK_HOSPITALS,
@@ -29,8 +29,6 @@ import {
   appendAudit,
   appendSignedRx,
   getHospital,
-  listAuditForHospital,
-  listDoctorsForHospital,
   listHospitals,
   listPatientsForHospital,
   listSignedRxForHospital,
@@ -85,14 +83,22 @@ export type NewHospital = Pick<
 /** A prescription as the Rx pad sends it; the server assigns the id and time. */
 export type PrescriptionDraft = Omit<SignedRx, 'id' | 'signedAt'>;
 
-/** A failed request. `status` is the HTTP status the real API would send. */
-export class ApiError extends Error {
-  readonly status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-  }
+/** A doctor a hospital admin invites; the server makes the account and a link. */
+export interface DoctorInvite {
+  email: string;
+  name: string;
+  licenseNo: string;
+  specialty?: string;
+}
+
+/**
+ * A one-time link to set a password, as the server hands it to the admin who
+ * asked: they pass it on (there's no email sender yet). setPasswordUrl()
+ * turns the token into the link.
+ */
+export interface PasswordLink {
+  token: string;
+  purpose: 'invite' | 'reset';
 }
 
 export const api = {
@@ -146,8 +152,17 @@ export const api = {
     /** GET /users — every account, for the platform admin. */
     list: (): Promise<User[]> => reply(MOCK_USERS),
 
-    /** GET /hospitals/:slug/doctors */
-    listDoctors: (slug: string): Promise<User[]> => reply(listDoctorsForHospital(slug)),
+    /** GET /hospitals/:slug/doctors — from the server, with invited doctors. */
+    listDoctors: (slug: string): Promise<User[]> =>
+      callApi<User[]>(`/hospitals/${encodeURIComponent(slug)}/doctors`),
+
+    /** POST /auth/invites — by a hospital admin, for their hospital. */
+    invite: (input: DoctorInvite): Promise<PasswordLink & { user: User }> =>
+      callApi('/auth/invites', { method: 'POST', body: input }),
+
+    /** POST /auth/reset-links — a new link for one of the admin's hospital's users. */
+    passwordLink: (userId: string): Promise<PasswordLink> =>
+      callApi('/auth/reset-links', { method: 'POST', body: { userId } }),
   },
 
   patients: {
@@ -208,9 +223,17 @@ export const api = {
   },
 
   audit: {
-    /** GET /audit-events, or GET /audit-events?hospital=:slug */
-    list: (slug?: string): Promise<AuditEvent[]> =>
-      reply(slug ? listAuditForHospital(slug) : MOCK_AUDIT),
+    /**
+     * GET /audit-events, or GET /hospitals/:slug/audit-events. The server's
+     * log (the seed, sign-ins, invitations), plus what this tab wrote through
+     * the mock above, until those writes move to the server too.
+     */
+    list: async (slug?: string): Promise<AuditEvent[]> => {
+      const path = slug ? `/hospitals/${encodeURIComponent(slug)}/audit-events` : '/audit-events';
+      const server = await callApi<AuditEvent[]>(path);
+      const local = writtenHere.filter((e) => !slug || e.hospitalSlug === slug);
+      return [...server, ...structuredClone(local)].sort((a, b) => b.at.localeCompare(a.at));
+    },
   },
 
   catalog: {
@@ -227,6 +250,8 @@ export const api = {
 
 export type DataClient = typeof api;
 
+export { ApiError };
+
 // --- internals ---------------------------------------------------------------
 
 /** Answer like the network would: a copy, after the configured delay. */
@@ -242,4 +267,10 @@ const now = () => new Date().toISOString();
 const newId = (prefix: string) =>
   `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-const audit = (e: AuditEvent) => appendAudit(structuredClone(e));
+/** Audit events the mock wrote in this tab, which the server hasn't seen. */
+const writtenHere: AuditEvent[] = [];
+
+const audit = (e: AuditEvent) => {
+  appendAudit(structuredClone(e));
+  writtenHere.push(structuredClone(e));
+};

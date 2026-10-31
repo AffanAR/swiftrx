@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, api, type Actor, type NewHospital, type NewPatient } from './api';
+import { onSessionEnded } from './http';
 import { MOCK_AUDIT, MOCK_HOSPITALS, MOCK_PATIENTS, MOCK_SIGNED_RX } from './mockDb';
 
 const AYESHA: Actor = { id: 'd_001', email: 'ayesha@city-hospital.com' };
@@ -49,7 +50,7 @@ describe('reads', () => {
   });
 
   it('never return a password hash', async () => {
-    const users = [...(await api.users.list()), ...(await api.users.listDoctors('city-hospital'))];
+    const users = await api.users.list();
     expect(users.length).toBeGreaterThan(0);
     for (const u of users) expect(u).not.toHaveProperty('passwordHash');
   });
@@ -58,12 +59,6 @@ describe('reads', () => {
     const city = 'city-hospital';
     expect((await api.patients.list(city)).every((p) => p.hospitalSlug === city)).toBe(true);
     expect((await api.prescriptions.list(city)).every((r) => r.hospitalSlug === city)).toBe(true);
-    expect((await api.audit.list(city)).every((e) => e.hospitalSlug === city)).toBe(true);
-    expect(
-      (await api.users.listDoctors(city)).every(
-        (u) => u.role === 'doctor' && u.hospitalSlug === city,
-      ),
-    ).toBe(true);
     expect(await api.hospitals.get('no-such-hospital')).toBeNull();
   });
 });
@@ -172,5 +167,61 @@ describe('hospitals', () => {
     await expect(
       api.hospitals.updateSettings('no-such-hospital', { features, rxDesign }),
     ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('reads from the server', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function serverAnswers(body: unknown, status = 200) {
+    const stub = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body), { status }));
+    vi.stubGlobal('fetch', stub);
+    return stub;
+  }
+
+  it("ask the API for a hospital's doctors", async () => {
+    const stub = serverAnswers([{ id: 'd_001' }]);
+    expect(await api.users.listDoctors('city-hospital')).toEqual([{ id: 'd_001' }]);
+    expect(stub.mock.calls[0][0]).toBe('/api/hospitals/city-hospital/doctors');
+  });
+
+  it("merge the server's audit log with what this tab wrote, newest first", async () => {
+    await api.patients.create(
+      {
+        hospitalSlug: 'city-hospital',
+        name: 'Local Patient',
+        age: 30,
+        sex: 'F',
+        weightKg: 60,
+        contact: '',
+        allergies: [],
+        activeProblems: [],
+      },
+      AYESHA,
+    );
+    const fromServer = {
+      kind: 'login',
+      userId: 'd_001',
+      userEmail: AYESHA.email,
+      at: '2000-01-01T00:00:00.000Z',
+      hospitalSlug: 'city-hospital',
+    };
+    const stub = serverAnswers([fromServer]);
+    const events = await api.audit.list('city-hospital');
+    expect(stub.mock.calls[0][0]).toBe('/api/hospitals/city-hospital/audit-events');
+    expect(events[0]).toMatchObject({ kind: 'create_patient', patientName: 'Local Patient' });
+    expect(events.at(-1)).toEqual(fromServer);
+    // Another hospital's log leaves this tab's City Hospital write out.
+    serverAnswers([]);
+    expect(await api.audit.list('northstar-medical')).toEqual([]);
+  });
+
+  it('throw ApiError with the status, and announce a 401', async () => {
+    serverAnswers({ error: 'Sign in first.' }, 401);
+    const ended = vi.fn();
+    const stop = onSessionEnded(ended);
+    await expect(api.audit.list()).rejects.toMatchObject({ status: 401 });
+    expect(ended).toHaveBeenCalledOnce();
+    stop();
   });
 });

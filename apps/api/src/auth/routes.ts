@@ -228,58 +228,7 @@ export function authRoutes(deps: AuthDeps) {
     return c.body(null, 204);
   });
 
-  routes.get('/me', async (c) => {
-    const nobody = () => c.json(null);
-    const surface = surfaceOf(c.req.url, deps.rootDomain);
-    if (surface.kind === 'unknown') return nobody();
-    const secure = cookiesSecure(c, deps);
-    const token = readToken(c, surface.kind, secure);
-    if (!token) return nobody();
-
-    // The session is no good anywhere (unknown, expired, or its user no
-    // longer allowed in): remove it and the cookie.
-    const ended = async () => {
-      await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(token)));
-      deleteCookie(c, COOKIE_NAMES[surface.kind], cookieOptions(secure));
-      return nobody();
-    };
-
-    const [row] = await db
-      .select({
-        createdAt: sessions.createdAt,
-        expiresAt: sessions.expiresAt,
-        hospitalId: sessions.hospitalId,
-        hospitalSlug: hospitals.slug,
-        hospitalStatus: hospitals.status,
-        user: userColumns,
-      })
-      .from(sessions)
-      .innerJoin(users, eq(users.id, sessions.userId))
-      .leftJoin(hospitals, eq(hospitals.id, sessions.hospitalId))
-      .where(eq(sessions.tokenHash, hashToken(token)));
-    if (!row || row.expiresAt <= deps.now()) return ended();
-
-    // A session counts only where it was made. On a host several surfaces
-    // share (dev's plain localhost), this browser may still use it there, so
-    // it's left alone.
-    const madeHere =
-      surface.kind === 'admin'
-        ? row.hospitalId === null
-        : row.hospitalId !== null && row.hospitalSlug === surface.slug;
-    if (!madeHere) return nobody();
-
-    if (row.user.status !== 'active') return ended();
-    if (row.hospitalId === null || row.hospitalSlug === null) {
-      if (!row.user.isPlatformAdmin) return ended();
-      return c.json(authSession(row.user, null, [], row));
-    }
-    if (row.hospitalStatus === 'suspended') return ended();
-    const roles = await rolesAt(db, row.user.id, row.hospitalId);
-    if (roles.length === 0) return ended();
-    return c.json(
-      authSession(row.user, { id: row.hospitalId, slug: row.hospitalSlug }, roles, row),
-    );
-  });
+  routes.get('/me', async (c) => c.json(await currentSession(c, deps)));
 
   routes.get('/demo-accounts', async (c) => {
     const surface = surfaceOf(c.req.url, deps.rootDomain);
@@ -325,6 +274,67 @@ export function authRoutes(deps: AuthDeps) {
   });
 
   return routes;
+}
+
+/**
+ * The session this request carries, checked: it exists and hasn't expired,
+ * it was made for this host's surface, and its user is active and still holds
+ * a role there. Null otherwise; a session that is no good anywhere is deleted
+ * and its cookie cleared on the way.
+ */
+export async function currentSession(
+  c: Context,
+  deps: Pick<AuthDeps, 'db' | 'now' | 'rootDomain' | 'secureCookies'>,
+): Promise<AuthSession | null> {
+  const { db } = deps;
+  const nobody = () => null;
+  const surface = surfaceOf(c.req.url, deps.rootDomain);
+  if (surface.kind === 'unknown') return nobody();
+  const secure = cookiesSecure(c, deps);
+  const token = readToken(c, surface.kind, secure);
+  if (!token) return nobody();
+
+  // The session is no good anywhere (unknown, expired, or its user no
+  // longer allowed in): remove it and the cookie.
+  const ended = async () => {
+    await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(token)));
+    deleteCookie(c, COOKIE_NAMES[surface.kind], cookieOptions(secure));
+    return nobody();
+  };
+
+  const [row] = await db
+    .select({
+      createdAt: sessions.createdAt,
+      expiresAt: sessions.expiresAt,
+      hospitalId: sessions.hospitalId,
+      hospitalSlug: hospitals.slug,
+      hospitalStatus: hospitals.status,
+      user: userColumns,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .leftJoin(hospitals, eq(hospitals.id, sessions.hospitalId))
+    .where(eq(sessions.tokenHash, hashToken(token)));
+  if (!row || row.expiresAt <= deps.now()) return ended();
+
+  // A session counts only where it was made. On a host several surfaces
+  // share (dev's plain localhost), this browser may still use it there, so
+  // it's left alone.
+  const madeHere =
+    surface.kind === 'admin'
+      ? row.hospitalId === null
+      : row.hospitalId !== null && row.hospitalSlug === surface.slug;
+  if (!madeHere) return nobody();
+
+  if (row.user.status !== 'active') return ended();
+  if (row.hospitalId === null || row.hospitalSlug === null) {
+    if (!row.user.isPlatformAdmin) return ended();
+    return authSession(row.user, null, [], row);
+  }
+  if (row.hospitalStatus === 'suspended') return ended();
+  const roles = await rolesAt(db, row.user.id, row.hospitalId);
+  if (roles.length === 0) return ended();
+  return authSession(row.user, { id: row.hospitalId, slug: row.hospitalSlug }, roles, row);
 }
 
 // --- helpers -------------------------------------------------------------------

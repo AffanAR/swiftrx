@@ -28,7 +28,7 @@
 //    and the read endpoints will work it out from `prescriptions`.
 // =============================================================================
 
-import { count, getTableName, type Table } from 'drizzle-orm';
+import { and, count, eq, getTableName, inArray, like, not, type Table } from 'drizzle-orm';
 import { z } from 'zod';
 
 import {
@@ -354,6 +354,29 @@ export async function seed(
 
     return { seeded: true, counts };
   });
+}
+
+/**
+ * Give the demo accounts Argon2id hashes again where an older seed left
+ * bcrypt ones, which the server no longer reads: dev databases seeded before
+ * sign-in moved to the API. Other accounts are left alone. Returns how many
+ * were updated.
+ */
+export async function upgradeDemoPasswords(
+  db: Db,
+  passwords: Readonly<Record<string, string>> = DEMO_PASSWORDS,
+): Promise<number> {
+  const ids = Object.keys(passwords);
+  if (ids.length === 0) return 0;
+  const stale = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(inArray(users.id, ids), not(like(users.passwordHash, '$argon2id$%'))));
+  for (const { id } of stale) {
+    const passwordHash = await hashPassword(passwords[id]);
+    await db.update(users).set({ passwordHash }).where(eq(users.id, id));
+  }
+  return stale.length;
 }
 
 async function hasHospitals(db: Pick<Db, 'select'>): Promise<boolean> {

@@ -139,9 +139,27 @@ const api = tsImport('../apps/api/src/listener.ts', {
 api
   .then((loaded) => loaded.ready)
   .then(
-    (where) => console.log(`[serve] API ready: ${where}`),
+    (where) => {
+      console.log(`[serve] API ready: ${where}`);
+      logMemory('after start-up');
+    },
     (error) => console.error('[serve] The API could not start, so /api answers 503.', error),
   );
+
+// Render's free instance has 512 MB, so the log keeps an eye on it: once the
+// API is up, then every half hour if the peak has grown.
+let loggedPeak = 0;
+function logMemory(when) {
+  const mb = (bytes) => Math.round(bytes / 1048576);
+  const peak = process.resourceUsage().maxRSS * 1024;
+  loggedPeak = peak;
+  console.log(
+    `[serve] memory ${when}: ${mb(process.memoryUsage().rss)} MB now, ${mb(peak)} MB at the peak`,
+  );
+}
+setInterval(() => {
+  if (process.resourceUsage().maxRSS * 1024 > loggedPeak) logMemory('(new peak)');
+}, 30 * 60_000).unref();
 
 const server = createServer(async (req, res) => {
   let urlPath;

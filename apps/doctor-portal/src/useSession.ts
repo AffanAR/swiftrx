@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchSession, signOut as endSession, type AuthSession } from '@swiftrx/shared';
+import {
+  fetchSession,
+  onSessionEnded,
+  signOut as endSession,
+  type AuthSession,
+} from '@swiftrx/shared';
 
 export type SessionState =
-  { status: 'loading' } | { status: 'signed-out' } | ({ status: 'signed-in' } & AuthSession);
+  | { status: 'loading' }
+  /** `ended`: the session ran out or the server dropped it, rather than a sign-out. */
+  | { status: 'signed-out'; ended?: boolean }
+  | ({ status: 'signed-in' } & AuthSession);
 
 /**
  * The portal's session, as the server holds it. On mount it asks the API who
@@ -10,6 +18,11 @@ export type SessionState =
  * cookie, its expiry, the user and their role here. Returns the state,
  * `signOut`, and `signedIn`, which the login page calls with the session the
  * server just made, so the router sees it without another round trip.
+ *
+ * A session also ends without a sign-out: at its expiry time, or when any
+ * API call answers 401. Then the state turns `signed-out` with `ended`, and
+ * nothing else is cleared, so a doctor who signs straight back in finds the
+ * Rx pad as they left it.
  */
 export function useSession(
   hospitalSlug: string,
@@ -28,6 +41,26 @@ export function useSession(
       live = false;
     };
   }, [hospitalSlug]);
+
+  const expiresAt = state.status === 'signed-in' ? state.session.expiresAt : null;
+
+  // When the session's time is up, ask the server (its clock decides), and
+  // treat any 401 from a data call as the end of the session.
+  useEffect(() => {
+    if (expiresAt === null) return;
+    const end = () => setState({ status: 'signed-out', ended: true });
+    const recheck = () =>
+      fetchSession(hospitalSlug).then(
+        (auth) => (auth ? setState({ status: 'signed-in', ...auth }) : end()),
+        () => {},
+      );
+    const timer = setTimeout(recheck, Math.min(Math.max(expiresAt - Date.now(), 0), 2 ** 31 - 1));
+    const unsubscribe = onSessionEnded(end);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [expiresAt, hospitalSlug]);
 
   const signOut = useCallback(async () => {
     try {
