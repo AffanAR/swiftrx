@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { DemoAccounts, TextField, LiveDot, Spinner } from '@swiftrx/shared';
+import { DemoAccounts, TextField, LiveDot, Spinner, ThemeToggle } from '@swiftrx/shared';
 
 export function LoginPage({
   onSignIn,
@@ -23,6 +23,7 @@ export function LoginPage({
 
   return (
     <div className="min-h-full grid lg:grid-cols-2 relative overflow-hidden">
+      <ThemeToggle className="absolute top-3 right-3 z-10" />
       <div aria-hidden className="pointer-events-none absolute inset-0 rx-bg-grid opacity-40" />
       <div aria-hidden className="pointer-events-none absolute inset-0 rx-bg-radial-accent" />
       <div

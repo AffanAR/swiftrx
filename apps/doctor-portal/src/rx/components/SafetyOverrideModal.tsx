@@ -53,7 +53,7 @@ export function SafetyOverrideModal() {
   confirmRef.current = confirm;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
       {/* Click-outside-to-close as a real button, so it is announced and
          reachable instead of being a mouse-only affordance on the overlay. */}
       <button
@@ -128,7 +128,7 @@ export function SafetyOverrideModal() {
               className={cx(
                 'px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-2 transition-colors',
                 canSign
-                  ? 'bg-rx-danger text-white hover:bg-rx-danger/80'
+                  ? 'bg-rx-danger text-ink-900 hover:bg-rx-danger/80'
                   : 'bg-ink-700 text-ink-400 cursor-not-allowed',
               )}
             >

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LiveDot, PageBoundary, cx, type Hospital, type User } from '@swiftrx/shared';
+import { LiveDot, PageBoundary, ThemeToggle, cx, type Hospital, type User } from '@swiftrx/shared';
 
 export function PortalShell({
   children,
@@ -80,6 +80,7 @@ export function PortalShell({
               Sign out
             </button>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 

@@ -13,6 +13,7 @@ export * from './tenant';
 export * from './ui';
 export * from './config';
 export * from './print';
+export * from './theme';
 // components.tsx is React; some consumers (the admin / portal) pull
 // pre-built primitives from it. Apps that don't need React can import
 // from the deeper paths directly.

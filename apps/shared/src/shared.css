@@ -2,6 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens, as RGB channels for the Tailwind preset's colors. Dark is the
+   default; theme.ts sets data-theme="light" on <html> for the day theme. The
+   ink scale flips in light mode (900 is the page, 100 the main text), so the
+   same classes work in both. Accents are picked so text in them keeps WCAG AA
+   contrast on the page and on their own 15-20% tints, and text on a filled
+   accent / danger button uses text-ink-900 (navy in dark, white in light). */
+@layer base {
+  :root {
+    --ink-50: 247 248 250;
+    --ink-100: 238 240 244;
+    --ink-200: 221 225 234;
+    --ink-300: 188 195 210;
+    --ink-400: 139 148 171;
+    --ink-500: 125 134 160;
+    --ink-600: 63 71 98;
+    --ink-700: 42 49 73;
+    --ink-800: 25 31 51;
+    --ink-900: 12 17 34;
+    --rx-accent: 16 185 129;
+    --rx-accent-dark: 4 120 87;
+    --rx-warn: 245 158 11;
+    --rx-danger: 248 113 113;
+    --rx-focus: 59 130 246;
+    /* Sheen and grid lines: light on dark, dark on light. */
+    --rx-sheen: 255 255 255;
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-lift: 0 4px 16px -6px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+  :root[data-theme='light'] {
+    --ink-50: 10 14 26;
+    --ink-100: 20 26 43;
+    --ink-200: 38 45 64;
+    --ink-300: 58 66 86;
+    --ink-400: 79 88 110;
+    --ink-500: 100 109 131;
+    --ink-600: 164 172 189;
+    --ink-700: 221 225 233;
+    --ink-800: 243 245 249;
+    --ink-900: 255 255 255;
+    --rx-accent: 5 102 74;
+    --rx-accent-dark: 4 78 58;
+    --rx-warn: 154 74 7;
+    --rx-danger: 185 28 28;
+    --rx-focus: 29 78 216;
+    --rx-sheen: 15 23 42;
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.08);
+    --shadow-lift: 0 4px 16px -6px rgba(15, 23, 42, 0.25);
+    color-scheme: light;
+  }
+}
+
 @layer components {
   .rx-input {
     @apply w-full rounded-md bg-ink-800 border border-ink-700 px-3 py-2 text-ink-100
@@ -18,7 +70,7 @@
            font-medium transition disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .rx-btn-primary {
-    @apply rx-btn bg-rx-accent text-ink-900 hover:bg-rx-accentDark hover:text-ink-50;
+    @apply rx-btn bg-rx-accent text-ink-900 hover:bg-rx-accentDark hover:text-white;
   }
   .rx-btn-ghost {
     @apply rx-btn text-ink-300 hover:text-ink-100 hover:bg-ink-700/50;
@@ -30,9 +82,9 @@
     background-image: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.08) 45%,
-      rgba(255, 255, 255, 0.18) 50%,
-      rgba(255, 255, 255, 0.08) 55%,
+      rgb(var(--rx-sheen) / 0.08) 45%,
+      rgb(var(--rx-sheen) / 0.18) 50%,
+      rgb(var(--rx-sheen) / 0.08) 55%,
       transparent 100%
     );
     background-size: 200% 100%;
@@ -83,7 +135,7 @@
   }
   .rx-hover-lift:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px -6px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--shadow-lift);
   }
 
   .rx-typing-dot {
@@ -124,21 +176,21 @@
   }
   .rx-bg-grid {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      linear-gradient(rgb(var(--rx-sheen) / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--rx-sheen) / 0.025) 1px, transparent 1px);
     background-size: 32px 32px;
   }
   .rx-bg-radial-accent {
     background-image: radial-gradient(
       900px circle at 20% 0%,
-      rgba(16, 185, 129, 0.08),
+      rgb(var(--rx-accent) / 0.08),
       transparent 60%
     );
   }
   .rx-bg-radial-focus {
     background-image: radial-gradient(
       700px circle at 80% 20%,
-      rgba(59, 130, 246, 0.1),
+      rgb(var(--rx-focus) / 0.1),
       transparent 60%
     );
   }

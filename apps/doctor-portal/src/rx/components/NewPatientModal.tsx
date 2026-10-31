@@ -108,7 +108,7 @@ export function NewPatientModal() {
   submitRef.current = submit;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
       {/* Click-outside-to-close as a real button, so it is announced and
          reachable instead of being a mouse-only affordance on the overlay. */}
       <button
@@ -258,7 +258,7 @@ export function NewPatientModal() {
               className={cx(
                 'px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-2 transition-colors',
                 canSubmit
-                  ? 'bg-rx-accent text-ink-900 hover:bg-rx-accentDark'
+                  ? 'bg-rx-accent text-ink-900 hover:bg-rx-accentDark hover:text-white'
                   : 'bg-ink-700 text-ink-400 cursor-not-allowed',
               )}
             >

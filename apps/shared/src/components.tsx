@@ -6,6 +6,7 @@ import * as React from 'react';
 import { cx, AnimatedNumber } from './ui';
 import { DEMO_MODE } from './config';
 import { fetchDemoAccounts } from './auth';
+import { currentTheme, setTheme, subscribeTheme } from './theme';
 import type { DemoAccount, Hospital } from './types';
 
 export function TextField({
@@ -278,13 +279,61 @@ export function DemoFrame({ children }: { children: React.ReactNode }) {
     <div className="h-full flex flex-col">
       <div
         role="note"
-        className="shrink-0 px-3 py-1.5 text-center text-xs text-amber-200 bg-amber-500/15 border-b border-amber-500/30"
+        className="shrink-0 px-3 py-1.5 text-center text-xs text-rx-warn bg-rx-warn/15 border-b border-rx-warn/30"
       >
         <span className="font-semibold">Demo</span> · Patient data isn't saved to a server, and most
         changes reset on reload. Don't enter real patient details.
       </div>
       <div className="flex-1 min-h-0">{children}</div>
     </div>
+  );
+}
+
+/** The theme on screen; re-renders when the user or the OS switches it. */
+export function useTheme() {
+  return React.useSyncExternalStore(subscribeTheme, currentTheme, () => 'dark' as const);
+}
+
+/**
+ * Sun / moon button that switches between the light and dark themes. The pick
+ * is remembered in this browser; until then the OS setting decides.
+ */
+export function ThemeToggle({ className }: { className?: string }) {
+  const theme = useTheme();
+  const next = theme === 'dark' ? 'light' : 'dark';
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(next)}
+      aria-label={`Switch to ${next} theme`}
+      title={`Switch to ${next} theme`}
+      className={cx(
+        'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-ink-700',
+        'bg-ink-800/70 text-ink-300 hover:text-ink-100 hover:bg-ink-700/60 transition-colors',
+        className,
+      )}
+    >
+      {theme === 'dark' ? (
+        // Moon: dark theme is on.
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+          <path d="M17.3 12.9A7.5 7.5 0 0 1 7.1 2.7a7.5 7.5 0 1 0 10.2 10.2Z" />
+        </svg>
+      ) : (
+        // Sun: light theme is on.
+        <svg
+          viewBox="0 0 20 20"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          aria-hidden
+        >
+          <circle cx="10" cy="10" r="3.5" />
+          <path d="M10 1.5v2M10 16.5v2M1.5 10h2M16.5 10h2M4 4l1.4 1.4M14.6 14.6 16 16M4 16l1.4-1.4M14.6 5.4 16 4" />
+        </svg>
+      )}
+    </button>
   );
 }
 

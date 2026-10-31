@@ -22,6 +22,18 @@ a custom **Tailwind CSS** design system. They share data, types, auth
 primitives and UI primitives via the local `@swiftrx/shared` package. The Rx
 pad is lazy-loaded, so its code only downloads when a doctor opens `/rx`.
 
+### Light and dark theme
+
+Every surface (admin, portal, Rx pad) has a dark and a light ("day") theme.
+The sun / moon button in the top bar (top-right corner on sign-in pages)
+switches them. The choice is remembered per browser in `localStorage`
+(`swiftrx:theme`); until someone picks, the OS setting
+(`prefers-color-scheme`) decides. Admin and each hospital live on their own
+subdomain, so each remembers its own choice. Colors are CSS variables in
+`apps/shared/src/shared.css`, used by the Tailwind preset, so classes like
+`bg-ink-900` work in both themes. Printed prescriptions are always black on
+white, whichever theme is on.
+
 ## Run it
 
 ```bash
@@ -274,7 +286,8 @@ them over. Firefox on Linux also uses `Alt + 1–8` for tabs.
 | `apps/shared/src/components.tsx`              | Reusable form + identity components                |
 | `apps/shared/src/ui.tsx`                      | UI primitives (`cx`, `LiveDot`, `Kbd`, …) for every app |
 | `apps/shared/src/shared.css`                  | The one stylesheet (Tailwind entry + `rx-*` classes) |
-| `apps/shared/tailwind-preset.js`              | Shared Tailwind theme (colors, keyframes)          |
+| `apps/shared/tailwind-preset.js`              | Shared Tailwind theme (colors → CSS variables, keyframes) |
+| `apps/shared/src/theme.ts`                    | Light / dark theme: OS default, remembered choice  |
 | `apps/doctor-portal/src/App.tsx`              | Portal routes, incl. the lazy `/rx` route          |
 | `apps/doctor-portal/src/auth.ts`              | `sessionBelongsTo()` + `canPrescribe()`            |
 | `apps/doctor-portal/src/rx/RxPad.tsx`         | Rx pad entry (loads the doctor's workspace)        |

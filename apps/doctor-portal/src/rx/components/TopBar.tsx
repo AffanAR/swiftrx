@@ -1,4 +1,4 @@
-import { AnimatedNumber, LiveDot, cx } from '@swiftrx/shared';
+import { AnimatedNumber, LiveDot, ThemeToggle, cx } from '@swiftrx/shared';
 import { useApp, actions } from '../store';
 
 export function TopBar({ onSignOut }: { onSignOut: () => void }) {
@@ -115,6 +115,7 @@ export function TopBar({ onSignOut }: { onSignOut: () => void }) {
         >
           ⌘K · patient
         </button>
+        <ThemeToggle />
       </div>
     </header>
   );

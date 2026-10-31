@@ -141,7 +141,7 @@ function FeaturesEditor({
           </span>
         )}
         {dirty && (
-          <span className="text-[11px] text-amber-300 font-mono animate-fadeIn">
+          <span className="text-[11px] text-rx-warn font-mono animate-fadeIn">
             ● Unsaved changes
           </span>
         )}
