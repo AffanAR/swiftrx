@@ -40,10 +40,13 @@ for a diagnosis). Then they check the safety alerts, sign and print.
   pharmacy.
 - **Nothing to install.** It runs in a browser.
 
-**First market: Pakistan.** The seed hospitals are in Karachi, Lahore and
-Islamabad, doctors carry PMDC numbers, and the catalog is meant to hold
-DRAP-registered brands. So the plan includes Urdu patient instructions,
-Pakistani drug data, and Pakistan's rules for health data and prescriptions.
+**Market: Bangladesh only** (set 2026-10-31). Doctors carry BMDC
+registration numbers, the catalog holds DGDA-registered brands, and
+prescriptions print in English, Bangla or both. So the plan includes Bangla
+patient instructions, Bangladeshi drug data, and Bangladesh's rules for
+health data and prescriptions. The seed data still describes Pakistan
+(Karachi, Lahore and Islamabad hospitals, PMDC numbers); it gets
+Bangladeshi hospitals, BMDC numbers and local brands in Phase 2.
 
 **Out of scope until Phase 6 at least:** patient billing, appointments,
 wards, labs (a full hospital information system) and dispensing. Saying no
@@ -76,7 +79,7 @@ to these keeps one developer's time on the pad.
 | ✓ | Prototype stable | Phases 0–1: the demo works end to end in one browser, and CI is green. | Done 2026-10-22 |
 | M1 | Backend live on the demo | Phase 2: real sign-in; data is saved on the server and shared between the apps; only the server creates a signed Rx. Running at `thesyndicate.bond`. | End of Nov 2026 |
 | M2 | Safety rules signed off | Phase 3: allergy, interaction, duplicate and dose checks rebuilt on a real drug catalog, and a clinician has signed a written review of every rule. | Mid-Jan 2027 |
-| M3 | Pilot-ready | Phase 4: a production environment apart from the demo, with backups and monitoring; a PDF and a verification QR code on each Rx; PMDC checks; Urdu instructions; a security review; papers signed with the pilot hospital. | Late Jan 2027 |
+| M3 | Pilot-ready | Phase 4: a production environment apart from the demo, with backups and monitoring; a PDF and a verification QR code on each Rx; BMDC checks; Bangla instructions; the prescription design panel; a security review; papers signed with the pilot hospital. | Late Jan 2027 |
 | M4 | Pilot done | One hospital's doctors have used it for 6–8 weeks, and the pilot's measures (Phase 4) are in. | Late Mar 2027 |
 | M5 | First paying hospitals | Phase 5: pricing, invoicing, onboarding and support are in place, and three hospitals pay (set your own number). | End of Jun 2027 |
 | M6 | Growth | Phase 6: features picked from what the pilot and the first customers asked for. | From Jul 2027 |
@@ -202,7 +205,7 @@ on `thesyndicate.bond` with DEMO mode still on.
 
 ### Phase 3: Clinical safety v2 (→ M2, mid-Jan 2027)
 
-**Goal:** alerts a doctor would trust, on the medicines Pakistani doctors
+**Goal:** alerts a doctor would trust, on the medicines Bangladeshi doctors
 actually prescribe.
 
 **Engineering** (`PLAN.md` §3.2, Phase 3):
@@ -225,7 +228,7 @@ actually prescribe.
 
 - **An advisor:** a practising doctor, ideally backed by a pharmacist or a
   paediatrician for doses. Agree hours and pay (or equity) in writing.
-- **Drug data:** DRAP-registered brands (brand → generic → strength → form →
+- **Drug data:** DGDA-registered brands (brand → generic → strength → form →
   maker) and an interaction dataset. Get quotes in November. Ask whether you
   may store the data, show it to hospitals and update it monthly, and what
   it costs a year.
@@ -244,10 +247,13 @@ to learn whether its doctors prefer SwiftRx to paper.
 **Engineering** (`PLAN.md` §3.2, Phase 4):
 
 - A server-rendered PDF, and a verification page with a QR code on each Rx.
-- PMDC license checks for doctors. A manual check against the PMDC register,
-  saved with who checked and when, is enough to start.
-- Urdu patient instructions (add `ur`, print right to left). The
-  `defaultLanguage` list has no Urdu today.
+- BMDC registration checks for doctors (renaming today's PMDC labels). A
+  manual check against the BMDC register, saved with who checked and when,
+  is enough to start.
+- Bangla patient instructions: add `bn` (the `defaultLanguage` list has no
+  Bangla today) and a Bangla font for the printout, so it doesn't depend on
+  the fonts on the hospital's computer.
+- **The prescription design panel** (below).
 - **Added:**
   - The production environment (§6), apart from the demo.
   - Two-factor sign-in for platform admins (`PLAN.md` §3.1, item 3).
@@ -257,6 +263,34 @@ to learn whether its doctors prefer SwiftRx to paper.
   - An export of one hospital's data (patients and Rx, as CSV and PDF). The
     data agreement will need it when a contract ends.
   - Dependabot dependency updates.
+
+**Prescription design panel.** Each hospital's printed Rx is set up by the
+SwiftRx team only, in the admin panel. Hospital admins and doctors can't see
+or change it; the portal only prints with it (decision D12). It builds on
+the editor already on the admin panel's **Hospital features** page, which
+previews through the same `renderRxHtml` the real print uses. Every signed
+Rx keeps a frozen copy of the design it was printed with.
+
+1. **Save on the server** (a few days): a platform-admin-only endpoint for a
+   hospital's design, with every value checked before it's saved.
+2. **More controls** (1–2 weeks): the hospital's logo; letterhead mode for
+   pre-printed paper (hide the header and footer, set margins in mm);
+   sections switched on or off and reordered (diagnosis, vitals, medicines,
+   tests, advice, follow-up); font and text size; headings in English,
+   Bangla or both; extra fields such as a medical record number; where the
+   verification QR code goes. The team also enters each doctor's
+   qualifications, specialty and signature or stamp on the doctor's profile,
+   and the design decides where they print.
+3. **Safe changes** (about a week): edits stay a draft, with a test print,
+   until published. Each published version is kept, can be restored, and is
+   in the audit log. Items the law requires (the doctor's name and BMDC
+   number, the date, the patient's details, the signature area) always
+   print; the lawyer confirms the list.
+4. **Starting templates** (a few days): Classic, Minimal, Letterhead and
+   Bilingual, picked when a hospital is created.
+
+When a hospital signs up, the team copies its current paper prescription
+into its design.
 
 **Operations and security:**
 
@@ -274,19 +308,17 @@ to learn whether its doctors prefer SwiftRx to paper.
 **Legal** (with a lawyer):
 
 - **A business to sign with:** a private limited company (registered with
-  the SECP) or a sole proprietorship, whichever the lawyer advises.
+  the RJSC) or a sole proprietorship, whichever the lawyer advises.
 - **A privacy policy and terms of service.** The terms say the doctor makes
   the decision and SwiftRx only advises, and the screens say so too.
 - **A data processing agreement with the hospital.** The hospital controls
   its patients' data, and SwiftRx processes it for them. It covers
   retention, deletion, export, breach notice and where the data is stored.
-- **Which laws apply.** A web search on 2026-10-31 (not legal advice) found
-  that Pakistan's Personal Data Protection Bill was approved by the federal
-  cabinet in 2023 but apparently hasn't passed Parliament. The Prevention of
-  Electronic Crimes Act 2016 (amended 2025) is the main law in force that
-  touches personal data. Also ask about the healthcare regulator where the
-  pilot hospital is (for example the Sindh or Punjab Healthcare Commission)
-  and its rules on medical records.
+- **Which laws apply.** Bangladesh's data-protection and cyber-security laws
+  have changed several times in recent years, so have the lawyer say which
+  are in force and what they require for health data. Also ask about the
+  Directorate General of Health Services (DGHS), which licenses private
+  hospitals and clinics, and its rules on medical records.
 - **What makes a prescription valid:** what it must show, and whether the
   printed Rx the doctor signs by hand can be the legal record during the
   pilot (the safest start). Ask whether a digital-only Rx is valid at all.
@@ -335,7 +367,7 @@ incident is open, and you know the five changes doctors asked for most.
   admin and doctors, set its Rx design, and import patients from a CSV.
 - **The admin panel:** a working Suspend, real usage and trends (`PLAN.md`
   §2.4), and plan changes.
-- **Support:** help pages and short videos in Urdu and English, a support
+- **Support:** help pages and short videos in Bangla and English, a support
   channel the hospitals already use, and stated support hours.
 - **Selling:** the demo, a two-minute video, a one-page leaflet, and the
   pilot's numbers as a case study.
@@ -348,7 +380,7 @@ covers hosting and the drug-data licence.
 
 Ideas to rank by what customers ask for, not commitments:
 
-- An Urdu interface, not only Urdu instructions.
+- A Bangla interface, not only Bangla instructions.
 - A real "Send to Pharmacy" (pharmacy routing).
 - A patient copy by SMS or WhatsApp that links to the verification page.
 - Lab orders and results.
@@ -392,14 +424,16 @@ When a decision is made, write its date and the reason here.
 | D1 | Merge the Rx pad into the portal? | Yes | — | Decided 2026-10-22; done in Phase 1 |
 | D2 | Backend stack | Hono, Drizzle and Postgres | — | Decided 2026-10-30; the reasons are in `PLAN.md`, Phase 2, under the skeleton item |
 | D3 | May hospital admins prescribe? | No, unless they also hold a doctor membership with a verified license. The Rx pad already admits only active, licensed doctors (`canPrescribe()`). | Early Nov 2026, before the auth step | Decided 2026-10-31: doctors only, as recommended, because prescribing is a licensed act. An admin who also prescribes gets a second membership, as a doctor (the schema allows several roles per hospital). The server must enforce it when it signs (`POST /prescriptions`). |
-| D4 | Drug and interaction data: source and yearly budget | Quotes from two or three providers in November; choose on coverage of Pakistani brands, how often it's updated, and the licence terms | Early Dec 2026 | Open |
-| D5 | Hosting region and data residency | Ask the pilot hospital and the lawyer whether data must stay in Pakistan. Render's regions are in the US, Frankfurt and Singapore. The API is plain Node and Postgres, so a Pakistani host is an option. | Dec 2026, before buying production hosting | Open |
+| D4 | Drug and interaction data: source and yearly budget | Quotes from two or three providers in November; choose on coverage of Bangladeshi brands, how often it's updated, and the licence terms | Early Dec 2026 | Open |
+| D5 | Hosting region and data residency | Ask the pilot hospital and the lawyer whether data must stay in Bangladesh. Render's regions are in the US, Frankfurt and Singapore (the nearest). The API is plain Node and Postgres, so a Bangladeshi host is an option. | Dec 2026, before buying production hosting | Open |
 | D6 | Product name and production domain | Check the name is free to use (trademark) and buy the domain. Decide before the first real Rx is printed: the verification link and QR code on paper can't change afterwards. | Dec 2026 | Open; `swiftrx.com` is a placeholder in the code |
 | D7 | Private repo, or open source? | Private, unless you want open source (then add a licence). Render needs access to a private repo. Copies made while it was public can't be recalled. | Before the pilot | Open; public now |
 | D8 | Business entity | Whatever the lawyer advises; you need one to sign the hospital papers | Nov 2026 | Open |
 | D9 | Clinical advisor | — | Nov 2026 | Open |
 | D10 | Pilot hospital | A clinic or outpatient department where you know someone | Dec 2026; papers signed by mid-Jan 2027 | Open |
 | D11 | Pricing model and prices | Set from the pilot's numbers | Mar 2027 | Open |
+| D12 | Who customises each hospital's printed Rx? | — | — | Decided 2026-10-31: the SwiftRx team only, in the admin panel; hospitals and doctors get no access |
+| D13 | Market and languages | — | — | Decided 2026-10-31: Bangladesh only; prescriptions in English and Bangla |
 
 `PLAN.md` §4 has the original list of five.
 
@@ -435,7 +469,7 @@ Rough. The Render prices come from third-party summaries checked on
 
 Hosting is cheap; people and data aren't. Get quotes for the lawyer, the
 advisor and the drug data in November, so the real budget is known in
-December. If D5 says the data must stay in Pakistan, price the hosting
+December. If D5 says the data must stay in Bangladesh, price the hosting
 again.
 
 ---
