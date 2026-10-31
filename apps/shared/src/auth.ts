@@ -13,6 +13,7 @@
 //  hospital's own subdomain the host wins anyway, as in resolveSurface().
 // =============================================================================
 
+import { callApi, withSurface } from './http';
 import type { AuthSession, DemoAccount, SignInRefusal } from './types';
 
 /** Why a sign-in failed: the server's reason, or 'unavailable' when it couldn't be asked. */
@@ -128,4 +129,39 @@ const REFUSALS: ReadonlySet<string> = new Set<SignInRefusal>([
 function authUrl(route: string, hospitalSlug?: string | null): string {
   const query = hospitalSlug ? `?${new URLSearchParams({ hospital: hospitalSlug })}` : '';
   return `/api/auth/${route}${query}`;
+}
+
+// --- Password links (invitations and resets) ------------------------------------
+
+/**
+ * Shortest password accepted, here and on the server. Length is what counts,
+ * not character rules (NIST SP 800-63B).
+ */
+export const MIN_PASSWORD_LENGTH = 8;
+
+/** What a password link is for, as the set-password page shows it. */
+export interface PasswordLinkInfo {
+  purpose: 'invite' | 'reset';
+  email: string;
+  name: string;
+}
+
+/**
+ * The address of a password link on this portal. The token goes after `#`,
+ * which browsers send neither to a server nor in a Referer.
+ */
+export function setPasswordUrl(token: string): string {
+  // globalThis, not window: the API type-checks this file without the DOM.
+  const origin = (globalThis as { location?: { origin: string } }).location?.origin ?? '';
+  return `${origin}${withSurface('/set-password')}#${token}`;
+}
+
+/** What a link's token is for, or null if it's unknown, used or expired. */
+export function fetchPasswordLink(token: string): Promise<PasswordLinkInfo | null> {
+  return callApi('/auth/token-info', { method: 'POST', body: { token } });
+}
+
+/** Set the password a link is for. Throws ApiError (410 when the link is spent). */
+export async function setPassword(token: string, password: string): Promise<void> {
+  await callApi('/auth/set-password', { method: 'POST', body: { token, password } });
 }

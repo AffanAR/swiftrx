@@ -18,7 +18,14 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { ApiError, api, type Actor, type NewHospital, type NewPatient } from './api';
+import {
+  ApiError,
+  api,
+  type Actor,
+  type DoctorInvite,
+  type NewHospital,
+  type NewPatient,
+} from './api';
 import type { HospitalFeatures, RxDesign, User } from './types';
 
 /** Doctors, patients and signed Rx per hospital, for the admin's hospital list. */
@@ -167,4 +174,18 @@ export function createQueryClient(): QueryClient {
 
 function refetch(qc: QueryClient, ...keys: string[][]) {
   return Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey })));
+}
+
+/** A hospital admin invites a doctor; the roster and the audit log refetch. */
+export function useInviteDoctor(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (invite: DoctorInvite) => api.users.invite(invite),
+    onSuccess: () => refetch(qc, [...queries.doctors(slug).queryKey], ['audit']),
+  });
+}
+
+/** A new password link for one of the admin's hospital's users. */
+export function usePasswordLink() {
+  return useMutation({ mutationFn: (userId: string) => api.users.passwordLink(userId) });
 }

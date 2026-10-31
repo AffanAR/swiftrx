@@ -61,10 +61,10 @@ to these keeps one developer's time on the pad.
 | Frontend | Done to prototype quality: the admin panel, and the hospital portal with the Rx pad at `/rx`. Phases 0 and 1 are complete. |
 | Data | Every screen goes through one async data client (`apps/shared/src/api.ts`) and shows loading and error states. It still answers from an in-browser mock database, so nothing is saved or shared between visitors. |
 | Backend | `apps/api`: Hono, Drizzle, Postgres (or PGlite in-process), 16 tables, an append-only audit table and a validated seed; merged into `master` on 2026-10-31, and CI runs its tests on real Postgres as well as PGlite. Since the auth step (branch `claude/trusting-brahmagupta-10a77e`, not merged yet) both apps sign in through it, and `scripts/serve.mjs` serves it under `/api` on a PGlite in memory. Data still comes from the mock database. |
-| Sign-in | On the server, on the auth branch: Argon2id hashes, 12-hour sessions in httpOnly host-only cookies checked on every request, each hospital's session good only at that hospital, rate-limited sign-in. No hash or password is in a bundle (checked on every build). Still missing: password reset, invites, two-factor for admins. On `master` and the live demo, sign-in still runs in the browser. |
+| Sign-in | On the server, live on the demo since 2026-10-31: Argon2id hashes, 12-hour sessions in httpOnly host-only cookies checked on every request, each hospital's session good only at that hospital, rate-limited sign-in. Hospital admins invite doctors and make password links (copied by hand: there's no email sender yet). No hash or password is in a bundle (checked on every build). Still missing: email, self-service reset, two-factor for admins. |
 | Safety checks | Interim. A critical allergy alert blocks signing until the doctor gives a reason, and a dose or duration of 0 is refused. Open gaps (`PLAN.md` §2.2): the duplicate check never fires, medicines on one Rx aren't checked against each other, there are no dose ranges, and Esc clears the pad with no confirm or undo. |
 | Drug catalog | Seed data only: 12 drugs, 7 diagnoses, 12 quick packs. |
-| Quality | Prettier, ESLint, strict TypeScript, 181 unit tests on the auth branch (113 on `master`), a pre-commit hook, and CI on every push. |
+| Quality | Prettier, ESLint, strict TypeScript, 206 unit tests, a pre-commit hook, and CI on every push. |
 | Hosting | A public demo at `thesyndicate.bond`: Render's free plan behind Cloudflare, with a DEMO banner on every page and a DEMO stamp on every print. Only `thesyndicate.bond` and `city-hospital.` resolve (checked 2026-10-31). With no wildcard DNS record, the admin panel only loads at the bare domain and the other hospitals don't load at all. The first visit after 15 idle minutes waits while the free instance wakes (21 seconds on 2026-10-31; Render says up to a minute). |
 | Repo | Public on GitHub (`AffanAR/swiftrx`), though it was meant to be private. |
 
@@ -154,9 +154,9 @@ Phases 0 and 1 were finished on 2026-10-22; `PLAN.md` §3.2 has the record.
 3. **Auth:** cookie sessions with server-enforced expiry, Argon2id on the
    server, the tenant taken from the Host header, rate-limited sign-in,
    password reset and real invites. No hash or password left in any bundle.
-   Sign-in done 2026-10-31 on branch `claude/trusting-brahmagupta-10a77e`
-   (not merged); password reset and invites are next (`PLAN.md` lists what
-   is left).
+   Done 2026-10-31: sign-in is live on the demo, with invitations and
+   admin-made reset links. Self-service reset needs an email sender
+   (`PLAN.md` lists what is left).
 4. **The other endpoints:** the reads (hospitals, users, patients,
    prescriptions, audit, catalog) and the simple writes (new patient, new
    hospital, hospital settings) that `api.ts` already names. As each one

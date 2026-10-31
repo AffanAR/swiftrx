@@ -440,14 +440,15 @@ In this order:
     the hoisted `drizzle-kit` can't load it, so it's also a root
     devDependency. Keep the two version ranges the same
     (`apps/api/drizzle.config.ts`).
-- [ ] **Auth:** `/auth/login`, `/auth/logout` and `/auth/me` with `httpOnly`,
+- [x] **Auth:** `/auth/login`, `/auth/logout` and `/auth/me` with `httpOnly`,
       `Secure`, `SameSite=Lax` cookie sessions, Argon2id hashes on the
       server, and the tenant taken from Host on the server. Then login
       rate-limiting, password reset and a real invite flow (makes "Invite
       doctor" work). No hashes or passwords left in any bundle. (Sign-in done
-      2026-10-31, on branch `claude/trusting-brahmagupta-10a77e`, checked in
-      the browser in dev and on the production build; password reset and
-      invites are left, below.)
+      2026-10-31 and live on the demo the same day; invitations, reset links,
+      ended sessions and the server's audit log followed on 2026-10-31. Checked
+      in the browser. Self-service "forgot password" waits for an email
+      sender, below.)
 
   What was built (`apps/api/src/auth/`):
   - **Routes.** `POST /api/auth/login`, `POST /api/auth/logout`,
@@ -511,17 +512,41 @@ In this order:
     with small Postgres buffers. Everything, sessions included, resets when
     the instance restarts or sleeps.
 
-  Left for the next auth step:
-  - **Password reset and invites.** One `user_tokens` table (hashed,
-    single-use, expiring tokens for "reset" and "invite"), a page to set a
-    password from a link, and "Invite doctor" creating an `invited` user
-    with a membership (`password_hash` is already nullable for that). They
-    need an email sender; until there is one, the demo could show the link.
+  Added after the first deploy (same day):
+  - **Invitations and reset links** (`apps/api/src/auth/invites.ts`,
+    migration `0003`). A hospital admin invites a doctor from the Doctors
+    page, which creates an `invited` account with a doctor membership and a
+    link; the admin also makes a new link for any of the hospital's users.
+    Tokens are 256 random bits, kept as SHA-256 in `user_tokens`, single
+    use, 7 days for an invitation and 24 hours for a reset, and good only at
+    their hospital. The link carries the token after `#`, so it never
+    reaches a server log or a Referer. `/set-password` sets the password,
+    activates an invited account and ends the user's other sessions and
+    links. There's no email sender yet, so the admin copies the link and
+    sends it, which is also why there's no self-service "forgot password".
+  - **First read endpoints:** `GET /api/hospitals/:slug/doctors` (invited
+    doctors appear on the roster) and the audit log
+    (`GET /api/audit-events`, `GET /api/hospitals/:slug/audit-events`),
+    with 401 and 403 by role. The admin's audit log shows the server's
+    events plus what the browser's mock wrote in that tab.
+  - **Ended sessions.** A 401 from any API call, or the session's expiry
+    time, sends the app to sign-in with "Your session ended", and sign-in
+    returns to the page they were on. The Rx pad keeps its unsigned draft
+    when the same doctor signs back in.
+  - On plain localhost the portal keeps `?hospital=` in the URL, so a
+    reload stays at the same hospital; `db:setup` re-hashes demo accounts a
+    pre-Argon2 dev database left with bcrypt; `serve.mjs` logs its memory
+    after start-up and at each new peak, for Render's 512 MB.
+
+  Left:
+  - An email sender, then self-service password reset and emailed
+    invitations.
   - Two-factor sign-in for platform admins (Phase 4).
   - Rate-limit counts in Postgres once there is more than one instance, and
     a check on the live service of which address Render passes on.
-  - Login events now go to the server's `audit_events`; the admin's audit
-    log still reads the mock db until `GET /audit-events` exists.
+  - Admin stats still count doctors from the mock db, so an invited doctor
+    shows on the hospital's roster but not in the admin's totals until the
+    users endpoint moves.
 - [ ] **Read endpoints** that mirror the `mockDb` helpers: hospital,
       patients, and the drug, diagnosis and quick-pack catalog.
 - [ ] **`POST /prescriptions`:** the server

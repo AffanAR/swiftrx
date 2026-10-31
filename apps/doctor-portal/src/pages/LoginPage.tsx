@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   DemoAccounts,
   TextField,
@@ -13,10 +13,18 @@ import {
   type Hospital,
 } from '@swiftrx/shared';
 
-type Props = { hospital: Hospital; onSignedIn: (auth: AuthSession) => void };
+type Props = {
+  hospital: Hospital;
+  onSignedIn: (auth: AuthSession) => void;
+  /** The last session ended on its own (expired or dropped by the server). */
+  ended?: boolean;
+};
 
-export function LoginPage({ hospital, onSignedIn }: Props) {
+export function LoginPage({ hospital, onSignedIn, ended = false }: Props) {
   const navigate = useNavigate();
+  // Where they were going before sign-in (App's redirect leaves it), else the dashboard.
+  const returnTo = (useLocation().state as { returnTo?: unknown } | null)?.returnTo;
+  const next = typeof returnTo === 'string' && /^\/[a-z]/.test(returnTo) ? returnTo : '/dashboard';
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
@@ -35,7 +43,7 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
       return;
     }
     onSignedIn(result.auth);
-    navigate('/dashboard', { replace: true });
+    navigate(next, { replace: true });
   };
 
   return (
@@ -147,6 +155,15 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
                 }
               />
             </div>
+
+            {ended && !error && (
+              <div
+                role="status"
+                className="rounded-md border border-ink-600 bg-ink-800/60 px-3 py-2 text-sm text-ink-300"
+              >
+                Your session ended. Sign in again to carry on where you left off.
+              </div>
+            )}
 
             {error && (
               <div

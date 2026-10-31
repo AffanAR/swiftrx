@@ -15,7 +15,7 @@ import {
   prescriptions,
   users,
 } from './schema';
-import { DEMO_PASSWORDS, demoSeedData, seed, type SeedData } from './seed';
+import { DEMO_PASSWORDS, demoSeedData, seed, upgradeDemoPasswords, type SeedData } from './seed';
 import { SLOW, freshDatabase } from './testDatabase';
 
 describe('seed', () => {
@@ -91,6 +91,16 @@ describe('seed', () => {
         expect(row).toMatchObject({ isPlatformAdmin: false, slug: u.hospitalSlug, role: u.role });
       }
     }
+  });
+
+  it('gives a demo account left with an old bcrypt hash an Argon2id one, and only that', async () => {
+    const bcrypt = '$2b$08$TAAUtqfRLUtpwnmRvcsNrOTdnQ2v6UMrM4Nx/IPQWkyYrSSwppW9K';
+    await database.db.update(users).set({ passwordHash: bcrypt }).where(eq(users.id, 'd_001'));
+
+    expect(await upgradeDemoPasswords(database.db)).toBe(1);
+    const [row] = await database.db.select().from(users).where(eq(users.id, 'd_001'));
+    expect(await verifyPassword(row.passwordHash, 'demo1234')).toBe(true);
+    expect(await upgradeDemoPasswords(database.db)).toBe(0);
   });
 
   it('stores each hospital with its settings', async () => {

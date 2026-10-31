@@ -27,11 +27,11 @@ export default defineConfig({
       // tests, so counting them would drag the number down without guarding
       // anything. Widen this list as DOM tests are added.
       include: [
-        'apps/shared/src/{api,auth,tenant,print,schemas}.ts',
+        'apps/shared/src/{api,auth,http,tenant,print,schemas}.ts',
         'apps/doctor-portal/src/rx/{store,safety,search}.ts',
         // Entry points (server.ts, db/cli.ts, env.ts) are left out: they only
         // wire these modules to the process.
-        'apps/api/src/{app,listener}.ts',
+        'apps/api/src/{app,listener,reads}.ts',
         'apps/api/src/auth/*.ts',
         'apps/api/src/db/{client,schema,seed}.ts',
       ],

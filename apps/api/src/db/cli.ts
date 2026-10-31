@@ -27,7 +27,7 @@ import {
   openDatabase,
   type DatabaseConfig,
 } from './client';
-import { seed } from './seed';
+import { seed, upgradeDemoPasswords } from './seed';
 
 const COMMANDS = ['setup', 'migrate', 'seed', 'reset', 'snapshot'] as const;
 type Command = (typeof COMMANDS)[number];
@@ -66,6 +66,12 @@ async function main(args: string[]): Promise<void> {
               .join(', ')}.`
           : 'Already has data, so the seed was skipped. `npm run db:reset` starts over.',
       );
+      if (!result.seeded) {
+        const upgraded = await upgradeDemoPasswords(database.db);
+        if (upgraded > 0) {
+          console.log(`Gave ${upgraded} demo account(s) an Argon2id hash in place of bcrypt.`);
+        }
+      }
     }
   } finally {
     await database.close();

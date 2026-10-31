@@ -210,6 +210,37 @@ export const sessions = pgTable(
   ],
 );
 
+export const USER_TOKEN_PURPOSES = ['invite', 'reset'] as const;
+
+/**
+ * One-time links to set a password: an invitation for a new user, or a reset
+ * for an existing one, each for one hospital's portal. Like sessions, only
+ * the token's SHA-256 is kept. A token works once (`used_at`), and only
+ * until it expires.
+ */
+export const userTokens = pgTable(
+  'user_tokens',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    hospitalId: uuid('hospital_id')
+      .notNull()
+      .references(() => hospitals.id, { onDelete: 'cascade' }),
+    purpose: text('purpose', { enum: USER_TOKEN_PURPOSES }).notNull(),
+    createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('user_tokens_user_idx').on(t.userId),
+    check('user_tokens_purpose_valid', oneOf(t.purpose, USER_TOKEN_PURPOSES)),
+    check('user_tokens_expire_after_creation', sql`${t.expiresAt} > ${t.createdAt}`),
+  ],
+);
+
 // --- Patients ----------------------------------------------------------------------------
 
 export const patients = pgTable(

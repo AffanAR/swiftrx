@@ -3,8 +3,11 @@ import { DemoAccounts, TextField, LiveDot, Spinner, ThemeToggle } from '@swiftrx
 
 export function LoginPage({
   onSignIn,
+  ended = false,
 }: {
   onSignIn: (email: string, password: string) => Promise<string | null>;
+  /** The last session ended on its own (expired or dropped by the server). */
+  ended?: boolean;
 }) {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -120,6 +123,15 @@ export function LoginPage({
                 required
               />
             </div>
+
+            {ended && !error && (
+              <div
+                role="status"
+                className="rounded-md border border-ink-600 bg-ink-800/60 px-3 py-2 text-sm text-ink-300"
+              >
+                Your session ended. Sign in again.
+              </div>
+            )}
 
             {error && (
               <div
