@@ -57,11 +57,11 @@ to these keeps one developer's time on the pad.
 | --- | --- |
 | Frontend | Done to prototype quality: the admin panel, and the hospital portal with the Rx pad at `/rx`. Phases 0 and 1 are complete. |
 | Data | Every screen goes through one async data client (`apps/shared/src/api.ts`) and shows loading and error states. It still answers from an in-browser mock database, so nothing is saved or shared between visitors. |
-| Backend | The `apps/api` skeleton is built: Hono, Drizzle, Postgres (or PGlite in-process), 15 tables, an append-only audit table and a validated seed. It was merged into `master` on 2026-10-31, and CI runs its tests on real Postgres as well as PGlite. It isn't deployed or used by the apps yet. |
-| Sign-in | Demo only. Password hashes ship in the browser bundle, and the session is unsigned JSON in localStorage. |
+| Backend | `apps/api`: Hono, Drizzle, Postgres (or PGlite in-process), 16 tables, an append-only audit table and a validated seed; merged into `master` on 2026-10-31, and CI runs its tests on real Postgres as well as PGlite. Since the auth step (branch `claude/trusting-brahmagupta-10a77e`, not merged yet) both apps sign in through it, and `scripts/serve.mjs` serves it under `/api` on a PGlite in memory. Data still comes from the mock database. |
+| Sign-in | On the server, on the auth branch: Argon2id hashes, 12-hour sessions in httpOnly host-only cookies checked on every request, each hospital's session good only at that hospital, rate-limited sign-in. No hash or password is in a bundle (checked on every build). Still missing: password reset, invites, two-factor for admins. On `master` and the live demo, sign-in still runs in the browser. |
 | Safety checks | Interim. A critical allergy alert blocks signing until the doctor gives a reason, and a dose or duration of 0 is refused. Open gaps (`PLAN.md` §2.2): the duplicate check never fires, medicines on one Rx aren't checked against each other, there are no dose ranges, and Esc clears the pad with no confirm or undo. |
 | Drug catalog | Seed data only: 12 drugs, 7 diagnoses, 12 quick packs. |
-| Quality | Prettier, ESLint, strict TypeScript, 113 unit tests, a pre-commit hook, and CI on every push. |
+| Quality | Prettier, ESLint, strict TypeScript, 181 unit tests on the auth branch (113 on `master`), a pre-commit hook, and CI on every push. |
 | Hosting | A public demo at `thesyndicate.bond`: Render's free plan behind Cloudflare, with a DEMO banner on every page and a DEMO stamp on every print. Only `thesyndicate.bond` and `city-hospital.` resolve (checked 2026-10-31). With no wildcard DNS record, the admin panel only loads at the bare domain and the other hospitals don't load at all. The first visit after 15 idle minutes waits while the free instance wakes (21 seconds on 2026-10-31; Render says up to a minute). |
 | Repo | Public on GitHub (`AffanAR/swiftrx`), though it was meant to be private. |
 
@@ -151,6 +151,9 @@ Phases 0 and 1 were finished on 2026-10-22; `PLAN.md` §3.2 has the record.
 3. **Auth:** cookie sessions with server-enforced expiry, Argon2id on the
    server, the tenant taken from the Host header, rate-limited sign-in,
    password reset and real invites. No hash or password left in any bundle.
+   Sign-in done 2026-10-31 on branch `claude/trusting-brahmagupta-10a77e`
+   (not merged); password reset and invites are next (`PLAN.md` lists what
+   is left).
 4. **The other endpoints:** the reads (hospitals, users, patients,
    prescriptions, audit, catalog) and the simple writes (new patient, new
    hospital, hospital settings) that `api.ts` already names. As each one
@@ -163,8 +166,8 @@ Phases 0 and 1 were finished on 2026-10-22; `PLAN.md` §3.2 has the record.
    prescriptions become append-only, like the audit log.
 6. **Server-side rules:** tenant scoping with row-level security, plan caps,
    feature flags, suspended hospitals and reserved slugs.
-7. **Hosting:** the API under `/api` in `serve.mjs`, plus CSP and HSTS
-   headers.
+7. **Hosting:** the API under `/api` in `serve.mjs` (done with the auth
+   step), plus CSP and HSTS headers.
 8. **Playwright end-to-end tests:** sign in → write → sign → the Rx shows in
    the portal and in the admin audit log; another hospital's data is
    refused.
@@ -174,7 +177,11 @@ Phases 0 and 1 were finished on 2026-10-22; `PLAN.md` §3.2 has the record.
 - **The demo's database.** Render's free Postgres expires 30 days after it's
   created and has no backups. For a demo with fake data, run PGlite inside
   the web service and reseed it on every start: it costs nothing and resets
-  whenever the instance sleeps. Visitors then share one database until the
+  whenever the instance sleeps. (Built with the auth step: the server starts
+  from a seeded snapshot made by `npm run build`, under `node
+  --liftoff-only`, which kept the measured peak near 400 MB of the free
+  instance's 512 MB; `PLAN.md` has the numbers. Watch Render's memory graph
+  after the first deploy.) Visitors then share one database until the
   next reset, so they can see what others typed. If that matters, make the
   demo invite-only with Cloudflare Access (`deploy/ONLINE.md` §2). The
   alternative is a paid Basic Postgres on Render (≈ $6–7 a month).

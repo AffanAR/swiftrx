@@ -441,10 +441,87 @@ In this order:
     devDependency. Keep the two version ranges the same
     (`apps/api/drizzle.config.ts`).
 - [ ] **Auth:** `/auth/login`, `/auth/logout` and `/auth/me` with `httpOnly`,
-      `Secure`, `SameSite=Lax` cookie sessions on `.swiftrx.com`, Argon2id
-      hashes on the server, and the tenant taken from Host on the server.
-      Then login rate-limiting, password reset and a real invite flow (makes
-      "Invite doctor" work). No hashes or passwords left in any bundle.
+      `Secure`, `SameSite=Lax` cookie sessions, Argon2id hashes on the
+      server, and the tenant taken from Host on the server. Then login
+      rate-limiting, password reset and a real invite flow (makes "Invite
+      doctor" work). No hashes or passwords left in any bundle. (Sign-in done
+      2026-10-31, on branch `claude/trusting-brahmagupta-10a77e`, checked in
+      the browser in dev and on the production build; password reset and
+      invites are left, below.)
+
+  What was built (`apps/api/src/auth/`):
+  - **Routes.** `POST /api/auth/login`, `POST /api/auth/logout`,
+    `GET /api/auth/me` (the session, or `null`), and
+    `GET /api/auth/demo-accounts`, which lists the sign-in page's demo
+    accounts in demo mode only. The demo passwords left the bundles that way.
+  - **Sessions** live in a new `sessions` table (migration `0002`). The
+    cookie holds 256 random bits; the table keeps only their SHA-256. They
+    last 12 hours from sign-in, and the server checks every request: the
+    session exists and hasn't expired, it was made for this host's surface,
+    and the user is active and still holds a role there (a suspended hospital
+    ends it). Signing in again replaces the browser's old session.
+  - **Tenant.** The server runs `resolveSurface()` on the Host header. A
+    hospital's session only counts at that hospital; platform admins sign in
+    only at the admin host and have no portal session. `?hospital=` counts
+    only where the host names no subdomain (plain localhost), as in the apps.
+  - **Passwords.** Argon2id (`@node-rs/argon2`: prebuilt per platform, no
+    install script, hashes off the event loop) at OWASP's minimum (19 MiB,
+    t=2, p=1), upgraded at sign-in when the parameters change. The seed's
+    bcrypt hashes were replaced: `users.json` holds no credentials, and the
+    seed hashes the demo passwords in `apps/api/src/db/demo-passwords.json`.
+    An unknown email still costs one Argon2 run, so timing shows nothing.
+  - **Rate limits,** in memory: 20 failed sign-ins per address and 10 per
+    email in 15 minutes; refused before any hashing. Counts would need a
+    shared store with more than one instance. The address comes from
+    `CF-Connecting-IP` behind Render (its edge is Cloudflare), otherwise the
+    last `X-Forwarded-For` entry; not yet checked on the live service.
+  - **Writes** must come from the same origin (`Origin`, else
+    `Sec-Fetch-Site`) and be JSON, which also stops login CSRF from another
+    hospital's subdomain, which counts as the same site.
+  - **Apps.** `apps/shared/src/auth.ts` is now the client for these routes.
+    The portal keeps `SessionPayload` (plus `expiresAt`); `/me` adds the
+    user's memberships at that hospital, and `canPrescribe()` admits only
+    active users with a license and a doctor membership there (D3). `User`
+    lost `passwordHash`, and `bcryptjs` is gone. `npm run check:bundles`
+    (in `npm run check` and CI) fails the build if a hash, a demo password
+    or bcrypt reaches a bundle.
+  - **Same origin everywhere.** The gateway and both Vite servers pass `/api`
+    to the API with the Host header untouched (`dev:all` starts the API too,
+    after `db:setup`). `scripts/serve.mjs` hands `/api` to the API before its
+    SPA fallback, so an unknown `/api` path is a JSON 404, not `index.html`.
+
+  Decisions:
+  - **Host-only cookies, not `Domain=.swiftrx.com`.** A cookie scoped to the
+    parent domain goes to every hospital's subdomain and the admin panel,
+    and any of them could overwrite it. Host-only, a hospital's cookie never
+    leaves its subdomain, and over HTTPS the `__Host-` prefix stops a sibling
+    subdomain from setting or shadowing it. Nothing needs a shared cookie:
+    the Rx pad is a route of the portal. The admin panel and the portals use
+    different cookie names, so on dev's shared `localhost` both stay signed
+    in. `Secure` is set when the request came over HTTPS (Render and
+    Cloudflare say so in `X-Forwarded-Proto`) and always with
+    `NODE_ENV=production`.
+  - **The demo's database** is PGlite in memory inside the web service.
+    `npm run build` writes a migrated, seeded snapshot
+    (`apps/api/dist/demo-db.tgz`) that the server starts from, and `npm
+    start` runs Node with `--liftoff-only`. Measured peaks while the API
+    starts (Windows working set): 398 MB this way, 931 MB without the flag
+    (V8's optimizing compiler on PGlite's WebAssembly), 748 MB building the
+    database at boot. Render's free instance has 512 MB. PGlite also runs
+    with small Postgres buffers. Everything, sessions included, resets when
+    the instance restarts or sleeps.
+
+  Left for the next auth step:
+  - **Password reset and invites.** One `user_tokens` table (hashed,
+    single-use, expiring tokens for "reset" and "invite"), a page to set a
+    password from a link, and "Invite doctor" creating an `invited` user
+    with a membership (`password_hash` is already nullable for that). They
+    need an email sender; until there is one, the demo could show the link.
+  - Two-factor sign-in for platform admins (Phase 4).
+  - Rate-limit counts in Postgres once there is more than one instance, and
+    a check on the live service of which address Render passes on.
+  - Login events now go to the server's `audit_events`; the admin's audit
+    log still reads the mock db until `GET /audit-events` exists.
 - [ ] **Read endpoints** that mirror the `mockDb` helpers: hospital,
       patients, and the drug, diagnosis and quick-pack catalog.
 - [ ] **`POST /prescriptions`:** the server
@@ -458,7 +535,9 @@ In this order:
 - [ ] Server-side enforcement: tenant scoping, caps, flags, suspended status
       and reserved slugs.
 - [ ] Hosting: the API under `/api` on the same origin, CSP and HSTS headers,
-      and a managed Postgres for the hosted demo.
+      and a managed Postgres for the hosted demo. (The API under `/api` was
+      done with the auth step, and the demo runs PGlite in memory instead of
+      a managed Postgres, see above. CSP and HSTS are left.)
 - [ ] Playwright e2e:
   - sign in → Rx → sign → visible in the portal and the admin audit log;
   - cross-tenant access is refused.
