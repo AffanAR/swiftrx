@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LiveDot, cx } from '@swiftrx/shared';
+import { LiveDot, ThemeToggle, cx } from '@swiftrx/shared';
 import type { SessionPayload } from '@swiftrx/shared';
 
 type AdminSession = Extract<SessionPayload, { role: 'platform_admin' }>;
@@ -62,6 +62,7 @@ export function AdminShell({
                 Sign out
               </button>
             </div>
+            <ThemeToggle />
           </div>
         </header>
       )}

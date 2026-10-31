@@ -3,13 +3,13 @@
 
 import type { AuditEvent } from '@swiftrx/shared';
 
-/** Accent color for an audit event kind. */
+/** Accent color for an audit event kind (theme tokens, so it suits both themes). */
 export function auditColor(kind: AuditEvent['kind']): string {
-  if (kind === 'sign_rx') return '#10b981';
-  if (kind === 'login') return '#3b82f6';
-  if (kind === 'create_patient') return '#f59e0b';
+  if (kind === 'sign_rx') return 'rgb(var(--rx-accent))';
+  if (kind === 'login') return 'rgb(var(--rx-focus))';
+  if (kind === 'create_patient') return 'rgb(var(--rx-warn))';
   if (kind === 'create_hospital') return '#8b5cf6';
-  return '#5e6781';
+  return 'rgb(var(--ink-500))';
 }
 
 /** One-line description of an audit event. */

@@ -130,7 +130,7 @@ export function PatientsPage({ hospital, user }: Props) {
       </Card>
 
       {adding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/70 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
           {/* Click-outside-to-close as a real button, so it is announced and
              reachable instead of being a mouse-only affordance on the overlay. */}
           <button

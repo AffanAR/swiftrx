@@ -66,7 +66,7 @@ function DoctorDashboard({ hospital, user }: Props) {
           <div className="relative h-10 w-10 rounded-full bg-rx-accent/10 border border-rx-accent/30 flex items-center justify-center overflow-hidden shrink-0">
             <div
               className="absolute inset-0 rounded-full border-2 border-rx-accent/0 animate-spinSlowReverse"
-              style={{ borderTopColor: 'rgba(16,185,129,0.6)' }}
+              style={{ borderTopColor: 'rgb(var(--rx-accent) / 0.6)' }}
             />
             <span className="relative text-rx-accent text-base font-bold">→</span>
           </div>

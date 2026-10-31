@@ -277,10 +277,10 @@ function EmptyRoster() {
         </p>
         <button
           onClick={() => actions.openNewPatient()}
-          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-rx-accent text-ink-900 font-semibold hover:bg-rx-accentDark transition-colors"
+          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-rx-accent text-ink-900 font-semibold hover:bg-rx-accentDark hover:text-white transition-colors"
         >
           + New patient
-          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ink-900/30">Alt+N</span>
+          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20">Alt+N</span>
         </button>
       </div>
     </div>

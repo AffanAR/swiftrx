@@ -118,11 +118,11 @@ export function CenterColumn({
           <button
             onClick={handleSign}
             disabled={signing}
-            className="rx-shine px-4 py-2 rounded-md bg-rx-accent text-ink-900 font-semibold hover:bg-rx-accentDark transition-colors flex items-center gap-2 animate-pulseRing disabled:opacity-60"
+            className="rx-shine px-4 py-2 rounded-md bg-rx-accent text-ink-900 font-semibold hover:bg-rx-accentDark hover:text-white transition-colors flex items-center gap-2 animate-pulseRing disabled:opacity-60"
             data-action="sign"
           >
             <span>{signing ? 'Signing…' : 'Sign & Print'}</span>
-            <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-ink-900/30">⌘S</span>
+            <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-black/20">⌘S</span>
           </button>
           <button
             onClick={handlePrintDraft}

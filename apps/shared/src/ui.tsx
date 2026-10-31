@@ -164,14 +164,13 @@ export function StaggeredList({
   );
 }
 
+// `dark`: for a chip on a filled accent / danger button, in either theme.
 export function Kbd({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
   return (
     <span
       className={cx(
         'font-mono text-[10px] px-1.5 py-0.5 rounded border',
-        dark
-          ? 'bg-ink-900/40 text-ink-100 border-ink-900/40'
-          : 'bg-ink-700 text-ink-200 border-ink-600',
+        dark ? 'bg-black/40 text-white border-black/30' : 'bg-ink-700 text-ink-200 border-ink-600',
       )}
     >
       {children}

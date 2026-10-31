@@ -8,30 +8,27 @@ module.exports = {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
+      // Colors are CSS variables (RGB channels) set in shared.css, so one
+      // class like `bg-ink-900` is dark navy in the dark theme and white in
+      // the light one. `<alpha-value>` keeps modifiers like `/40` working.
       colors: {
-        ink: {
-          50: '#f7f8fa',
-          100: '#eef0f4',
-          200: '#dde1ea',
-          300: '#bcc3d2',
-          400: '#8b94ab',
-          500: '#5e6781',
-          600: '#3f4762',
-          700: '#2a3149',
-          800: '#191f33',
-          900: '#0c1122',
-        },
+        ink: Object.fromEntries(
+          [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map((n) => [
+            n,
+            `rgb(var(--ink-${n}) / <alpha-value>)`,
+          ]),
+        ),
         rx: {
-          accent: '#10b981',
-          accentDark: '#047857',
-          warn: '#f59e0b',
-          danger: '#ef4444',
-          focus: '#3b82f6',
+          accent: 'rgb(var(--rx-accent) / <alpha-value>)',
+          accentDark: 'rgb(var(--rx-accent-dark) / <alpha-value>)',
+          warn: 'rgb(var(--rx-warn) / <alpha-value>)',
+          danger: 'rgb(var(--rx-danger) / <alpha-value>)',
+          focus: 'rgb(var(--rx-focus) / <alpha-value>)',
         },
       },
       boxShadow: {
-        glow: '0 0 0 3px rgba(59,130,246,0.35)',
-        card: '0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4)',
+        glow: '0 0 0 3px rgb(var(--rx-focus) / 0.35)',
+        card: 'var(--shadow-card)',
       },
       keyframes: {
         fadeIn: {
