@@ -1,9 +1,18 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TextField, LiveDot, Spinner, HospitalBadge, type Hospital } from '@swiftrx/shared';
-import { login } from '../auth';
+import {
+  DemoAccounts,
+  TextField,
+  LiveDot,
+  Spinner,
+  HospitalBadge,
+  signIn,
+  signInErrorMessage,
+  type AuthSession,
+  type Hospital,
+} from '@swiftrx/shared';
 
-type Props = { hospital: Hospital; onSignedIn: () => void };
+type Props = { hospital: Hospital; onSignedIn: (auth: AuthSession) => void };
 
 export function LoginPage({ hospital, onSignedIn }: Props) {
   const navigate = useNavigate();
@@ -13,20 +22,19 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setBusy(true);
-    setTimeout(() => {
-      const result = login({ email, password, hospitalSlug: hospital.slug });
-      setBusy(false);
-      if (!result.ok) {
-        setError(reasonToMessage(result.reason));
-        return;
-      }
-      onSignedIn();
-      navigate('/dashboard', { replace: true });
-    }, 300);
+    // The server checks the password and the hospital, and sets the cookie.
+    const result = await signIn(email, password, hospital.slug);
+    setBusy(false);
+    if (!result.ok) {
+      setError(signInErrorMessage(result));
+      return;
+    }
+    onSignedIn(result.auth);
+    navigate('/dashboard', { replace: true });
   };
 
   return (
@@ -162,19 +170,7 @@ export function LoginPage({ hospital, onSignedIn }: Props) {
               )}
             </button>
 
-            <details
-              className="mt-6 text-xs text-ink-500 animate-fadeIn"
-              style={{ animationDelay: '380ms' }}
-            >
-              <summary className="cursor-pointer text-ink-400 hover:text-ink-300 select-none transition-colors">
-                Demo credentials
-              </summary>
-              <div className="mt-3 rounded-md border border-ink-700 bg-ink-800/60 p-3 font-mono text-[11px] animate-slideUpIn">
-                <div className="text-ink-300">ayesha@city-hospital.com / demo1234</div>
-                <div className="text-ink-500 mt-1">bilal@city-hospital.com / demo1234</div>
-                <div className="text-ink-500 mt-1">sana@northstar-medical.com / demo1234</div>
-              </div>
-            </details>
+            <DemoAccounts hospitalSlug={hospital.slug} />
           </form>
         </div>
       </div>
@@ -192,29 +188,4 @@ function Stat({ label, value, delay }: { label: string; value: string; delay: nu
       <div className="mt-0.5 text-ink-500">{label}</div>
     </div>
   );
-}
-
-function reasonToMessage(
-  r:
-    | 'no-hospital'
-    | 'unknown-user'
-    | 'wrong-password'
-    | 'wrong-hospital'
-    | 'wrong-role'
-    | 'disabled',
-): string {
-  switch (r) {
-    case 'no-hospital':
-      return 'Hospital context missing. Reload the page.';
-    case 'unknown-user':
-      return 'No account found for that email.';
-    case 'wrong-password':
-      return 'Incorrect password.';
-    case 'wrong-hospital':
-      return "This account isn't registered with this hospital.";
-    case 'wrong-role':
-      return 'This account does not have doctor or admin access.';
-    case 'disabled':
-      return 'This account is disabled.';
-  }
 }

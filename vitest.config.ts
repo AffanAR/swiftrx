@@ -31,7 +31,8 @@ export default defineConfig({
         'apps/doctor-portal/src/rx/{store,safety,search}.ts',
         // Entry points (server.ts, db/cli.ts, env.ts) are left out: they only
         // wire these modules to the process.
-        'apps/api/src/app.ts',
+        'apps/api/src/{app,listener}.ts',
+        'apps/api/src/auth/*.ts',
         'apps/api/src/db/{client,schema,seed}.ts',
       ],
       thresholds: {

@@ -5,7 +5,8 @@
 import * as React from 'react';
 import { cx, AnimatedNumber } from './ui';
 import { DEMO_MODE } from './config';
-import type { Hospital } from './types';
+import { fetchDemoAccounts } from './auth';
+import type { DemoAccount, Hospital } from './types';
 
 export function TextField({
   label,
@@ -279,11 +280,52 @@ export function DemoFrame({ children }: { children: React.ReactNode }) {
         role="note"
         className="shrink-0 px-3 py-1.5 text-center text-xs text-amber-200 bg-amber-500/15 border-b border-amber-500/30"
       >
-        <span className="font-semibold">Demo</span> · Nothing is saved to a server and most changes
-        reset on reload. Don't enter real patient details.
+        <span className="font-semibold">Demo</span> · Patient data isn't saved to a server, and most
+        changes reset on reload. Don't enter real patient details.
       </div>
       <div className="flex-1 min-h-0">{children}</div>
     </div>
+  );
+}
+
+const ROLE_LABELS: Record<DemoAccount['role'], string> = {
+  platform_admin: 'platform admin',
+  hospital_admin: 'hospital admin',
+  doctor: 'doctor',
+};
+
+/**
+ * The demo accounts for this sign-in page, in a closed box. The server only
+ * lists them in demo mode, so their passwords never ship in a bundle; with
+ * none to list, this renders nothing.
+ */
+export function DemoAccounts({ hospitalSlug }: { hospitalSlug?: string }) {
+  const [accounts, setAccounts] = React.useState<DemoAccount[]>([]);
+  React.useEffect(() => {
+    let live = true;
+    fetchDemoAccounts(hospitalSlug).then((list) => {
+      if (live) setAccounts(list);
+    });
+    return () => {
+      live = false;
+    };
+  }, [hospitalSlug]);
+
+  if (accounts.length === 0) return null;
+  return (
+    <details className="mt-6 text-xs text-ink-500 animate-fadeIn">
+      <summary className="cursor-pointer text-ink-400 hover:text-ink-300 select-none transition-colors">
+        Demo credentials
+      </summary>
+      <div className="mt-3 rounded-md border border-ink-700 bg-ink-800/60 p-3 font-mono text-[11px] animate-slideUpIn">
+        {accounts.map((a, i) => (
+          <div key={a.email} className={i === 0 ? 'text-ink-300' : 'text-ink-500 mt-1'}>
+            {a.email} / {a.password}
+            <span className="text-ink-600"> · {ROLE_LABELS[a.role]}</span>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }
 

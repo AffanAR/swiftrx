@@ -1,78 +1,67 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  login,
-  readSessionFromStorage,
-  writeSessionToStorage,
-  clearSessionFromStorage,
+  fetchSession,
+  signIn as startSession,
+  signInErrorMessage,
+  signOut as endSession,
   type SessionPayload,
 } from '@swiftrx/shared';
 
-const STORAGE_KEY = 'swiftrx.admin.session';
+type AdminSession = Extract<SessionPayload, { role: 'platform_admin' }>;
 
 export type AdminSessionState =
-  | { status: 'loading' }
-  | { status: 'signed-out' }
-  | { status: 'signed-in'; session: Extract<SessionPayload, { role: 'platform_admin' }> };
+  { status: 'loading' } | { status: 'signed-out' } | { status: 'signed-in'; session: AdminSession };
 
+/**
+ * The admin panel's session, as the server holds it (an httpOnly cookie for
+ * this host; the server only accepts platform admins here). Returns the
+ * state, `signOut`, and `signIn`, which resolves to an error message or null.
+ */
 export function useAdminSession(): [
   AdminSessionState,
-  () => void,
-  (email: string, password: string) => string | null,
+  () => Promise<void>,
+  (email: string, password: string) => Promise<string | null>,
 ] {
   const [state, setState] = useState<AdminSessionState>({ status: 'loading' });
 
   useEffect(() => {
-    const s = readSessionFromStorage<SessionPayload>(STORAGE_KEY);
-    if (s && s.role === 'platform_admin') {
-      setState({
-        status: 'signed-in',
-        session: s as Extract<SessionPayload, { role: 'platform_admin' }>,
-      });
-    } else {
-      setState({ status: 'signed-out' });
-    }
+    let live = true;
+    fetchSession().then(
+      (auth) => {
+        if (!live) return;
+        const session = auth?.session;
+        setState(
+          session?.role === 'platform_admin'
+            ? { status: 'signed-in', session }
+            : { status: 'signed-out' },
+        );
+      },
+      // Can't reach the API: show the sign-in page, which says so if they try.
+      () => live && setState({ status: 'signed-out' }),
+    );
+    return () => {
+      live = false;
+    };
   }, []);
 
-  const signIn = useCallback((email: string, password: string) => {
-    const result = login({ email, password, expectedRole: 'platform_admin' });
-    if (!result.ok) {
-      return reasonToMessage(result.reason);
-    }
-    writeSessionToStorage(STORAGE_KEY, result.session);
-    setState({
-      status: 'signed-in',
-      session: result.session as Extract<SessionPayload, { role: 'platform_admin' }>,
-    });
+  const signIn = useCallback(async (email: string, password: string) => {
+    const result = await startSession(email, password);
+    if (!result.ok) return signInErrorMessage(result);
+    const { session } = result.auth;
+    // The server only signs platform admins in here; this keeps the type honest.
+    if (session.role !== 'platform_admin') return signInErrorMessage({ reason: 'wrong-role' });
+    setState({ status: 'signed-in', session });
     return null;
   }, []);
 
-  const signOut = useCallback(() => {
-    clearSessionFromStorage(STORAGE_KEY);
+  const signOut = useCallback(async () => {
+    try {
+      await endSession();
+    } catch {
+      // The page signs out anyway; the server's copy still expires on time.
+    }
     setState({ status: 'signed-out' });
   }, []);
 
   return [state, signOut, signIn];
-}
-
-function reasonToMessage(
-  r:
-    | 'no-hospital'
-    | 'unknown-user'
-    | 'wrong-password'
-    | 'wrong-hospital'
-    | 'disabled'
-    | 'wrong-role',
-): string {
-  switch (r) {
-    case 'unknown-user':
-      return 'No platform admin account found for that email.';
-    case 'wrong-password':
-      return 'Incorrect password.';
-    case 'wrong-role':
-      return 'This account is not a platform admin.';
-    case 'disabled':
-      return 'This account is disabled.';
-    default:
-      return 'Sign-in failed. Please try again.';
-  }
 }

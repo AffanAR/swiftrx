@@ -13,6 +13,11 @@
 //    starts a dev database over.
 //
 //  Where the JSON and the tables differ:
+//  - The JSON holds no passwords, since the apps bundle it. The demo
+//    accounts' passwords are in demo-passwords.json next to this file (they
+//    are public: the demo's sign-in pages show them), and the seed stores
+//    them as Argon2id hashes. A user without one has no password and can't
+//    sign in.
 //  - A user's single `hospitalSlug` and `role` become a membership; platform
 //    admins get `is_platform_admin` and no membership.
 //  - `allergies: []` is seeded as "not recorded", not "none known": the JSON
@@ -49,7 +54,9 @@ import {
   MOCK_USERS,
 } from '@swiftrx/shared/seedData';
 
+import { hashPassword } from '../auth/passwords';
 import type { Db } from './client';
+import demoPasswords from './demo-passwords.json';
 import {
   auditEvents,
   diagnoses,
@@ -87,6 +94,9 @@ export type SeedCounts = Record<string, number>;
 
 export type SeedResult = { seeded: true; counts: SeedCounts } | { seeded: false };
 
+/** The demo accounts' passwords, by user id. */
+export const DEMO_PASSWORDS: Readonly<Record<string, string>> = demoPasswords;
+
 /** The demo data from apps/shared/src/seed, as a fresh copy. */
 export function demoSeedData(): SeedData {
   return structuredClone({
@@ -102,12 +112,26 @@ export function demoSeedData(): SeedData {
   });
 }
 
-export async function seed(db: Db, data: SeedData = demoSeedData()): Promise<SeedResult> {
+export async function seed(
+  db: Db,
+  data: SeedData = demoSeedData(),
+  passwords: Readonly<Record<string, string>> = DEMO_PASSWORDS,
+): Promise<SeedResult> {
   const d = seedDataSchema.parse(data);
 
+  // Argon2 is slow on purpose, so hash before the transaction, and only when
+  // there's something to seed. (The transaction checks again.)
+  if (await hasHospitals(db)) return { seeded: false };
+  const passwordHashes = new Map(
+    await Promise.all(
+      d.users
+        .filter((u) => passwords[u.id] !== undefined)
+        .map(async (u) => [u.id, await hashPassword(passwords[u.id])] as const),
+    ),
+  );
+
   return db.transaction(async (tx) => {
-    const [{ existing }] = await tx.select({ existing: count() }).from(hospitals);
-    if (existing > 0) return { seeded: false };
+    if (await hasHospitals(tx)) return { seeded: false };
 
     const counts: SeedCounts = {};
     async function insertAll<T extends Table>(table: T, rows: T['$inferInsert'][]) {
@@ -159,7 +183,7 @@ export async function seed(db: Db, data: SeedData = demoSeedData()): Promise<See
       d.users.map((u) => ({
         id: u.id,
         email: u.email,
-        passwordHash: u.passwordHash,
+        passwordHash: passwordHashes.get(u.id) ?? null,
         name: u.name,
         isPlatformAdmin: u.role === 'platform_admin',
         specialty: u.specialty ?? null,
@@ -330,4 +354,9 @@ export async function seed(db: Db, data: SeedData = demoSeedData()): Promise<See
 
     return { seeded: true, counts };
   });
+}
+
+async function hasHospitals(db: Pick<Db, 'select'>): Promise<boolean> {
+  const [{ n }] = await db.select({ n: count() }).from(hospitals);
+  return n > 0;
 }

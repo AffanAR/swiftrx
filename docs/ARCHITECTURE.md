@@ -59,13 +59,15 @@ Every hospital owns a subdomain, and the tenant comes from
 on `localhost:5174` without the dev gateway. On `<slug>.<root>` the host always
 wins, so editing the URL can't switch hospitals there.
 
-A stored session only counts on the portal of the hospital it signed in at
-(`sessionBelongsTo()` in `apps/doctor-portal/src/auth.ts`). On a shared origin,
-another hospital's URL shows that hospital's sign-in page, not its pages.
-Sign-in refuses doctors and hospital admins of another hospital, and the Rx pad
-only opens for active, licensed doctors of the URL's hospital
-(`canPrescribe()`). A platform admin can still sign in to any portal
-(`PLAN.md` §2.3).
+Sign-in runs on the server (`apps/api/src/auth/`), which takes the tenant from
+the Host header with the same `resolveSurface()`. A session only counts at the
+hospital it was made at; the server checks that on every request, and the
+portal again (`sessionBelongsTo()` in `apps/doctor-portal/src/auth.ts`). On a
+shared origin, another hospital's URL shows that hospital's sign-in page.
+Sign-in refuses doctors and hospital admins of another hospital, and platform
+admins sign in only at the admin panel. The Rx pad only opens for active,
+licensed users with a doctor role at the URL's hospital (`canPrescribe()`).
+The session cookie is host-only, so it never reaches another subdomain.
 
 ```mermaid
 sequenceDiagram
@@ -111,8 +113,8 @@ flowchart LR
 
 `api.ts` is the seam for the real API: each method is labelled with the endpoint
 it becomes, and nothing else has to change when it does. ESLint stops app code
-from importing the mock db directly. Sign-in is the exception: it stays in
-`auth.ts` until the auth step.
+from importing the mock db directly. Sign-in already calls the API, through
+`auth.ts`.
 
 | Client method | Becomes |
 | --- | --- |
@@ -120,7 +122,7 @@ from importing the mock db directly. Sign-in is the exception: it stays in
 | `api.patients.create` | `POST /hospitals/:slug/patients` |
 | `api.prescriptions.sign` | `POST /hospitals/:slug/prescriptions`, signed server-side |
 | `api.audit.list` | `GET /audit-events` (the server writes the events) |
-| `login` (`apps/shared/src/auth.ts`) | `POST /auth/login` with a cookie session |
+| `signIn`, `signOut`, `fetchSession` (`apps/shared/src/auth.ts`) | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` (done) |
 
 Until the backend exists, data does not flow between apps or tabs — see
 `PLAN.md` Phase 2.
@@ -159,7 +161,8 @@ from the hospital's design, so a tenant on A5 landscape prints on A5 landscape.
 | How data is read or written | `apps/shared/src/api.ts` (client), `queries.ts` (hooks) |
 | Loading, error and crash screens | `apps/shared/src/status.tsx` |
 | Seed data | `apps/shared/src/seed/*.json` (loaded by `seedData.ts`) |
-| Login / role gates | `apps/shared/src/auth.ts` |
+| Sign-in and sessions | `apps/api/src/auth/` (server), `apps/shared/src/auth.ts` (client) |
+| Role gates | `apps/doctor-portal/src/auth.ts` |
 | Which tenant a request belongs to | `apps/shared/src/tenant.ts` |
 | Allergy / interaction / duplicate checks | `apps/doctor-portal/src/rx/safety.ts` |
 | Fuzzy search, brand → generic | `apps/doctor-portal/src/rx/search.ts` |

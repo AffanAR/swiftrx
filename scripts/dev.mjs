@@ -2,14 +2,17 @@
 // =============================================================================
 //  SwiftRx dev orchestrator
 // =============================================================================
-//  Boots the two Vite apps (portal :5174, admin :5175) and a gateway on :5172
-//  that routes by Host header:
+//  Boots the API (:5176), the two Vite apps (portal :5174, admin :5175) and a
+//  gateway on :5172 that routes by Host header:
+//    /api on any host  → the API, with the Host header untouched: the API
+//                        reads the tenant from it
 //    admin.*           → admin
 //    *                 → portal (the Rx pad is the portal's /rx route)
 //    *.localhost       → portal (Chrome/Firefox resolve *.localhost → 127.0.0.1)
 //
-//  In production the same mapping is done by a reverse proxy (see deploy/nginx
-//  in the repo for an example).
+//  The API sets up its database first (migrate, and seed if empty). In
+//  production scripts/serve.mjs does the same mapping (deploy/nginx has an
+//  example for nginx).
 // =============================================================================
 
 import { spawn } from 'node:child_process';
@@ -22,6 +25,7 @@ const httpProxy =
 const PORTAL_PORT = 5174;
 const ADMIN_PORT = 5175;
 const GATEWAY_PORT = 5172;
+const API_PORT = Number(process.env.API_PORT) || 5176;
 
 const COLOR = {
   reset: '\x1b[0m',
@@ -43,6 +47,9 @@ function spawnOne(name, color, cwd, args, env = {}) {
     cwd,
     env: { ...process.env, FORCE_COLOR: '1', ...env },
     shell: true,
+    // No child reads the terminal, and an open stdin pipe stalls the API's
+    // `tsx watch`: it never starts the server (seen on Windows, tsx 4.23).
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
   const tag = `${color}[${name}]${COLOR.reset}`;
   child.stdout.on('data', (b) => {
@@ -69,15 +76,17 @@ function spawnOne(name, color, cwd, args, env = {}) {
 
 function pickTargets() {
   const mode = (process.argv[2] || 'all').toLowerCase();
-  if (mode === 'gateway') return { portal: false, admin: false, gateway: true };
-  if (mode === 'portal') return { portal: true, admin: false, gateway: false };
-  if (mode === 'admin') return { portal: false, admin: true, gateway: false };
-  return { portal: true, admin: true, gateway: true };
+  if (mode === 'gateway') return { api: false, portal: false, admin: false, gateway: true };
+  if (mode === 'portal') return { api: false, portal: true, admin: false, gateway: false };
+  if (mode === 'admin') return { api: false, portal: false, admin: true, gateway: false };
+  return { api: true, portal: true, admin: true, gateway: true };
 }
 
 const targets = pickTargets();
 
 if (targets.gateway) {
+  // changeOrigin stays off: the API takes the hospital from the Host header.
+  const proxyToApi = httpProxy({ target: `http://127.0.0.1:${API_PORT}`, xfwd: true });
   const proxyToAdmin = httpProxy({
     target: `http://127.0.0.1:${ADMIN_PORT}`,
     changeOrigin: true,
@@ -92,6 +101,11 @@ if (targets.gateway) {
   const server = createServer((req, res) => {
     const host = (req.headers.host || '').toLowerCase();
     const url = req.url || '/';
+
+    if (/^\/api(\/|\?|$)/.test(url)) {
+      log('gateway', `${host}${url}  →  api`);
+      return proxyToApi(req, res);
+    }
 
     // Query ?as=admin → admin.
     if (url.includes('as=admin')) {
@@ -131,8 +145,9 @@ if (targets.gateway) {
       `                http://northstar-medical.localhost:${GATEWAY_PORT}`,
       `                http://riverside-clinic.localhost:${GATEWAY_PORT}`,
       `  Rx pad     :  http://city-hospital.localhost:${GATEWAY_PORT}/rx (signed-in doctors)`,
+      `  API        :  /api on every host above → http://127.0.0.1:${API_PORT}`,
       '',
-      '  Each app also runs standalone on its own port:',
+      '  Each app also runs standalone on its own port (both pass /api on):',
       `    Portal  http://localhost:${PORTAL_PORT}/?hospital=city-hospital`,
       `    Admin   http://localhost:${ADMIN_PORT}`,
       '════════════════════════════════════════════════════════════════',
@@ -143,6 +158,7 @@ if (targets.gateway) {
 }
 
 const children = [];
+if (targets.api) children.push(spawnOne('api', COLOR.yellow, 'apps/api', ['run', 'dev']));
 if (targets.portal)
   children.push(spawnOne('portal', COLOR.cyan, 'apps/doctor-portal', ['run', 'dev']));
 if (targets.admin) children.push(spawnOne('admin', COLOR.magenta, 'apps/admin', ['run', 'dev']));

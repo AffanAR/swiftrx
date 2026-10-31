@@ -39,14 +39,21 @@ Demo accounts are listed in the [README](../README.md#demo-credentials).
 
 ## 2. What the hosted demo is (and isn't)
 
-- **No backend.** All data lives in each visitor's browser (in memory, plus
-  localStorage for sessions and admin feature edits). Visitors never see each
+- **Sign-in is on the server, data isn't yet.** `scripts/serve.mjs` runs the
+  API under `/api` on a PGlite database in memory, started from the snapshot
+  `npm run build` writes. Sessions are server-side cookies, and they end
+  whenever the instance restarts or sleeps. All other data lives in each
+  visitor's browser (in memory, plus localStorage for admin feature edits). Visitors never see each
   other's changes, the admin panel and the portals don't share data, and a
   reload resets most of it. A hospital created in the admin panel has no
   portal: its subdomain shows "Hospital portal not found".
-- **Anyone can sign in.** The demo passwords ship inside the app bundles and
-  are shown on the sign-in pages, so anyone can sign in as the platform admin
-  or a doctor.
+- **Anyone can sign in.** The sign-in pages show the demo passwords, which
+  the API lists in demo mode (they are no longer in the bundles), so anyone
+  can sign in as the platform admin or a doctor.
+- **Memory.** Render's free instance has 512 MB. `npm start` runs Node with
+  `--liftoff-only` and the API starts from the snapshot; that peaked near
+  400 MB when measured locally (`scripts/serve.mjs` has the numbers). Check
+  the service's memory graph after a deploy.
 - **Demo mode is on in every production build.** Every page shows a banner,
   and every print is stamped "DEMO — NOT A VALID PRESCRIPTION", with no
   signature hash and no "valid until" date. `VITE_DEMO_MODE=false` at build
@@ -171,7 +178,7 @@ These are phases in [`PLAN.md`](../PLAN.md): Phase 2 (backend) and Phase 4
 - [ ] Replace `apps/shared/src/mockDb.ts` with a real backend. Its exports
       (`getHospital`, `listPatientsForHospital`, `appendSignedRx`,
       `appendAudit`, …) are the contract.
-- [ ] Replace the localStorage session with server-issued, HTTP-only
+- [x] Replace the localStorage session with server-issued, HTTP-only
       session cookies, and remove the demo passwords from the bundles.
 - [ ] Enforce roles, tenant isolation, plan limits and feature flags on the
       server.

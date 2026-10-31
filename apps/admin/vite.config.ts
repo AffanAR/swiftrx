@@ -2,6 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
+// See apps/doctor-portal/vite.config.ts: the API answers on this origin's /api,
+// with the Host header left as the browser sent it.
+const apiProxy = {
+  '/api': { target: `http://127.0.0.1:${process.env.API_PORT || 5176}`, changeOrigin: false },
+};
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -15,7 +21,9 @@ export default defineConfig({
     // seed data it renders) to the whole LAN.
     host: '127.0.0.1',
     strictPort: true,
+    proxy: apiProxy,
   },
+  preview: { proxy: apiProxy },
   build: {
     rollupOptions: {
       output: {

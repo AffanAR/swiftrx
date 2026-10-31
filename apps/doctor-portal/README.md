@@ -6,9 +6,9 @@ sessions are scoped to that hospital, and every page shows the hospital's
 identity. The Rx pad is this portal's `/rx` route; doctors open it from
 their dashboard or the nav, and hospital admins can't prescribe.
 
-> Mock build — sign-in runs in the browser against
-> `apps/shared/src/mockDb.ts` and sessions live in localStorage. See the
-> root [README](../../README.md) and [PLAN.md](../../PLAN.md).
+> Sign-in and sessions are on the server (`apps/api`, `/api/auth`); the
+> pages' data still comes from `apps/shared/src/mockDb.ts`. See the root
+> [README](../../README.md) and [PLAN.md](../../PLAN.md).
 
 ## Tenant model
 
@@ -54,7 +54,9 @@ show up in the portal, and patients added in the portal show up in the pad.
 
 ## Replacing the mock backend
 
-`src/auth.ts` exposes `login`, `logout`, `loadSession` and
-`getUserFromSession`. Swap their bodies for API calls once the backend
-exists. Pages read the session through `useSession()` in
-`src/useSession.ts`, which also exposes `refresh()` for the login page.
+Sign-in is already on the server. `src/useSession.ts` asks the API who is
+signed in at this hospital (`GET /api/auth/me`) and exposes `signOut` and
+`signedIn`, which the login page calls with the session the server made.
+`src/auth.ts` holds the gates: `sessionBelongsTo()` and `canPrescribe()`,
+which reads the user's memberships from that answer. Data still comes from
+the mock db through `apps/shared/src/api.ts`.

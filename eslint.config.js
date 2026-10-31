@@ -40,14 +40,10 @@ export default defineConfig(
   },
   {
     // Apps read and write data through `api` and the query hooks, never the
-    // mock db, so swapping in the real backend only changes api.ts. Sign-in
-    // (auth.ts, useSession.ts) is exempt until the auth step replaces it.
+    // mock db, so swapping in the real backend only changes api.ts. (Sign-in
+    // already goes to the server, through apps/shared/src/auth.ts.)
     files: ['apps/admin/src/**/*.{ts,tsx}', 'apps/doctor-portal/src/**/*.{ts,tsx}'],
-    ignores: [
-      '**/*.test.ts',
-      'apps/doctor-portal/src/auth.ts',
-      'apps/doctor-portal/src/useSession.ts',
-    ],
+    ignores: ['**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

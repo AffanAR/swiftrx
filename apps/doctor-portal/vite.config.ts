@@ -2,6 +2,14 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
+// The API (apps/api) answers on this origin's /api in dev and preview too, so
+// its sign-in cookie is first-party. changeOrigin must stay off (Vite's string
+// shorthand turns it on): the API reads the hospital from the Host header and
+// refuses a POST whose Origin doesn't match it.
+const apiProxy = {
+  '/api': { target: `http://127.0.0.1:${process.env.API_PORT || 5176}`, changeOrigin: false },
+};
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -25,7 +33,9 @@ export default defineConfig({
     // natively, so subdomain routing still works without exposing the port.
     host: '127.0.0.1',
     strictPort: true,
+    proxy: apiProxy,
   },
+  preview: { proxy: apiProxy },
   build: {
     rollupOptions: {
       output: {

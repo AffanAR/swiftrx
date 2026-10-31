@@ -141,8 +141,11 @@ export const users = pgTable(
   {
     id: text('id').primaryKey(),
     email: text('email').notNull(),
-    /** bcrypt today (from the seed); the auth step moves new hashes to Argon2id. */
-    passwordHash: text('password_hash').notNull(),
+    /**
+     * Argon2id, in the PHC string format (src/auth/passwords.ts). Null until
+     * the user sets a password, as an invited user hasn't yet.
+     */
+    passwordHash: text('password_hash'),
     name: text('name').notNull(),
     isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
     specialty: text('specialty'),
@@ -179,6 +182,31 @@ export const memberships = pgTable(
     primaryKey({ columns: [t.hospitalId, t.userId, t.role] }),
     index('memberships_user_idx').on(t.userId),
     check('memberships_role_valid', oneOf(t.role, MEMBERSHIP_ROLES)),
+  ],
+);
+
+/**
+ * Signed-in browsers. The cookie carries a random token; only its SHA-256 is
+ * stored, so someone who reads this table can't sign in with it. A session
+ * belongs to one place: the hospital it was made at, or the admin panel
+ * (`hospital_id` null, platform admins only), and counts nowhere else.
+ */
+export const sessions = pgTable(
+  'sessions',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    hospitalId: uuid('hospital_id').references(() => hospitals.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+    /** Fixed at sign-in; the server refuses the session from then on. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index('sessions_user_idx').on(t.userId),
+    index('sessions_expires_idx').on(t.expiresAt),
+    check('sessions_expire_after_creation', sql`${t.expiresAt} > ${t.createdAt}`),
   ],
 );
 

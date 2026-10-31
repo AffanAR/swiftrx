@@ -103,16 +103,23 @@ function resolveHost(host: string, pathname: string, rootDomain: string): Resolv
   return { surface: 'hospital', subdomain: sub, hospitalSlug: sub, source: 'domain' };
 }
 
+type PageLocation = Pick<URL, 'hostname' | 'pathname' | 'search' | 'protocol' | 'port'>;
+
+/**
+ * The page's `window.location`, or null outside a browser. The API resolves
+ * surfaces with this file too, and its Node types have no `window`.
+ */
+function pageLocation(): PageLocation | null {
+  return (globalThis as { window?: { location: PageLocation } }).window?.location ?? null;
+}
+
 /** Browser wrapper that pulls from `window.location`. */
 export function resolveFromBrowser(): ResolvedTenant {
-  if (typeof window === 'undefined') {
+  const here = pageLocation();
+  if (!here) {
     return { surface: 'unknown', subdomain: null, hospitalSlug: null, source: 'none' };
   }
-  return resolveSurface(
-    window.location.hostname,
-    window.location.pathname,
-    new URLSearchParams(window.location.search),
-  );
+  return resolveSurface(here.hostname, here.pathname, new URLSearchParams(here.search));
 }
 
 /**
@@ -122,7 +129,7 @@ export function resolveFromBrowser(): ResolvedTenant {
  * the dev gateway; otherwise <slug>.<root domain>.
  */
 export function hospitalPortalUrl(slug: string): string {
-  const here = typeof window !== 'undefined' ? window.location : null;
+  const here = pageLocation();
   const h = here?.hostname ?? '';
   if (here && h.startsWith('admin.')) {
     return `${here.protocol}//${slug}.${h.slice('admin.'.length)}${here.port ? `:${here.port}` : ''}`;
