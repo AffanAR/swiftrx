@@ -149,7 +149,7 @@ export const users = pgTable(
     name: text('name').notNull(),
     isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
     specialty: text('specialty'),
-    /** The doctor's PMDC license number, printed on every Rx they sign. */
+    /** The doctor's BMDC registration number, printed on every Rx they sign. */
     licenseNo: text('license_no'),
     status: text('status', { enum: USER_STATUSES }).notNull().default('invited'),
     createdAt: createdAt(),

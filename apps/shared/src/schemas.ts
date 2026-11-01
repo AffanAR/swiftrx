@@ -56,7 +56,7 @@ export const doseUnitSchema = z.enum(['mg', 'ml', 'g', 'mcg', 'tablets']);
 export const frequencySchema = z.enum(['QD', 'BID', 'TID', 'QID', 'PRN', 'QHS']);
 export const severitySchema = z.enum(['low', 'moderate', 'critical']);
 export const investigationTypeSchema = z.enum(['lab', 'imaging', 'other']);
-export const languageSchema = z.enum(['en', 'es', 'fr', 'de', 'ar', 'hi']);
+export const languageSchema = z.enum(['en', 'bn']);
 
 // --- Hospital ------------------------------------------------------------------
 

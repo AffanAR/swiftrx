@@ -41,7 +41,7 @@ export function PlatformSettingsPage() {
       <Card title="Integrations" subtitle="Disabled — these are placeholders">
         <div className="space-y-2 text-sm text-ink-300">
           <Row label="Pharmacy network" value="Not connected" />
-          <Row label="PMDC license verification" value="Not connected" />
+          <Row label="BMDC registration check" value="Not connected" />
           <Row label="HL7 / FHIR bridge" value="Not connected" />
         </div>
       </Card>

@@ -18,7 +18,7 @@ const AUTH: AuthSession = {
     expiresAt: 43_200_000,
     email: 'ayesha@city-hospital.com',
     name: 'Dr. Ayesha Khan',
-    licenseNo: 'PMDC-44121',
+    licenseNo: 'BMDC A-44121',
   },
   user: {
     id: 'd_001',
@@ -26,7 +26,7 @@ const AUTH: AuthSession = {
     name: 'Dr. Ayesha Khan',
     role: 'doctor',
     hospitalSlug: 'city-hospital',
-    licenseNo: 'PMDC-44121',
+    licenseNo: 'BMDC A-44121',
     status: 'active',
     createdAt: '2024-08-15T10:00:00.000Z',
   },

@@ -25,7 +25,7 @@
     "role": "doctor",
     "hospitalSlug": "city-hospital",
     "specialty": "Internal Medicine",
-    "licenseNo": "PMDC-44121",
+    "licenseNo": "BMDC A-44121",
     "status": "active",
     "createdAt": "2024-08-15T10:00:00.000Z",
     "lastLoginAt": "2025-09-25T11:20:00.000Z"
@@ -37,7 +37,7 @@
     "role": "doctor",
     "hospitalSlug": "city-hospital",
     "specialty": "Cardiology",
-    "licenseNo": "PMDC-50211",
+    "licenseNo": "BMDC A-50211",
     "status": "active",
     "createdAt": "2024-09-01T10:00:00.000Z"
   },
@@ -57,7 +57,7 @@
     "role": "doctor",
     "hospitalSlug": "northstar-medical",
     "specialty": "Pediatrics",
-    "licenseNo": "PMDC-37890",
+    "licenseNo": "BMDC A-37890",
     "status": "active",
     "createdAt": "2025-01-04T09:00:00.000Z"
   }

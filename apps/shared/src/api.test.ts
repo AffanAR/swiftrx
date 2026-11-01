@@ -36,7 +36,7 @@ const draft = (): PrescriptionDraft => ({
   investigations: [],
   doctorId: 'd_001',
   doctorName: 'Dr. Ayesha Khan',
-  doctorLicense: 'PMDC-44121',
+  doctorLicense: 'BMDC A-44121',
 });
 
 /** Make every fetch answer `body` with `status`, and return the stub to inspect. */

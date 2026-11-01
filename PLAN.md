@@ -147,8 +147,8 @@ fix, not a UI patch.
   with no visible focus, in a keyboard-first app.
 - The admin "live preview" is a separate JSX copy of the print template, so
   preview and real print can drift. `HospitalFeaturesPage.tsx:433`
-- The default-language list has no Urdu, though every tenant is in Pakistan.
-  `apps/shared/src/types.ts:35`
+- ~~The default-language list has no Urdu.~~ The market is Bangladesh now
+  (ROADMAP.md D13), and since 2026-11-02 the list is English and Bangla.
 - `useHotkeys` re-subscribes on every render (it gets a new array each time).
 
 ### 2.5 Structure and duplication
@@ -627,10 +627,10 @@ the server creates a signed Rx.
 - [ ] Server-rendered PDF, plus a verification page and QR code per Rx (City
       Hospital's footer already promises a verify URL).
 - [ ] BMDC registration check for doctors (Bangladesh, ROADMAP.md D13; the
-      seed's license numbers still say PMDC).
-- [ ] Bangla patient instructions (add `bn` and drop the unused languages
-      from `languageSchema`; Bangla prints left to right, but needs a font
-      with Bengali script).
+      seed uses BMDC-style numbers, "BMDC A-44121", since 2026-11-02).
+- [ ] Bangla patient instructions. `languageSchema` is already English and
+      Bangla (`en`, `bn`), stored per hospital but not used by the print;
+      Bangla prints left to right, but needs a font with Bengali script.
 - [ ] Hosting with backups, monitoring (e.g. Sentry) and logs that contain no
       patient data. (A public demo with no patient data is set up instead for
       now: Render + Cloudflare at `thesyndicate.bond`, `scripts/serve.mjs`,

@@ -2,8 +2,8 @@
   {
     "slug": "city-hospital",
     "name": "City Hospital",
-    "city": "Karachi",
-    "country": "PK",
+    "city": "Dhaka",
+    "country": "BD",
     "status": "active",
     "plan": "enterprise",
     "createdAt": "2024-08-12T10:00:00.000Z",
@@ -25,8 +25,8 @@
     },
     "rxDesign": {
       "headerTitle": "City Hospital",
-      "headerSubtitle": "Multispecialty Tertiary Care · DHA Karachi",
-      "headerRight": "Plot 42, Block 4, Karachi\n+92-21-9920-1100 · rx@city-hospital.com",
+      "headerSubtitle": "Multispecialty Tertiary Care · Dhanmondi, Dhaka",
+      "headerRight": "House 42, Road 7, Dhanmondi, Dhaka 1205\n+880-2-5501-1100 · rx@city-hospital.com",
       "accentColor": "#10b981",
       "showRxBadge": true,
       "showAccentBand": true,
@@ -44,8 +44,8 @@
   {
     "slug": "northstar-medical",
     "name": "Northstar Medical Center",
-    "city": "Lahore",
-    "country": "PK",
+    "city": "Chattogram",
+    "country": "BD",
     "status": "active",
     "plan": "clinic",
     "createdAt": "2025-01-03T08:00:00.000Z",
@@ -67,8 +67,8 @@
     },
     "rxDesign": {
       "headerTitle": "Northstar Medical Center",
-      "headerSubtitle": "Internal Medicine · Lahore",
-      "headerRight": "14-A Gulberg III, Lahore\n+92-42-3577-2200",
+      "headerSubtitle": "Internal Medicine · Chattogram",
+      "headerRight": "14 O.R. Nizam Road, Chattogram\n+880-31-255-2200",
       "accentColor": "#6366f1",
       "showRxBadge": true,
       "showAccentBand": true,
@@ -86,8 +86,8 @@
   {
     "slug": "riverside-clinic",
     "name": "Riverside Clinic",
-    "city": "Islamabad",
-    "country": "PK",
+    "city": "Sylhet",
+    "country": "BD",
     "status": "trial",
     "plan": "starter",
     "createdAt": "2025-09-20T14:30:00.000Z",
@@ -110,7 +110,7 @@
     "rxDesign": {
       "headerTitle": "Riverside Clinic",
       "headerSubtitle": "Family Practice",
-      "headerRight": "12 Margalla Road, Islamabad",
+      "headerRight": "12 Zindabazar, Sylhet",
       "accentColor": "#f59e0b",
       "showRxBadge": true,
       "showAccentBand": false,

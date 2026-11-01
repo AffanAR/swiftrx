@@ -229,11 +229,7 @@ function FeaturesEditor({
                 }
                 options={[
                   { value: 'en', label: 'English' },
-                  { value: 'es', label: 'Español' },
-                  { value: 'fr', label: 'Français' },
-                  { value: 'de', label: 'Deutsch' },
-                  { value: 'ar', label: 'العربية' },
-                  { value: 'hi', label: 'हिन्दी' },
+                  { value: 'bn', label: 'বাংলা (Bangla)' },
                 ]}
               />
             </div>
@@ -468,7 +464,7 @@ function sampleRx(hospitalSlug: string, doctor?: User): SignedRx {
       age: 42,
       sex: 'M',
       weightKg: 78,
-      contact: '+92-300-1234567',
+      contact: '+880-1711-234567',
       allergyStatus: 'recorded',
       allergies: ['Penicillin'],
       activeProblems: [],
@@ -525,7 +521,7 @@ function sampleRx(hospitalSlug: string, doctor?: User): SignedRx {
     ],
     doctorId: doctor?.id ?? 'd_preview',
     doctorName: doctor?.name ?? 'Dr. Sample Doctor',
-    doctorLicense: doctor?.licenseNo ?? 'PMDC-00000',
+    doctorLicense: doctor?.licenseNo ?? 'BMDC A-00000',
   };
 }
 

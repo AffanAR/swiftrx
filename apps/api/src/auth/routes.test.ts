@@ -131,14 +131,14 @@ describe('POST /api/auth/login', () => {
       expiresAt: issuedAt + SESSION_TTL_MS,
       email: 'ayesha@city-hospital.com',
       name: 'Dr. Ayesha Khan',
-      licenseNo: 'PMDC-44121',
+      licenseNo: 'BMDC A-44121',
     });
     expect(body.user).toMatchObject({
       id: 'd_001',
       role: 'doctor',
       hospitalSlug: 'city-hospital',
       status: 'active',
-      licenseNo: 'PMDC-44121',
+      licenseNo: 'BMDC A-44121',
       lastLoginAt: s.now().toISOString(),
     });
     expect(body.memberships).toEqual([{ hospitalSlug: 'city-hospital', role: 'doctor' }]);

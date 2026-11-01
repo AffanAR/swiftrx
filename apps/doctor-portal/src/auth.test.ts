@@ -19,7 +19,7 @@ const doctorAtCity: SessionPayload = {
   expiresAt: 43_200_000,
   email: 'doctor@city-hospital.com',
   name: 'A City doctor',
-  licenseNo: 'PMDC-00000',
+  licenseNo: 'BMDC A-00000',
 };
 
 describe('sessionBelongsTo', () => {
@@ -52,7 +52,7 @@ describe('canPrescribe (D3: only doctors prescribe)', () => {
     name: 'Dr. Ayesha Khan',
     role: 'doctor',
     hospitalSlug: 'city-hospital',
-    licenseNo: 'PMDC-44121',
+    licenseNo: 'BMDC A-44121',
     status: 'active',
     createdAt: '2024-08-15T10:00:00.000Z',
   };

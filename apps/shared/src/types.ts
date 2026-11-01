@@ -31,8 +31,12 @@ export interface HospitalFeatures {
   maxPatients: number;
   /** Soft warning when this % of monthlyRxCap is used. */
   usageWarnAtPercent: number;
-  /** Default language for the prescription copy (placeholder, future i18n). */
-  defaultLanguage: 'en' | 'es' | 'fr' | 'de' | 'ar' | 'hi';
+  /**
+   * Default language for the prescription copy: English or Bangla, the two
+   * SwiftRx supports in Bangladesh (ROADMAP.md D13). Stored only, for now:
+   * the print is English until the Bangla patient instructions arrive.
+   */
+  defaultLanguage: 'en' | 'bn';
 }
 
 export type RxPageSize = 'A4' | 'A5' | 'Letter';

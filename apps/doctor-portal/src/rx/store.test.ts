@@ -33,14 +33,14 @@ const AYESHA: DoctorIdentity = {
   id: 'd_001',
   email: 'ayesha@city-hospital.com',
   name: 'Dr. Ayesha Khan',
-  licenseNo: 'PMDC-44121',
+  licenseNo: 'BMDC A-44121',
   hospitalSlug: 'city-hospital',
 };
 const SANA: DoctorIdentity = {
   id: 'd_003',
   email: 'sana@northstar-medical.com',
   name: 'Dr. Sana Iqbal',
-  licenseNo: 'PMDC-37890',
+  licenseNo: 'BMDC A-37890',
   hospitalSlug: 'northstar-medical',
 };
 
@@ -158,7 +158,7 @@ describe('sign', () => {
       hospitalSlug: 'city-hospital',
       doctorId: 'd_001',
       doctorName: 'Dr. Ayesha Khan',
-      doctorLicense: 'PMDC-44121',
+      doctorLicense: 'BMDC A-44121',
       patient: { id: 'p_002' },
     });
     expect(rx?.safetyOverride).toBeUndefined();

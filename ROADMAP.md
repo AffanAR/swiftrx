@@ -44,9 +44,9 @@ for a diagnosis). Then they check the safety alerts, sign and print.
 registration numbers, the catalog holds DGDA-registered brands, and
 prescriptions print in English, Bangla or both. So the plan includes Bangla
 patient instructions, Bangladeshi drug data, and Bangladesh's rules for
-health data and prescriptions. The seed data still describes Pakistan
-(Karachi, Lahore and Islamabad hospitals, PMDC numbers); it gets
-Bangladeshi hospitals, BMDC numbers and local brands in Phase 2.
+health data and prescriptions. The demo data is Bangladeshi too: hospitals
+in Dhaka, Chattogram and Sylhet, BMDC registration numbers, +880 phone
+numbers and local brands (2026-10-31 and 2026-11-02).
 
 **Out of scope until Phase 6 at least:** patient billing, appointments,
 wards, labs (a full hospital information system) and dispensing. Saying no

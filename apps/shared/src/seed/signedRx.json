@@ -46,7 +46,7 @@
     ],
     "doctorId": "d_001",
     "doctorName": "Dr. Ayesha Khan",
-    "doctorLicense": "PMDC-44121"
+    "doctorLicense": "BMDC A-44121"
   },
   {
     "id": "rx_seed_002",
@@ -80,7 +80,7 @@
     ],
     "doctorId": "d_002",
     "doctorName": "Dr. Bilal Ahmed",
-    "doctorLicense": "PMDC-50211"
+    "doctorLicense": "BMDC A-50211"
   },
   {
     "id": "rx_seed_003",
@@ -114,6 +114,6 @@
     ],
     "doctorId": "d_003",
     "doctorName": "Dr. Sana Iqbal",
-    "doctorLicense": "PMDC-37890"
+    "doctorLicense": "BMDC A-37890"
   }
 ]

@@ -62,7 +62,8 @@ export function NewHospitalPage() {
           <span className="font-mono text-ink-300">
             {normalizeSlug(name) || 'slug'}.{ROOT_DOMAIN}
           </span>
-          ), a default plan, and a hospital admin invite.
+          ) and default settings, and starts as a trial. It has no users yet: inviting its first
+          hospital admin from here isn't built yet.
         </p>
       </div>
 
@@ -79,7 +80,7 @@ export function NewHospitalPage() {
               hint={`Subdomain: ${normalizeSlug(name) || '—'}.${ROOT_DOMAIN}`}
             />
           </div>
-          <TextField label="City" value={city} onChange={setCity} placeholder="Karachi" required />
+          <TextField label="City" value={city} onChange={setCity} placeholder="Dhaka" required />
           <TextField
             label="Country (ISO)"
             value={country}

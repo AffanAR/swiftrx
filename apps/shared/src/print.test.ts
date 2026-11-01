@@ -9,7 +9,7 @@ const PATIENT: SignedRx['patient'] = {
   age: 42,
   sex: 'M',
   weightKg: 78,
-  contact: '+92-300-1234567',
+  contact: '+880-1711-234567',
   allergyStatus: 'recorded',
   allergies: ['Penicillin'],
   activeProblems: [],
@@ -41,7 +41,7 @@ const rx = (overrides: Partial<SignedRx> = {}): SignedRx => ({
   investigations: [{ code: 'BMP', name: 'Basic Metabolic Panel', type: 'lab' }],
   doctorId: 'd_001',
   doctorName: 'Dr. Ayesha Khan',
-  doctorLicense: 'PMDC-44121',
+  doctorLicense: 'BMDC A-44121',
   ...overrides,
 });
 
@@ -63,7 +63,7 @@ describe('renderRxHtml', () => {
       '(Lisinopril)',
       'Same time daily',
       'Dr. Ayesha Khan',
-      'PMDC-44121',
+      'BMDC A-44121',
     ]) {
       expect(html).toContain(text);
     }
