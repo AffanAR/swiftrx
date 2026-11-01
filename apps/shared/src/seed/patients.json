@@ -7,6 +7,7 @@
     "sex": "M",
     "weightKg": 78,
     "contact": "+92-300-1234567",
+    "allergyStatus": "recorded",
     "allergies": ["Penicillin"],
     "activeProblems": ["Hypertension", "Type 2 Diabetes"],
     "activeMedications": [
@@ -47,6 +48,7 @@
     "sex": "F",
     "weightKg": 62,
     "contact": "+92-301-9876543",
+    "allergyStatus": "none_known",
     "allergies": [],
     "activeProblems": ["Asthma"],
     "activeMedications": [
@@ -79,6 +81,7 @@
     "sex": "M",
     "weightKg": 82,
     "contact": "+92-333-2221100",
+    "allergyStatus": "recorded",
     "allergies": ["Sulfa drugs"],
     "activeProblems": ["COPD", "Coronary Artery Disease"],
     "activeMedications": [
@@ -115,6 +118,7 @@
     "sex": "M",
     "weightKg": 21,
     "contact": "+92-345-1112233",
+    "allergyStatus": "not_recorded",
     "allergies": [],
     "activeProblems": ["Acute pharyngitis"],
     "activeMedications": [],
@@ -138,6 +142,7 @@
     "sex": "F",
     "weightKg": 60,
     "contact": "+92-321-4445566",
+    "allergyStatus": "recorded",
     "allergies": ["Latex"],
     "activeProblems": ["Migraine"],
     "activeMedications": [],
@@ -161,6 +166,7 @@
     "sex": "M",
     "weightKg": 70,
     "contact": "+92-311-7778899",
+    "allergyStatus": "not_recorded",
     "allergies": [],
     "activeProblems": ["Type 2 Diabetes", "Dyslipidemia"],
     "activeMedications": [

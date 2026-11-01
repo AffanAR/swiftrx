@@ -18,14 +18,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import {
-  ApiError,
-  api,
-  type Actor,
-  type DoctorInvite,
-  type NewHospital,
-  type NewPatient,
-} from './api';
+import { ApiError, api, type DoctorInvite, type NewHospital, type NewPatient } from './api';
 import type { HospitalFeatures, RxDesign, User } from './types';
 
 /** Doctors, patients and signed Rx per hospital, for the admin's hospital list. */
@@ -42,6 +35,12 @@ export const queries = {
     queryOptions({
       queryKey: ['hospitals', 'detail', slug],
       queryFn: () => api.hospitals.get(slug),
+    }),
+  /** What a portal's sign-in page shows; needs no session. */
+  hospitalProfile: (slug: string) =>
+    queryOptions({
+      queryKey: ['hospitals', 'profile', slug],
+      queryFn: () => api.hospitals.profile(slug),
     }),
   doctors: (slug: string) =>
     queryOptions({
@@ -100,6 +99,8 @@ export const queries = {
 
 export const useHospitals = () => useSuspenseQuery(queries.hospitals()).data;
 export const useHospital = (slug: string) => useSuspenseQuery(queries.hospital(slug)).data;
+export const useHospitalProfile = (slug: string) =>
+  useSuspenseQuery(queries.hospitalProfile(slug)).data;
 export const useDoctors = (slug: string): User[] => useSuspenseQuery(queries.doctors(slug)).data;
 export const usePatients = (slug: string) => useSuspenseQuery(queries.patients(slug)).data;
 export const useHospitalStats = () => useSuspenseQuery(queries.hospitalStats()).data;
@@ -127,7 +128,7 @@ export const afterWrite = {
 export function useCreateHospital() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { hospital: NewHospital; by: Actor }) => api.hospitals.create(v.hospital, v.by),
+    mutationFn: (hospital: NewHospital) => api.hospitals.create(hospital),
     onSuccess: () => afterWrite.hospitalCreated(qc),
   });
 }
@@ -148,7 +149,7 @@ export function useUpdateHospitalSettings() {
 export function useCreatePatient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { patient: NewPatient; by: Actor }) => api.patients.create(v.patient, v.by),
+    mutationFn: (patient: NewPatient) => api.patients.create(patient),
     onSuccess: () => afterWrite.patientCreated(qc),
   });
 }

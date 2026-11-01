@@ -1,43 +1,33 @@
 // =============================================================================
 //  SwiftRx Shared — Data client
 // =============================================================================
-//  The one way the apps read and write data. Today every method answers from
-//  the in-memory mock db (mockDb.ts). When the backend arrives, this is the
-//  file that changes: each method becomes a fetch() to the endpoint noted
-//  beside it, and the pages, the query hooks (queries.ts) and the Rx store
-//  stay as they are.
+//  The one way the apps read and write data. Each method notes its endpoint.
+//  Sign-in (auth.ts), hospitals, patients, doctors, the audit log and the
+//  catalog go to the server (apps/api); the account list and prescriptions
+//  still answer from the in-memory mock db (mockDb.ts) until their endpoints
+//  exist. The pages, the query hooks (queries.ts) and the Rx store don't
+//  change when a method moves.
 //
-//  Like JSON over HTTP, every method is async and returns copies, so a caller
-//  can't change stored data by mutating a result. Writes assign ids and
-//  timestamps and record the audit event, as the server will.
-//
-//  Sign-in already goes to the server (auth.ts, /api/auth). Passwords live
-//  only there, so the mock users here have none.
+//  Like JSON over HTTP, every mock method is async and returns copies, so a
+//  caller can't change stored data by mutating a result. Mock writes assign
+//  ids and timestamps and record the audit event, as the server does.
 // =============================================================================
 
 import { MOCK_LATENCY_MS } from './config';
 import { ApiError, callApi } from './http';
 import {
-  MOCK_HOSPITALS,
-  MOCK_PATIENTS,
   MOCK_SIGNED_RX,
   MOCK_USERS,
   appendAudit,
   appendSignedRx,
-  getHospital,
-  listHospitals,
-  listPatientsForHospital,
   listSignedRxForHospital,
-  updateHospitalFeatures,
-  updateHospitalRxDesign,
 } from './mockDb';
 import {
-  DEFAULT_HOSPITAL_FEATURES,
-  DEFAULT_RX_DESIGN,
   type AuditEvent,
   type Catalog,
   type Hospital,
   type HospitalFeatures,
+  type HospitalProfile,
   type Patient,
   type RxDesign,
   type SignedRx,
@@ -56,7 +46,15 @@ export interface Actor {
 /** The patient fields a client sends; the server assigns the id and creation time. */
 export type NewPatient = Pick<
   Patient,
-  'hospitalSlug' | 'name' | 'age' | 'sex' | 'weightKg' | 'contact' | 'allergies' | 'activeProblems'
+  | 'hospitalSlug'
+  | 'name'
+  | 'age'
+  | 'sex'
+  | 'weightKg'
+  | 'contact'
+  | 'allergyStatus'
+  | 'allergies'
+  | 'activeProblems'
 >;
 
 /** The fields an admin sends to provision a hospital; the rest start at their defaults. */
@@ -88,49 +86,30 @@ export interface PasswordLink {
 
 export const api = {
   hospitals: {
-    /** GET /hospitals */
-    list: (): Promise<Hospital[]> => reply(listHospitals()),
+    /** GET /hospitals — every hospital, for the platform admin. */
+    list: (): Promise<Hospital[]> => callApi<Hospital[]>('/hospitals'),
 
-    /** GET /hospitals/:slug — null for an unknown slug. */
-    get: (slug: string): Promise<Hospital | null> => reply(getHospital(slug)),
+    /** GET /hospitals/:slug — null for an unknown slug. Needs a session there. */
+    get: (slug: string): Promise<Hospital | null> =>
+      orNull(callApi<Hospital>(`/hospitals/${encodeURIComponent(slug)}`)),
 
-    /** POST /hospitals */
-    create: async (input: NewHospital, by: Actor): Promise<Hospital> => {
-      if (MOCK_HOSPITALS.some((h) => h.slug === input.slug)) {
-        throw new ApiError(409, 'A hospital with a similar slug already exists.');
-      }
-      const hospital: Hospital = {
-        ...structuredClone(input),
-        status: 'trial',
-        createdAt: now(),
-        monthlyRxUsed: 0,
-        features: { ...DEFAULT_HOSPITAL_FEATURES },
-        rxDesign: { ...DEFAULT_RX_DESIGN, headerTitle: input.name },
-      };
-      MOCK_HOSPITALS.push(hospital);
-      audit({
-        kind: 'create_hospital',
-        userId: by.id,
-        userEmail: by.email,
-        at: hospital.createdAt,
-        hospitalSlug: hospital.slug,
-        hospitalName: hospital.name,
-      });
-      return reply(hospital);
-    },
+    /** GET /hospitals/:slug/profile — name and plan, before anyone signs in; null if unknown. */
+    profile: (slug: string): Promise<HospitalProfile | null> =>
+      orNull(callApi<HospitalProfile>(`/hospitals/${encodeURIComponent(slug)}/profile`)),
+
+    /** POST /hospitals — by the platform admin; the server audits it. */
+    create: (input: NewHospital): Promise<Hospital> =>
+      callApi<Hospital>('/hospitals', { method: 'POST', body: input }),
 
     /** PATCH /hospitals/:slug — feature flags, limits and the printed Rx design. */
-    updateSettings: async (
+    updateSettings: (
       slug: string,
       settings: { features: HospitalFeatures; rxDesign: RxDesign },
-    ): Promise<Hospital> => {
-      const found =
-        updateHospitalFeatures(slug, structuredClone(settings.features)) &&
-        updateHospitalRxDesign(slug, structuredClone(settings.rxDesign));
-      const hospital = found ? getHospital(slug) : null;
-      if (!hospital) throw new ApiError(404, `No hospital "${slug}".`);
-      return reply(hospital);
-    },
+    ): Promise<Hospital> =>
+      callApi<Hospital>(`/hospitals/${encodeURIComponent(slug)}`, {
+        method: 'PATCH',
+        body: settings,
+      }),
   },
 
   users: {
@@ -152,36 +131,15 @@ export const api = {
 
   patients: {
     /** GET /hospitals/:slug/patients */
-    list: (slug: string): Promise<Patient[]> => reply(listPatientsForHospital(slug)),
+    list: (slug: string): Promise<Patient[]> =>
+      callApi<Patient[]>(`/hospitals/${encodeURIComponent(slug)}/patients`),
 
-    /** POST /hospitals/:slug/patients */
-    create: async (input: NewPatient, by: Actor): Promise<Patient> => {
-      if (!input.name.trim() || !(input.age >= 0) || !(input.weightKg > 0)) {
-        throw new ApiError(400, 'Name, age and weight are required.');
-      }
-      const patient: Patient = {
-        ...structuredClone(input),
-        id: newId('p'),
-        activeMedications: [],
-        recentVitals: [
-          { label: 'BP', value: '—' },
-          { label: 'Pulse', value: '—' },
-          { label: 'SpO2', value: '—' },
-        ],
-        createdAt: now(),
-      };
-      MOCK_PATIENTS.push(patient);
-      audit({
-        kind: 'create_patient',
-        userId: by.id,
-        userEmail: by.email,
-        at: patient.createdAt,
-        hospitalSlug: patient.hospitalSlug,
-        patientId: patient.id,
-        patientName: patient.name,
-      });
-      return reply(patient);
-    },
+    /** POST /hospitals/:slug/patients — the server assigns the id and audits it. */
+    create: ({ hospitalSlug, ...patient }: NewPatient): Promise<Patient> =>
+      callApi<Patient>(`/hospitals/${encodeURIComponent(hospitalSlug)}/patients`, {
+        method: 'POST',
+        body: patient,
+      }),
   },
 
   prescriptions: {
@@ -235,6 +193,16 @@ export type DataClient = typeof api;
 export { ApiError };
 
 // --- internals ---------------------------------------------------------------
+
+/** A 404 as null, as the mock's lookups answered an unknown slug. */
+async function orNull<T>(request: Promise<T>): Promise<T | null> {
+  try {
+    return await request;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
 
 /** Answer like the network would: a copy, after the configured delay. */
 async function reply<T>(value: T): Promise<T> {

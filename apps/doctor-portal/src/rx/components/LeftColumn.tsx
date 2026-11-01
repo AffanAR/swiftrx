@@ -233,7 +233,13 @@ export function LeftColumn({
         }
       >
         {current.allergies.length === 0 ? (
-          <div className="text-sm text-ink-400 italic px-2">No known allergies</div>
+          current.allergyStatus === 'none_known' ? (
+            <div className="text-sm text-ink-400 italic px-2">No known allergies</div>
+          ) : (
+            <div className="text-sm text-rx-warn px-2">
+              Not recorded yet. Ask before prescribing.
+            </div>
+          )
         ) : (
           <ul className="space-y-1">
             {current.allergies.map((a, i) => (

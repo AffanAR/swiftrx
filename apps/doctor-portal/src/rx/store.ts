@@ -2,6 +2,7 @@ import React from 'react';
 import {
   afterWrite,
   api,
+  type AllergyStatus,
   type Brand,
   type Catalog,
   type Diagnosis,
@@ -32,6 +33,7 @@ export interface NewPatientInput {
   sex: 'M' | 'F';
   weightKg: number;
   contact: string;
+  allergyStatus: AllergyStatus;
   allergies: string[];
   activeProblems: string[];
 }
@@ -157,10 +159,7 @@ class Store {
         this.set({ savingPatient: true });
         let p: Patient;
         try {
-          p = await api.patients.create(
-            { ...input, hospitalSlug: doctor.hospitalSlug },
-            { id: doctor.id, email: doctor.email },
-          );
+          p = await api.patients.create({ ...input, hospitalSlug: doctor.hospitalSlug });
         } catch (err) {
           this.set({
             savingPatient: false,

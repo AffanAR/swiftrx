@@ -125,6 +125,15 @@ export interface Hospital {
   rxDesign: RxDesign;
 }
 
+/**
+ * What anyone may know about a hospital, signed in or not: enough for its
+ * portal's sign-in page (GET /api/hospitals/:slug/profile).
+ */
+export type HospitalProfile = Pick<
+  Hospital,
+  'slug' | 'name' | 'city' | 'country' | 'status' | 'plan' | 'primaryColor'
+>;
+
 // --- Users --------------------------------------------------------------------
 
 export type UserRole = 'platform_admin' | 'hospital_admin' | 'doctor';
@@ -146,6 +155,8 @@ export interface User {
 
 // --- Patient (per-hospital) -------------------------------------------------
 
+export type AllergyStatus = 'not_recorded' | 'none_known' | 'recorded';
+
 export interface Patient {
   id: string;
   hospitalSlug: string; // tenant key
@@ -154,6 +165,11 @@ export interface Patient {
   sex: 'M' | 'F';
   weightKg: number;
   contact: string;
+  /**
+   * Whether anyone asked: "none_known" (asked, none) and "not_recorded" (not
+   * asked yet) both have no allergies listed, and only the first is safe.
+   */
+  allergyStatus: AllergyStatus;
   allergies: string[];
   activeProblems: string[];
   activeMedications: { name: string; dose: string }[];

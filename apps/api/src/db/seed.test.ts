@@ -130,8 +130,7 @@ describe('seed', () => {
       const row = rows.find((r) => r.id === p.id)!;
       expect(row.slug).toBe(p.hospitalSlug);
       expect(row.weightKg).toBe(p.weightKg); // numeric comes back as a number
-      // An empty list in the JSON means "never asked", not "no allergies".
-      expect(row.allergyStatus).toBe(p.allergies.length > 0 ? 'recorded' : 'not_recorded');
+      expect(row.allergyStatus).toBe(p.allergyStatus);
       expect(allergyRows.filter((a) => a.patientId === p.id).map((a) => a.substance)).toEqual(
         p.allergies,
       );

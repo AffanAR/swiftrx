@@ -15,7 +15,10 @@ import type { AuthSession, Hospital, SessionPayload } from '@swiftrx/shared';
  * signed in at. Platform admins sign in at the admin panel and have no
  * hospital, so a portal never takes their session.
  */
-export function sessionBelongsTo(session: SessionPayload, hospital: Hospital): boolean {
+export function sessionBelongsTo(
+  session: SessionPayload,
+  hospital: Pick<Hospital, 'slug'>,
+): boolean {
   return session.role !== 'platform_admin' && session.hospitalSlug === hospital.slug;
 }
 

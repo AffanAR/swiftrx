@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, api, type Actor, type NewHospital, type NewPatient } from './api';
+import { api, type Actor, type NewPatient, type PrescriptionDraft } from './api';
 import { onSessionEnded } from './http';
 import {
   MOCK_AUDIT,
@@ -10,49 +10,49 @@ import {
 } from './mockDb';
 
 const AYESHA: Actor = { id: 'd_001', email: 'ayesha@city-hospital.com' };
-const ADMIN: Actor = { id: 'u_admin_001', email: 'admin@swiftrx.com' };
 
-// Writes change the mock db's module state; put it back after each test.
-// Patients and hospitals are appended; signed Rx and audit events prepended.
-let before = { hospitals: 0, patients: 0, rx: 0, audit: 0, usage: [] as number[] };
+// Signing changes the mock db's module state; put it back after each test.
+// Signed Rx and audit events are prepended.
+let before = { rx: 0, audit: 0, usage: [] as number[] };
 beforeEach(() => {
   before = {
-    hospitals: MOCK_HOSPITALS.length,
-    patients: MOCK_PATIENTS.length,
     rx: MOCK_SIGNED_RX.length,
     audit: MOCK_AUDIT.length,
     usage: MOCK_HOSPITALS.map((h) => h.monthlyRxUsed),
   };
 });
 afterEach(() => {
-  MOCK_HOSPITALS.length = before.hospitals;
-  MOCK_PATIENTS.length = before.patients;
   MOCK_SIGNED_RX.splice(0, MOCK_SIGNED_RX.length - before.rx);
   MOCK_AUDIT.splice(0, MOCK_AUDIT.length - before.audit);
   MOCK_HOSPITALS.forEach((h, i) => (h.monthlyRxUsed = before.usage[i]));
+  vi.unstubAllGlobals();
 });
 
-const newPatient = (patch: Partial<NewPatient> = {}): NewPatient => ({
+const draft = (): PrescriptionDraft => ({
   hospitalSlug: 'city-hospital',
-  name: 'Test Patient',
-  age: 0,
-  sex: 'F',
-  weightKg: 3.4,
-  contact: '—',
-  allergies: [],
-  activeProblems: [],
-  ...patch,
+  patient: MOCK_PATIENTS.find((p) => p.hospitalSlug === 'city-hospital')!,
+  diagnosis: MOCK_DIAGNOSES[0],
+  medications: [],
+  investigations: [],
+  doctorId: 'd_001',
+  doctorName: 'Dr. Ayesha Khan',
+  doctorLicense: 'PMDC-44121',
 });
 
-describe('reads', () => {
-  it('answer with copies, so changing a result changes nothing stored', async () => {
-    const [first] = await api.patients.list('city-hospital');
-    first.name = 'Changed';
-    first.allergies.push('Changed');
+/** Make every fetch answer `body` with `status`, and return the stub to inspect. */
+function serverAnswers(body: unknown, status = 200) {
+  const stub = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body), { status }));
+  vi.stubGlobal('fetch', stub);
+  return stub;
+}
 
-    const [again] = await api.patients.list('city-hospital');
-    expect(again.name).not.toBe('Changed');
-    expect(again.allergies).not.toContain('Changed');
+describe('mock reads', () => {
+  it('answer with copies, so changing a result changes nothing stored', async () => {
+    const [first] = await api.prescriptions.list('city-hospital');
+    first.patient.name = 'Changed';
+
+    const [again] = await api.prescriptions.list('city-hospital');
+    expect(again.patient.name).not.toBe('Changed');
   });
 
   it('never return a password hash', async () => {
@@ -61,60 +61,21 @@ describe('reads', () => {
     for (const u of users) expect(u).not.toHaveProperty('passwordHash');
   });
 
-  it("keep each hospital's data to that hospital", async () => {
+  it("keep each hospital's prescriptions to that hospital", async () => {
     const city = 'city-hospital';
-    expect((await api.patients.list(city)).every((p) => p.hospitalSlug === city)).toBe(true);
     expect((await api.prescriptions.list(city)).every((r) => r.hospitalSlug === city)).toBe(true);
-    expect(await api.hospitals.get('no-such-hospital')).toBeNull();
-  });
-});
-
-describe('patients.create', () => {
-  it('assigns the id and time, stores the patient and records who added them', async () => {
-    // Age 0: infants are valid patients.
-    const p = await api.patients.create(newPatient(), AYESHA);
-
-    expect(p.id).toMatch(/^p_/);
-    expect(Number.isNaN(Date.parse(p.createdAt))).toBe(false);
-    expect((await api.patients.list('city-hospital')).some((x) => x.id === p.id)).toBe(true);
-    expect(MOCK_AUDIT[0]).toMatchObject({
-      kind: 'create_patient',
-      patientId: p.id,
-      userId: 'd_001',
-      hospitalSlug: 'city-hospital',
-    });
-  });
-
-  it('refuses a patient without a name or weight', async () => {
-    await expect(api.patients.create(newPatient({ name: '  ' }), AYESHA)).rejects.toMatchObject({
-      status: 400,
-    });
-    await expect(api.patients.create(newPatient({ weightKg: 0 }), AYESHA)).rejects.toBeInstanceOf(
-      ApiError,
-    );
-    expect(MOCK_PATIENTS.length).toBe(before.patients);
   });
 });
 
 describe('prescriptions.sign', () => {
   it('assigns each Rx its own id and time, stores it, counts it and audits it', async () => {
-    const [patient] = await api.patients.list('city-hospital');
-    const draft = {
-      hospitalSlug: 'city-hospital',
-      patient,
-      diagnosis: MOCK_DIAGNOSES[0],
-      medications: [],
-      investigations: [],
-      doctorId: 'd_001',
-      doctorName: 'Dr. Ayesha Khan',
-      doctorLicense: 'PMDC-44121',
-    };
-    const usedBefore = (await api.hospitals.get('city-hospital'))?.monthlyRxUsed ?? 0;
+    const city = MOCK_HOSPITALS.find((h) => h.slug === 'city-hospital')!;
+    const usedBefore = city.monthlyRxUsed;
 
     // Two signs in the same millisecond must not share an id.
     const [a, b] = await Promise.all([
-      api.prescriptions.sign(draft, AYESHA),
-      api.prescriptions.sign(draft, AYESHA),
+      api.prescriptions.sign(draft(), AYESHA),
+      api.prescriptions.sign(draft(), AYESHA),
     ]);
 
     expect(a.id).not.toBe(b.id);
@@ -122,68 +83,73 @@ describe('prescriptions.sign', () => {
     const ids = (await api.prescriptions.list('city-hospital')).map((r) => r.id);
     expect(ids).toEqual(expect.arrayContaining([a.id, b.id]));
     expect(MOCK_AUDIT.slice(0, 2).map((e) => e.kind)).toEqual(['sign_rx', 'sign_rx']);
-    expect((await api.hospitals.get('city-hospital'))?.monthlyRxUsed).toBe(usedBefore + 2);
+    expect(city.monthlyRxUsed).toBe(usedBefore + 2);
   });
 });
 
-describe('hospitals', () => {
-  const input: NewHospital = {
-    slug: 'test-clinic',
-    name: 'Test Clinic',
-    city: 'Lahore',
-    country: 'PK',
-    plan: 'starter',
-    contactEmail: 'admin@test-clinic.com',
-    monthlyRxCap: 200,
-  };
-
-  it('create provisions a trial hospital, records who did it, and refuses a taken slug', async () => {
-    const h = await api.hospitals.create(input, ADMIN);
-
-    expect(h).toMatchObject({ slug: 'test-clinic', status: 'trial', monthlyRxUsed: 0 });
-    expect(h.rxDesign.headerTitle).toBe('Test Clinic');
-    expect(MOCK_AUDIT[0]).toMatchObject({
-      kind: 'create_hospital',
-      hospitalSlug: 'test-clinic',
-      userId: 'u_admin_001',
-    });
-    await expect(api.hospitals.create(input, ADMIN)).rejects.toMatchObject({ status: 409 });
+describe('hospitals and patients, from the server', () => {
+  it('read from their endpoints', async () => {
+    const stub = serverAnswers([]);
+    await api.hospitals.list();
+    await api.hospitals.get('city-hospital');
+    await api.hospitals.profile('city-hospital');
+    await api.patients.list('city-hospital');
+    expect(stub.mock.calls.map((c) => c[0])).toEqual([
+      '/api/hospitals',
+      '/api/hospitals/city-hospital',
+      '/api/hospitals/city-hospital/profile',
+      '/api/hospitals/city-hospital/patients',
+    ]);
   });
 
-  it('updateSettings saves the features and design, and 404s for an unknown hospital', async () => {
-    const original = await api.hospitals.get('city-hospital');
-    if (!original) throw new Error('city-hospital is missing from the seed');
-    const features = {
-      ...original.features,
-      enableQuickPacks: !original.features.enableQuickPacks,
+  it('answer null for an unknown hospital', async () => {
+    serverAnswers({ error: 'No such hospital.' }, 404);
+    expect(await api.hospitals.get('no-such-hospital')).toBeNull();
+    expect(await api.hospitals.profile('no-such-hospital')).toBeNull();
+  });
+
+  it("add a patient at the patient's hospital, sending the rest as the body", async () => {
+    const stub = serverAnswers({ id: 'p_new' }, 201);
+    const patient: NewPatient = {
+      hospitalSlug: 'city-hospital',
+      name: 'Rahima Begum',
+      age: 0, // infants are valid patients
+      sex: 'F',
+      weightKg: 3.4,
+      contact: '—',
+      allergyStatus: 'none_known',
+      allergies: [],
+      activeProblems: [],
     };
-    const rxDesign = { ...original.rxDesign, headerTitle: 'Renamed for the test' };
+    expect(await api.patients.create(patient)).toEqual({ id: 'p_new' });
 
-    const saved = await api.hospitals.updateSettings('city-hospital', { features, rxDesign });
-    expect(saved.features.enableQuickPacks).toBe(features.enableQuickPacks);
-    expect((await api.hospitals.get('city-hospital'))?.rxDesign.headerTitle).toBe(
-      'Renamed for the test',
-    );
+    const [url, init] = stub.mock.calls[0];
+    expect(url).toBe('/api/hospitals/city-hospital/patients');
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body))).toEqual({ ...patient, hospitalSlug: undefined });
+  });
 
+  it("save a hospital's settings with PATCH", async () => {
+    const stub = serverAnswers({ slug: 'city-hospital' });
+    const city = MOCK_HOSPITALS.find((h) => h.slug === 'city-hospital')!;
     await api.hospitals.updateSettings('city-hospital', {
-      features: original.features,
-      rxDesign: original.rxDesign,
+      features: city.features,
+      rxDesign: city.rxDesign,
     });
-    await expect(
-      api.hospitals.updateSettings('no-such-hospital', { features, rxDesign }),
-    ).rejects.toMatchObject({ status: 404 });
+    expect(stub.mock.calls[0][0]).toBe('/api/hospitals/city-hospital');
+    expect(stub.mock.calls[0][1]?.method).toBe('PATCH');
+  });
+
+  it('pass on what the server refuses', async () => {
+    serverAnswers({ error: 'name: Too small' }, 400);
+    await expect(api.hospitals.list()).rejects.toMatchObject({
+      status: 400,
+      message: 'name: Too small',
+    });
   });
 });
 
-describe('reads from the server', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  function serverAnswers(body: unknown, status = 200) {
-    const stub = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body), { status }));
-    vi.stubGlobal('fetch', stub);
-    return stub;
-  }
-
+describe('other reads from the server', () => {
   it("ask the API for a hospital's doctors", async () => {
     const stub = serverAnswers([{ id: 'd_001' }]);
     expect(await api.users.listDoctors('city-hospital')).toEqual([{ id: 'd_001' }]);
@@ -191,19 +157,7 @@ describe('reads from the server', () => {
   });
 
   it("merge the server's audit log with what this tab wrote, newest first", async () => {
-    await api.patients.create(
-      {
-        hospitalSlug: 'city-hospital',
-        name: 'Local Patient',
-        age: 30,
-        sex: 'F',
-        weightKg: 60,
-        contact: '',
-        allergies: [],
-        activeProblems: [],
-      },
-      AYESHA,
-    );
+    const rx = await api.prescriptions.sign(draft(), AYESHA);
     const fromServer = {
       kind: 'login',
       userId: 'd_001',
@@ -214,7 +168,7 @@ describe('reads from the server', () => {
     const stub = serverAnswers([fromServer]);
     const events = await api.audit.list('city-hospital');
     expect(stub.mock.calls[0][0]).toBe('/api/hospitals/city-hospital/audit-events');
-    expect(events[0]).toMatchObject({ kind: 'create_patient', patientName: 'Local Patient' });
+    expect(events[0]).toMatchObject({ kind: 'sign_rx', rxId: rx.id });
     expect(events.at(-1)).toEqual(fromServer);
     // Another hospital's log leaves this tab's City Hospital write out.
     serverAnswers([]);

@@ -12,6 +12,8 @@ export type SessionState =
   | { status: 'signed-out'; ended?: boolean }
   | ({ status: 'signed-in' } & AuthSession);
 
+export type SignedIn = Extract<SessionState, { status: 'signed-in' }>;
+
 /**
  * The portal's session, as the server holds it. On mount it asks the API who
  * is signed in at this hospital (GET /api/auth/me), which checks the session

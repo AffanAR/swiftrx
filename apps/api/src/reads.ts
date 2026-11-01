@@ -87,7 +87,7 @@ export function readRoutes(deps: Deps) {
 }
 
 /** Whether a session may read a hospital's data: a platform admin, or one of its users. */
-function mayRead(auth: AuthSession, slug: string): boolean {
+export function mayRead(auth: AuthSession, slug: string): boolean {
   return auth.session.role === 'platform_admin' || auth.session.hospitalSlug === slug;
 }
 

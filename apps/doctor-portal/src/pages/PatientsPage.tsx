@@ -12,7 +12,7 @@ import {
 
 type Props = { hospital: Hospital; user: User };
 
-export function PatientsPage({ hospital, user }: Props) {
+export function PatientsPage({ hospital }: Props) {
   const patients = usePatients(hospital.slug);
   const createPatient = useCreatePatient();
   const [query, setQuery] = React.useState('');
@@ -41,17 +41,16 @@ export function PatientsPage({ hospital, user }: Props) {
     if (!name || !age || !weight) return;
     createPatient.mutate(
       {
-        patient: {
-          hospitalSlug: hospital.slug,
-          name,
-          age,
-          sex: form.sex,
-          weightKg: weight,
-          contact: form.contact.trim() || '—',
-          allergies: [],
-          activeProblems: [],
-        },
-        by: { id: user.id, email: user.email },
+        hospitalSlug: hospital.slug,
+        name,
+        age,
+        sex: form.sex,
+        weightKg: weight,
+        contact: form.contact.trim() || '—',
+        // This short form doesn't ask about allergies; the Rx pad's form does.
+        allergyStatus: 'not_recorded',
+        allergies: [],
+        activeProblems: [],
       },
       {
         onSuccess: () => {
@@ -117,8 +116,16 @@ export function PatientsPage({ hospital, user }: Props) {
                   ⚠ {p.allergies.join(', ')}
                 </span>
               ) : (
-                <span className="text-[10px] text-ink-500 border border-ink-700 rounded px-1.5 py-0.5">
-                  no allergies
+                <span
+                  className={
+                    p.allergyStatus === 'none_known'
+                      ? 'text-[10px] text-ink-500 border border-ink-700 rounded px-1.5 py-0.5'
+                      : 'text-[10px] text-rx-warn border border-rx-warn/40 rounded px-1.5 py-0.5'
+                  }
+                >
+                  {p.allergyStatus === 'none_known'
+                    ? 'no known allergies'
+                    : 'allergies not recorded'}
                 </span>
               )}
             </li>

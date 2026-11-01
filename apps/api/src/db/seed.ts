@@ -20,8 +20,6 @@
 //    sign in.
 //  - A user's single `hospitalSlug` and `role` become a membership; platform
 //    admins get `is_platform_admin` and no membership.
-//  - `allergies: []` is seeded as "not recorded", not "none known": the JSON
-//    can't tell the two apart, and assuming "none" is the unsafe guess.
 //  - A seeded Rx freezes the patient, the diagnosis and the hospital's Rx
 //    design as they are in the seed.
 //  - `monthlyRxUsed` isn't stored. It is a count of this month's prescriptions,
@@ -288,7 +286,7 @@ export async function seed(
         sex: p.sex,
         weightKg: p.weightKg,
         contact: p.contact,
-        allergyStatus: p.allergies.length > 0 ? ('recorded' as const) : ('not_recorded' as const),
+        allergyStatus: p.allergyStatus,
         activeProblems: p.activeProblems,
         activeMedications: p.activeMedications,
         recentVitals: p.recentVitals,

@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   MOCK_AUDIT,
   MOCK_DIAGNOSES,
+  MOCK_HOSPITALS,
   MOCK_PATIENTS,
   api,
   type Diagnosis,
+  type NewPatient,
   type Patient,
   type SignedRx,
 } from '@swiftrx/shared';
@@ -42,15 +44,19 @@ const SANA: DoctorIdentity = {
   hospitalSlug: 'northstar-medical',
 };
 
-/** What RxPad fetches for a hospital, straight from the data client. */
+/**
+ * What RxPad fetches for a hospital. The patients, hospital and catalog come
+ * from the server, so here from the seed it loads; signed Rx still come
+ * through the data client's mock.
+ */
 async function workspaceFor(slug: string): Promise<WorkspaceData> {
-  const [patients, signed, catalog, hospital] = await Promise.all([
-    api.patients.list(slug),
-    api.prescriptions.list(slug),
-    demoCatalog(),
-    api.hospitals.get(slug),
-  ]);
-  return { patients, signed, catalog, rxDesign: hospital?.rxDesign ?? null };
+  const hospital = MOCK_HOSPITALS.find((h) => h.slug === slug);
+  return {
+    patients: structuredClone(MOCK_PATIENTS.filter((p) => p.hospitalSlug === slug)),
+    signed: await api.prescriptions.list(slug),
+    catalog: demoCatalog(),
+    rxDesign: hospital?.rxDesign ?? null,
+  };
 }
 
 const dx = (code: string): Diagnosis => {
@@ -233,26 +239,39 @@ describe('createPatient', () => {
     sex: 'F' as const,
     weightKg: 55,
     contact: '—',
+    allergyStatus: 'not_recorded' as const,
     allergies: [],
     activeProblems: [],
   };
 
+  /** The server's answer to POST /hospitals/:slug/patients. */
+  const saved = (patient: NewPatient): Patient => ({
+    ...patient,
+    id: 'p_new',
+    activeMedications: [],
+    recentVitals: [],
+    createdAt: '2026-11-01T00:00:00.000Z',
+  });
+
   it("adds the patient to the doctor's hospital, selects them and closes the form", async () => {
+    const create = vi.spyOn(api.patients, 'create').mockImplementation(async (p) => saved(p));
     actions.openNewPatient();
     const id = await actions.createPatient(input);
 
+    expect(create).toHaveBeenCalledWith({ ...input, hospitalSlug: 'city-hospital' });
     const s = getState();
+    expect(id).toBe('p_new');
     expect(s.patientId).toBe(id);
     expect(s.showNewPatient).toBe(false);
     expect(s.savingPatient).toBe(false);
     expect(s.patients.find((p) => p.id === id)?.hospitalSlug).toBe('city-hospital');
-    expect(MOCK_AUDIT[0]).toMatchObject({ kind: 'create_patient', patientId: id, userId: 'd_001' });
   });
 
   it('refuses without a signed-in doctor', async () => {
+    const create = vi.spyOn(api.patients, 'create');
     store.set({ doctor: null });
     expect(await actions.createPatient(input)).toBe('');
-    expect(MOCK_PATIENTS.length).toBe(patientsBefore);
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('keeps the form open and says why when saving fails', async () => {

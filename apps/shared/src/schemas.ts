@@ -107,6 +107,31 @@ export const hospitalSchema = z.object({
   rxDesign: rxDesignSchema,
 });
 
+/** Subdomains that open the admin panel or the API, so no hospital can have them. */
+export const RESERVED_SLUGS: readonly string[] = ['admin', 'www', 'api'];
+
+/** What the admin panel sends to create a hospital (POST /api/hospitals). */
+export const newHospitalSchema = hospitalSchema
+  .pick({
+    slug: true,
+    name: true,
+    city: true,
+    country: true,
+    plan: true,
+    contactEmail: true,
+    monthlyRxCap: true,
+  })
+  .refine((h) => !RESERVED_SLUGS.includes(h.slug), {
+    message: 'That subdomain is reserved.',
+    path: ['slug'],
+  });
+
+/** A hospital's settings, which only the SwiftRx team changes (PATCH /api/hospitals/:slug). */
+export const hospitalSettingsSchema = z.object({
+  features: hospitalFeaturesSchema,
+  rxDesign: rxDesignSchema,
+});
+
 // --- Users ---------------------------------------------------------------------
 
 export const userSchema = z
@@ -129,7 +154,17 @@ export const userSchema = z
 
 // --- Patients ------------------------------------------------------------------
 
-export const patientSchema = z.object({
+export const allergyStatusSchema = z.enum(['not_recorded', 'none_known', 'recorded']);
+
+/** Allergies are listed exactly when the status says they were recorded. */
+const allergiesMatchStatus = {
+  check: (p: { allergyStatus: string; allergies: string[] }) =>
+    (p.allergyStatus === 'recorded') === p.allergies.length > 0,
+  message: 'List allergies with "recorded", and none with "none_known" or "not_recorded".',
+  path: ['allergyStatus'],
+};
+
+const patientFields = z.object({
   id: text,
   hospitalSlug: slug,
   name: text,
@@ -138,12 +173,35 @@ export const patientSchema = z.object({
   sex: sexSchema,
   weightKg: z.number().positive().max(500),
   contact: z.string(),
+  allergyStatus: allergyStatusSchema,
   allergies: z.array(text),
   activeProblems: z.array(text),
   activeMedications: z.array(z.object({ name: text, dose: z.string() })),
   recentVitals: z.array(z.object({ label: text, value: z.string() })),
   createdAt: timestamp,
 });
+
+export const patientSchema = patientFields.refine(allergiesMatchStatus.check, {
+  message: allergiesMatchStatus.message,
+  path: allergiesMatchStatus.path,
+});
+
+/** What a client sends to add a patient (POST /api/hospitals/:slug/patients). */
+export const newPatientSchema = patientFields
+  .pick({
+    name: true,
+    age: true,
+    sex: true,
+    weightKg: true,
+    contact: true,
+    allergyStatus: true,
+    allergies: true,
+    activeProblems: true,
+  })
+  .refine(allergiesMatchStatus.check, {
+    message: allergiesMatchStatus.message,
+    path: allergiesMatchStatus.path,
+  });
 
 // --- Catalog -------------------------------------------------------------------
 

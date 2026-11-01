@@ -33,7 +33,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/hospitals" element={<HospitalsListPage />} />
-          <Route path="/hospitals/new" element={<NewHospitalPage admin={session.session} />} />
+          <Route path="/hospitals/new" element={<NewHospitalPage />} />
           <Route path="/hospitals/:slug" element={<HospitalDetailPage />} />
           <Route path="/hospitals/:slug/features" element={<HospitalFeaturesPage />} />
           <Route path="/audit" element={<AuditLogPage />} />

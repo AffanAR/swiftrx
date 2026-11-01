@@ -35,6 +35,7 @@ const patient = (overrides: Partial<Patient> = {}): Patient => ({
   sex: 'F',
   weightKg: 60,
   contact: '—',
+  allergyStatus: 'not_recorded',
   allergies: [],
   activeProblems: [],
   activeMedications: [],

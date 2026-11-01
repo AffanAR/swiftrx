@@ -7,7 +7,7 @@ import {
   TextField,
   fetchPasswordLink,
   setPassword,
-  type Hospital,
+  type HospitalProfile,
   type PasswordLinkInfo,
 } from '@swiftrx/shared';
 
@@ -22,7 +22,7 @@ type Status =
  * Works signed in or out; setting the password ends every session the user
  * had, and they sign in again with the new one.
  */
-export function SetPasswordPage({ hospital }: { hospital: Hospital }) {
+export function SetPasswordPage({ hospital }: { hospital: HospitalProfile }) {
   const [token] = React.useState(() => window.location.hash.slice(1));
   const [status, setStatus] = React.useState<Status>({ step: 'checking' });
   const [password, setPasswordValue] = React.useState('');

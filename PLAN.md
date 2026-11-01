@@ -549,8 +549,36 @@ In this order:
   - Admin stats still count doctors from the mock db, so an invited doctor
     shows on the hospital's roster but not in the admin's totals until the
     users endpoint moves.
-- [ ] **Read endpoints** that mirror the `mockDb` helpers: hospital,
-      patients, and the drug, diagnosis and quick-pack catalog.
+- [x] **Read endpoints** that mirror the `mockDb` helpers: hospital,
+      patients, and the drug, diagnosis and quick-pack catalog. (Done
+      2026-11-01, with the writes that go with them, so nothing created in
+      the browser vanishes on reload. Checked in the browser.)
+  - **Catalog:** `GET /api/catalog` (2026-10-31, with the Bangladesh medicine
+    list), sent compressed and built once per process.
+  - **Hospitals** (`apps/api/src/hospitals.ts`): `GET /api/hospitals` and
+    `POST /api/hospitals` for the platform admin; `GET /api/hospitals/:slug`
+    for the admin or the hospital's users; `PATCH /api/hospitals/:slug` for
+    features and the Rx design, platform admin only (D12). A public
+    `GET /api/hospitals/:slug/profile` (name, city, plan) is what a portal's
+    sign-in page reads; the full record waits for a session. New hospitals
+    refuse the reserved subdomains `admin`, `www` and `api`.
+  - **`monthlyRxUsed`** is counted from `prescriptions` signed since the
+    start of the month in Bangladesh time (UTC+6). The seed's demo figures
+    (1247, 412, 31) are gone, and until `POST /prescriptions` lands the
+    count only sees seeded prescriptions, so it reads 0.
+  - **Patients:** `GET` and `POST /api/hospitals/:slug/patients`. Only the
+    hospital's own users add patients; the server assigns the id and writes
+    the audit row in the same transaction.
+  - **Allergy status** reached the contract: `Patient.allergyStatus` is
+    `recorded`, `none_known` or `not_recorded`, and the schema refuses
+    allergies that contradict it. The pad's new-patient form has a "No known
+    allergies" box; the pad and the roster say "not recorded" instead of
+    "no allergies" when nobody asked.
+  - The client sends no actor any more for these writes: the server takes it
+    from the session. The admin's localStorage overrides are gone.
+  - Still from the browser's mock: the account list (`GET /users`, which the
+    admin's doctor counts use) and prescriptions. A settings change isn't
+    audited yet (no audit kind for it).
 - [ ] **`POST /prescriptions`:** the server
   - assigns the id and timestamp;
   - re-runs `safety.ts` (pure, so it runs unchanged) and enforces role,
@@ -598,8 +626,11 @@ the server creates a signed Rx.
 
 - [ ] Server-rendered PDF, plus a verification page and QR code per Rx (City
       Hospital's footer already promises a verify URL).
-- [ ] PMDC license verification for doctors.
-- [ ] Urdu patient instructions (add `ur`; right-to-left print).
+- [ ] BMDC registration check for doctors (Bangladesh, ROADMAP.md D13; the
+      seed's license numbers still say PMDC).
+- [ ] Bangla patient instructions (add `bn` and drop the unused languages
+      from `languageSchema`; Bangla prints left to right, but needs a font
+      with Bengali script).
 - [ ] Hosting with backups, monitoring (e.g. Sentry) and logs that contain no
       patient data. (A public demo with no patient data is set up instead for
       now: Render + Cloudflare at `thesyndicate.bond`, `scripts/serve.mjs`,

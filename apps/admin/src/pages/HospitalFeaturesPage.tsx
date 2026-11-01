@@ -469,6 +469,7 @@ function sampleRx(hospitalSlug: string, doctor?: User): SignedRx {
       sex: 'M',
       weightKg: 78,
       contact: '+92-300-1234567',
+      allergyStatus: 'recorded',
       allergies: ['Penicillin'],
       activeProblems: [],
       activeMedications: [],

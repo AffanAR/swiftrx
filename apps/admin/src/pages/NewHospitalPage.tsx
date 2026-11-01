@@ -9,16 +9,15 @@ import {
   normalizeSlug,
   ROOT_DOMAIN,
   useCreateHospital,
-  type SessionPayload,
 } from '@swiftrx/shared';
 
-/** `admin` is the signed-in platform admin, recorded on the audit event. */
-export function NewHospitalPage({ admin }: { admin: Pick<SessionPayload, 'userId' | 'email'> }) {
+/** The server records the signed-in platform admin on the audit event. */
+export function NewHospitalPage() {
   const navigate = useNavigate();
   const createHospital = useCreateHospital();
   const [name, setName] = React.useState('');
   const [city, setCity] = React.useState('');
-  const [country, setCountry] = React.useState('PK');
+  const [country, setCountry] = React.useState('BD');
   const [plan, setPlan] = React.useState<'starter' | 'clinic' | 'enterprise'>('clinic');
   const [cap, setCap] = React.useState('1000');
   const [contact, setContact] = React.useState('');
@@ -34,16 +33,13 @@ export function NewHospitalPage({ admin }: { admin: Pick<SessionPayload, 'userId
     }
     createHospital.mutate(
       {
-        hospital: {
-          slug: normalizeSlug(name),
-          name: name.trim(),
-          city: city.trim(),
-          country,
-          plan,
-          contactEmail: contact.trim(),
-          monthlyRxCap: parseInt(cap, 10) || 1000,
-        },
-        by: { id: admin.userId, email: admin.email },
+        slug: normalizeSlug(name),
+        name: name.trim(),
+        city: city.trim(),
+        country,
+        plan,
+        contactEmail: contact.trim(),
+        monthlyRxCap: parseInt(cap, 10) || 1000,
       },
       {
         onSuccess: (hospital) => navigate(`/hospitals/${hospital.slug}`),
@@ -88,7 +84,7 @@ export function NewHospitalPage({ admin }: { admin: Pick<SessionPayload, 'userId
             label="Country (ISO)"
             value={country}
             onChange={setCountry}
-            placeholder="PK"
+            placeholder="BD"
             required
           />
           <Select

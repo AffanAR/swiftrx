@@ -7,7 +7,7 @@ import { cx, AnimatedNumber } from './ui';
 import { DEMO_MODE } from './config';
 import { fetchDemoAccounts } from './auth';
 import { currentTheme, setTheme, subscribeTheme } from './theme';
-import type { DemoAccount, Hospital } from './types';
+import type { DemoAccount, HospitalProfile } from './types';
 
 export function TextField({
   label,
@@ -235,7 +235,7 @@ export function StatTile({
   );
 }
 
-export function HospitalBadge({ hospital }: { hospital: Hospital }) {
+export function HospitalBadge({ hospital }: { hospital: HospitalProfile }) {
   return (
     <div className="flex items-center gap-3">
       <div
@@ -281,8 +281,8 @@ export function DemoFrame({ children }: { children: React.ReactNode }) {
         role="note"
         className="shrink-0 px-3 py-1.5 text-center text-xs text-rx-warn bg-rx-warn/15 border-b border-rx-warn/30"
       >
-        <span className="font-semibold">Demo</span> · Patient data isn't saved to a server, and most
-        changes reset on reload. Don't enter real patient details.
+        <span className="font-semibold">Demo</span> · Everything resets when the demo server
+        restarts, and prescriptions on reload. Don't enter real patient details.
       </div>
       <div className="flex-1 min-h-0">{children}</div>
     </div>

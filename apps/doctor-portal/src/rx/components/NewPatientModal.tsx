@@ -13,6 +13,8 @@ export function NewPatientModal() {
   const [weight, setWeight] = React.useState('');
   const [contact, setContact] = React.useState('');
   const [allergies, setAllergies] = React.useState<string[]>([]);
+  // With no allergies listed: did the patient say "none", or did nobody ask?
+  const [noneKnown, setNoneKnown] = React.useState(false);
   const [problems, setProblems] = React.useState<string[]>([]);
   const [activeField, setActiveField] = React.useState<FieldKey>('name');
 
@@ -95,6 +97,7 @@ export function NewPatientModal() {
       sex,
       weightKg: weightNum,
       contact: contact.trim() || '—',
+      allergyStatus: allergies.length > 0 ? 'recorded' : noneKnown ? 'none_known' : 'not_recorded',
       allergies,
       activeProblems: problems,
     });
@@ -226,6 +229,16 @@ export function NewPatientModal() {
             onAdd={(v) => addChip('allergy', v)}
             onRemove={(v) => removeChip('allergy', v)}
           />
+          {allergies.length === 0 && (
+            <label className="-mt-2 flex items-center gap-2 text-xs text-ink-300">
+              <input
+                type="checkbox"
+                checked={noneKnown}
+                onChange={(e) => setNoneKnown(e.target.checked)}
+              />
+              No known allergies (asked the patient)
+            </label>
+          )}
 
           <ChipRow
             label="Active problems"

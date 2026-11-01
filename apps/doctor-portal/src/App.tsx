@@ -1,7 +1,7 @@
 import { lazy, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { PageBoundary, useHospital } from '@swiftrx/shared';
-import { useSession, type SessionState } from './useSession';
+import { PageBoundary, useHospital, useHospitalProfile } from '@swiftrx/shared';
+import { useSession, type SessionState, type SignedIn } from './useSession';
 import { useKeepTenantQuery, useTenantSlug } from './tenantStore';
 import { canPrescribe, sessionBelongsTo } from './auth';
 import { LoginPage } from './pages/LoginPage';
@@ -23,11 +23,12 @@ export default function App() {
 }
 
 /**
- * The portal for one hospital. Fetching the hospital suspends; main.tsx shows
- * the loading and error states for it.
+ * The portal for one hospital. Before sign-in it knows only the hospital's
+ * public profile (name and plan); the rest needs a session there. Fetching
+ * either suspends; main.tsx shows the loading and error states for it.
  */
 function TenantPortal({ slug }: { slug: string }) {
-  const hospital = useHospital(slug);
+  const hospital = useHospitalProfile(slug);
   const [stored, signOut, signedIn] = useSession(slug);
   useKeepTenantQuery(slug);
   const { pathname } = useLocation();
@@ -66,6 +67,22 @@ function TenantPortal({ slug }: { slug: string }) {
       </Routes>
     );
   }
+
+  return <SignedInPortal slug={slug} session={session} signOut={signOut} />;
+}
+
+/** The portal once signed in, with the hospital's full record. */
+function SignedInPortal({
+  slug,
+  session,
+  signOut,
+}: {
+  slug: string;
+  session: SignedIn;
+  signOut: () => void;
+}) {
+  const hospital = useHospital(slug);
+  if (!hospital) return <NoTenant />;
 
   const { user } = session;
   const isAdmin = user.role === 'hospital_admin';

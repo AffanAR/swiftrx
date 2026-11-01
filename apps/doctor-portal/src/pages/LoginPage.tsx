@@ -10,11 +10,11 @@ import {
   signIn,
   signInErrorMessage,
   type AuthSession,
-  type Hospital,
+  type HospitalProfile,
 } from '@swiftrx/shared';
 
 type Props = {
-  hospital: Hospital;
+  hospital: HospitalProfile;
   onSignedIn: (auth: AuthSession) => void;
   /** The last session ended on its own (expired or dropped by the server). */
   ended?: boolean;
