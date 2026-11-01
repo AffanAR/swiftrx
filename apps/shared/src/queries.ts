@@ -186,6 +186,16 @@ export function useInviteDoctor(slug: string) {
   });
 }
 
+/** The platform admin invites a hospital's admin. */
+export function useInviteHospitalAdmin(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { email: string; name: string }) =>
+      api.users.inviteHospitalAdmin(slug, input),
+    onSuccess: () => refetch(qc, ['audit']),
+  });
+}
+
 /** A new password link for one of the admin's hospital's users. */
 export function usePasswordLink() {
   return useMutation({ mutationFn: (userId: string) => api.users.passwordLink(userId) });

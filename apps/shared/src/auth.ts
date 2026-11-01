@@ -14,6 +14,7 @@
 // =============================================================================
 
 import { callApi, withSurface } from './http';
+import { hospitalPortalUrl } from './tenant';
 import type { AuthSession, DemoAccount, SignInRefusal } from './types';
 
 /** Why a sign-in failed: the server's reason, or 'unavailable' when it couldn't be asked. */
@@ -154,6 +155,14 @@ export function setPasswordUrl(token: string): string {
   // globalThis, not window: the API type-checks this file without the DOM.
   const origin = (globalThis as { location?: { origin: string } }).location?.origin ?? '';
   return `${origin}${withSurface('/set-password')}#${token}`;
+}
+
+/**
+ * The same, on another hospital's portal: what the admin panel hands on when
+ * it invites a hospital's admin. A token only works at its own hospital.
+ */
+export function hospitalSetPasswordUrl(slug: string, token: string): string {
+  return `${hospitalPortalUrl(slug)}/set-password#${token}`;
 }
 
 /** What a link's token is for, or null if it's unknown, used or expired. */

@@ -62,8 +62,8 @@ export function NewHospitalPage() {
           <span className="font-mono text-ink-300">
             {normalizeSlug(name) || 'slug'}.{ROOT_DOMAIN}
           </span>
-          ) and default settings, and starts as a trial. It has no users yet: inviting its first
-          hospital admin from here isn't built yet.
+          ) and default settings, and starts as a trial. It has no users yet: invite its first
+          hospital admin from the hospital's page next.
         </p>
       </div>
 

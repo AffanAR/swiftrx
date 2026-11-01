@@ -48,7 +48,7 @@ function server() {
 const newDoctor = (email: string) => ({
   email,
   name: 'Dr. New Doctor',
-  licenseNo: 'BMDC-A-12345',
+  licenseNo: 'BMDC A-12345',
   specialty: 'Medicine',
 });
 
@@ -178,5 +178,119 @@ describe('reset links', () => {
       .from(users)
       .where(and(eq(users.id, user.id), eq(users.status, 'invited')));
     expect(pending).toHaveLength(1);
+  });
+});
+
+describe("a hospital's first admin", () => {
+  const ADMIN_HOST = 'http://admin.swiftrx.com';
+  const PLATFORM_ADMIN = { email: 'admin@swiftrx.com', password: 'admin1234' };
+  const invite = (email: string) => ({
+    hospitalSlug: 'riverside-clinic',
+    email,
+    name: 'Nasrin Akter',
+  });
+
+  it('is invited by the platform admin, sets a password at the hospital and runs it', async () => {
+    const s = server();
+    const platform = await s.signIn(ADMIN_HOST, PLATFORM_ADMIN);
+
+    const res = await s.post(
+      ADMIN_HOST,
+      'hospital-admin-invites',
+      invite('nasrin@riverside-clinic.com'),
+      platform,
+    );
+    expect(res.status).toBe(201);
+    const { user, token, purpose } = (await res.json()) as Link;
+    expect(purpose).toBe('invite');
+    expect(user).toMatchObject({
+      role: 'hospital_admin',
+      hospitalSlug: 'riverside-clinic',
+      status: 'invited',
+    });
+    const [audit] = await database.db
+      .select()
+      .from(auditEvents)
+      .orderBy(desc(auditEvents.id))
+      .limit(1);
+    expect(audit).toMatchObject({ kind: 'invite_user', actorEmail: 'admin@swiftrx.com' });
+
+    // The link works at the hospital's portal only.
+    const RIVERSIDE = 'http://riverside-clinic.swiftrx.com';
+    expect((await s.post(CITY, 'set-password', { token, password: 'riverside-pw-1' })).status).toBe(
+      410,
+    );
+    expect(
+      (await s.post(RIVERSIDE, 'set-password', { token, password: 'riverside-pw-1' })).status,
+    ).toBe(204);
+
+    // Signed in, the new admin can invite the hospital's first doctor.
+    const cookie = await s.signIn(RIVERSIDE, {
+      email: 'nasrin@riverside-clinic.com',
+      password: 'riverside-pw-1',
+    });
+    const doctor = await s.post(
+      RIVERSIDE,
+      'invites',
+      newDoctor('first.doctor@riverside-clinic.com'),
+      cookie,
+    );
+    expect(doctor.status).toBe(201);
+  });
+
+  it('gives an admin who never used their link a new one', async () => {
+    const s = server();
+    const platform = await s.signIn(ADMIN_HOST, PLATFORM_ADMIN);
+    const first = (await (
+      await s.post(
+        ADMIN_HOST,
+        'hospital-admin-invites',
+        invite('lost@riverside-clinic.com'),
+        platform,
+      )
+    ).json()) as Link;
+    const again = await s.post(
+      ADMIN_HOST,
+      'hospital-admin-invites',
+      invite('lost@riverside-clinic.com'),
+      platform,
+    );
+    expect(again.status).toBe(201);
+    const second = (await again.json()) as Link;
+    expect(second.user.id).toBe(first.user.id);
+    expect(second.token).not.toBe(first.token);
+  });
+
+  it('refuses an email that belongs to another account, and anyone but the platform admin', async () => {
+    const s = server();
+    const platform = await s.signIn(ADMIN_HOST, PLATFORM_ADMIN);
+    expect(
+      (
+        await s.post(
+          ADMIN_HOST,
+          'hospital-admin-invites',
+          invite('ayesha@city-hospital.com'),
+          platform,
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await s.post(
+          ADMIN_HOST,
+          'hospital-admin-invites',
+          { ...invite('x@example.com'), hospitalSlug: 'nowhere' },
+          platform,
+        )
+      ).status,
+    ).toBe(404);
+
+    const cityAdmin = await s.signIn(CITY, CITY_ADMIN);
+    expect(
+      (await s.post(CITY, 'hospital-admin-invites', invite('y@example.com'), cityAdmin)).status,
+    ).toBe(403);
+    expect(
+      (await s.post(ADMIN_HOST, 'hospital-admin-invites', invite('z@example.com'))).status,
+    ).toBe(401);
   });
 });

@@ -120,6 +120,20 @@ export const api = {
     listDoctors: (slug: string): Promise<User[]> =>
       callApi<User[]>(`/hospitals/${encodeURIComponent(slug)}/doctors`),
 
+    /**
+     * POST /auth/hospital-admin-invites — by the platform admin: an admin for
+     * a hospital (a new hospital's first). Again for the same invited admin,
+     * a new link.
+     */
+    inviteHospitalAdmin: (
+      hospitalSlug: string,
+      input: { email: string; name: string },
+    ): Promise<PasswordLink & { user: User }> =>
+      callApi('/auth/hospital-admin-invites', {
+        method: 'POST',
+        body: { hospitalSlug, ...input },
+      }),
+
     /** POST /auth/invites — by a hospital admin, for their hospital. */
     invite: (input: DoctorInvite): Promise<PasswordLink & { user: User }> =>
       callApi('/auth/invites', { method: 'POST', body: input }),

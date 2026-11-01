@@ -167,7 +167,7 @@ function InviteForm({
             label="License number"
             value={licenseNo}
             onChange={setLicenseNo}
-            placeholder="BMDC-A-12345"
+            placeholder="BMDC A-12345"
             required
           />
           <TextField label="Specialty" value={specialty} onChange={setSpecialty} />

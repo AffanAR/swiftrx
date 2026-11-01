@@ -1,13 +1,19 @@
+import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import {
   Card,
   ProgressBar,
+  Spinner,
   StatTile,
+  TextField,
   HospitalBadge,
   cx,
   hospitalPortalUrl,
+  hospitalSetPasswordUrl,
   queries,
+  useInviteHospitalAdmin,
+  type Hospital,
 } from '@swiftrx/shared';
 import { auditColor, auditTitle } from '../audit';
 
@@ -106,6 +112,8 @@ export function HospitalDetailPage() {
           />
         </div>
       </Card>
+
+      <InviteHospitalAdmin hospital={hospital} />
 
       <div className="grid lg:grid-cols-2 gap-4">
         <Card title="Doctors" subtitle={`${doctors.length} on staff`}>
@@ -208,6 +216,101 @@ export function HospitalDetailPage() {
         </ul>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Invite an admin for the hospital: how a new hospital gets its first user,
+ * who then invites its doctors from the portal. There's no email sender yet,
+ * so the page shows the link, on the hospital's own portal, to pass on.
+ */
+function InviteHospitalAdmin({ hospital }: { hospital: Hospital }) {
+  const invite = useInviteHospitalAdmin(hospital.slug);
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [link, setLink] = React.useState<{ url: string; name: string; email: string } | null>(null);
+  const [copied, setCopied] = React.useState(false);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCopied(false);
+    invite.mutate(
+      { name, email },
+      {
+        onSuccess: (r) => {
+          setLink({
+            url: hospitalSetPasswordUrl(hospital.slug, r.token),
+            name: r.user.name,
+            email: r.user.email,
+          });
+          setName('');
+          setEmail('');
+        },
+      },
+    );
+  };
+  const copy = () =>
+    link &&
+    navigator.clipboard.writeText(link.url).then(
+      () => setCopied(true),
+      () => setCopied(false),
+    );
+
+  return (
+    <Card
+      title="Hospital admin"
+      subtitle="Invite the person who runs this hospital on SwiftRx. They invite its doctors."
+    >
+      {link ? (
+        <div className="space-y-3 text-sm">
+          <p className="text-ink-400">
+            Send this link to <span className="font-mono text-ink-200">{link.email}</span> yourself,
+            and to no one else: it lets whoever opens it set {link.name}'s password. It works once,
+            for 7 days, on {hospital.name}'s portal. Inviting the same email again makes a new link.
+          </p>
+          <div className="flex gap-2">
+            <input
+              readOnly
+              value={link.url}
+              aria-label="Invitation link"
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 min-w-0 rounded-md bg-ink-800 border border-ink-600 px-2 py-1.5 font-mono text-xs text-ink-200"
+            />
+            <button className="rx-btn-primary" onClick={copy}>
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button className="rx-btn-ghost" onClick={() => setLink(null)}>
+              Done
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <TextField label="Name" value={name} onChange={setName} required />
+            <TextField label="Work email" type="email" value={email} onChange={setEmail} required />
+          </div>
+          {invite.error && (
+            <div role="alert" className="text-sm text-rx-danger">
+              {invite.error.message}
+            </div>
+          )}
+          <button
+            type="submit"
+            className="rx-btn-primary"
+            disabled={invite.isPending || !name.trim() || !email.trim()}
+          >
+            {invite.isPending ? (
+              <>
+                <Spinner /> Inviting…
+              </>
+            ) : (
+              'Invite hospital admin'
+            )}
+          </button>
+        </form>
+      )}
+    </Card>
   );
 }
 

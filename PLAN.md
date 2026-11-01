@@ -540,6 +540,13 @@ In this order:
     pre-Argon2 dev database left with bcrypt; `serve.mjs` logs its memory
     after start-up and at each new peak, for Render's 512 MB.
 
+  - **A new hospital's first admin** (2026-11-02). The platform admin invites
+    a hospital admin from the hospital's page in the admin panel
+    (`POST /api/auth/hospital-admin-invites`); the link opens on that
+    hospital's portal. Inviting the same still-invited admin again makes a
+    new link. Before this, a hospital created in the admin panel had no way
+    in.
+
   Left:
   - An email sender, then self-service password reset and emailed
     invitations.
