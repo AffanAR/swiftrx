@@ -9,15 +9,22 @@
 //  (21,700 brands), sent compressed (about 0.4 MB).
 //
 //  Every hospital shares one catalog, and nothing writes to it while the
-//  server runs, so the answer is built once and reused. Any signed-in user
-//  may read it; without a session it's a 401 like the other reads.
+//  server runs, so it's read once. Any signed-in user may read it; without a
+//  session it's a 401 like the other reads.
+//
+//  A hospital's feature switches decide what its users get: with brand search
+//  off there are no brands, with quick packs off no packs, and with
+//  investigations off no investigations (nor any suggested for a diagnosis).
+//  The pad hides what comes back empty, so a switch works even if the pad
+//  were changed to ignore it. Each of the eight combinations is turned into
+//  JSON once and reused. A platform admin gets everything.
 // =============================================================================
 
-import { asc } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { compress } from 'hono/compress';
 
-import type { Catalog, Investigation } from '@swiftrx/shared/types';
+import type { Catalog, HospitalFeatures, Investigation } from '@swiftrx/shared/types';
 
 import { currentSession, type AuthDeps } from './auth/routes';
 import {
@@ -25,6 +32,8 @@ import {
   diagnoses,
   diagnosisInvestigations,
   drugs,
+  hospitalSettings,
+  hospitals,
   investigations,
   quickPacks,
 } from './db/schema';
@@ -33,24 +42,69 @@ type Deps = Pick<AuthDeps, 'db' | 'now' | 'rootDomain' | 'secureCookies'>;
 
 export function catalogRoutes(deps: Deps) {
   const routes = new Hono();
-  let body: Promise<string> | undefined;
+  let full: Promise<Catalog> | undefined;
+  const bodies = new Map<string, Promise<string>>();
 
   routes.get('/catalog', compress(), async (c) => {
     c.header('Cache-Control', 'no-store');
-    if (!(await currentSession(c, deps))) return c.json({ error: 'Sign in first.' }, 401);
+    const auth = await currentSession(c, deps);
+    if (!auth) return c.json({ error: 'Sign in first.' }, 401);
 
-    body ??= readCatalog(deps).then((catalog) => JSON.stringify(catalog));
+    const features =
+      auth.session.role === 'platform_admin'
+        ? null
+        : await featuresOf(deps, auth.session.hospitalSlug);
+    const parts = {
+      brands: features?.enableBrandSearch ?? true,
+      quickPacks: features?.enableQuickPacks ?? true,
+      investigations: features?.enableInvestigations ?? true,
+    };
+    const key = JSON.stringify(parts);
+
+    full ??= readCatalog(deps);
+    let body = bodies.get(key);
+    if (!body) {
+      body = full.then((catalog) => JSON.stringify(withParts(catalog, parts)));
+      bodies.set(key, body);
+    }
     try {
       const json = await body;
       c.header('Content-Type', 'application/json; charset=UTF-8');
       return c.body(json);
     } catch (error) {
-      body = undefined; // try again on the next request
+      // Try again on the next request.
+      full = undefined;
+      bodies.clear();
       throw error;
     }
   });
 
   return routes;
+}
+
+/** The catalog without the parts a hospital has switched off. */
+export function withParts(
+  catalog: Catalog,
+  parts: { brands: boolean; quickPacks: boolean; investigations: boolean },
+): Catalog {
+  return {
+    drugs: catalog.drugs,
+    brands: parts.brands ? catalog.brands : [],
+    diagnoses: parts.investigations
+      ? catalog.diagnoses
+      : catalog.diagnoses.map((dx) => ({ code: dx.code, name: dx.name, category: dx.category })),
+    investigations: parts.investigations ? catalog.investigations : [],
+    quickPacks: parts.quickPacks ? catalog.quickPacks : [],
+  };
+}
+
+async function featuresOf(deps: Pick<Deps, 'db'>, slug: string): Promise<HospitalFeatures | null> {
+  const [row] = await deps.db
+    .select({ features: hospitalSettings.features })
+    .from(hospitalSettings)
+    .innerJoin(hospitals, eq(hospitals.id, hospitalSettings.hospitalId))
+    .where(eq(hospitals.slug, slug));
+  return row?.features ?? null;
 }
 
 /** The catalog in the shapes the apps use. */

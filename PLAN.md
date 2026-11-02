@@ -595,7 +595,29 @@ In this order:
     `shortHash(id)`;
   - writes the audit row in the same transaction.
 - [ ] Server-side enforcement: tenant scoping, caps, flags, suspended status
-      and reserved slugs.
+      and reserved slugs. (Most of it done 2026-11-03, checked in the
+      browser; the prescription limits wait for `POST /prescriptions`.)
+  - **Tenant scoping:** every read and write since the read endpoints checks
+    the session's hospital (403 otherwise). **Reserved slugs:** `admin`,
+    `www` and `api` since the hospital endpoints.
+  - **Suspended status:** sign-in is refused and every session at the
+    hospital ends (the auth step). New: `PATCH /api/hospitals/:slug/status`
+    for the platform admin, and the admin panel's Suspend / Reactivate
+    button, which asks first.
+  - **`maxPatients`:** adding a patient over the limit is a 409, checked
+    with the hospital's settings row locked so two at once can't both slip
+    under it.
+  - **Feature switches:** `GET /api/catalog` leaves out brands, quick packs
+    and investigations (and suggested investigations) for a hospital that
+    has switched them off, and the pad hides what comes back empty. The
+    switches did nothing before. The seed has some off: Northstar has no
+    brand search, Riverside no quick packs or investigations.
+  - **Audit:** settings changes (`update_hospital`, only when something
+    changed) and status changes (`change_hospital_status`), migration `0006`.
+  - Left for `POST /prescriptions`: the monthly Rx cap,
+    `maxMedicationsPerRx`, and what `enableSafetyAlerts` and
+    `allowPdfExport` should mean on the server (turning safety alerts off
+    for a hospital is a clinical-safety decision, not just a switch).
 - [x] Hosting: the API under `/api` on the same origin, CSP and HSTS headers,
       and a managed Postgres for the hosted demo. (The API under `/api` was
       done with the auth step, and the demo runs PGlite in memory instead of

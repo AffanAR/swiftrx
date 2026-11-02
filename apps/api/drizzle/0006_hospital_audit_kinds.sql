@@ -1,0 +1,2 @@
+ALTER TABLE "audit_events" DROP CONSTRAINT "audit_events_kind_valid";--> statement-breakpoint
+ALTER TABLE "audit_events" ADD CONSTRAINT "audit_events_kind_valid" CHECK ("audit_events"."kind" in ('login', 'sign_rx', 'create_patient', 'create_hospital', 'invite_user', 'update_hospital', 'change_hospital_status'));

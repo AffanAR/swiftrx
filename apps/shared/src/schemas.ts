@@ -132,6 +132,9 @@ export const hospitalSettingsSchema = z.object({
   rxDesign: rxDesignSchema,
 });
 
+/** A hospital status change, by the SwiftRx team (PATCH /api/hospitals/:slug/status). */
+export const hospitalStatusChangeSchema = z.object({ status: hospitalStatusSchema });
+
 // --- Users ---------------------------------------------------------------------
 
 export const userSchema = z
@@ -345,6 +348,19 @@ export const auditEventSchema = z.discriminatedUnion('kind', [
     ...auditBase,
     hospitalSlug: slug,
     invitedEmail: z.email(),
+  }),
+  z.object({
+    kind: z.literal('update_hospital'),
+    ...auditBase,
+    hospitalSlug: slug,
+    changed: z.array(z.enum(['features', 'rxDesign'])),
+  }),
+  z.object({
+    kind: z.literal('change_hospital_status'),
+    ...auditBase,
+    hospitalSlug: slug,
+    from: hospitalStatusSchema,
+    to: hospitalStatusSchema,
   }),
 ]);
 

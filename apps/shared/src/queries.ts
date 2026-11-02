@@ -19,7 +19,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { ApiError, api, type DoctorInvite, type NewHospital, type NewPatient } from './api';
-import type { HospitalFeatures, RxDesign, User } from './types';
+import type { Hospital, HospitalFeatures, RxDesign, User } from './types';
 
 /** Doctors, patients and signed Rx per hospital, for the admin's hospital list. */
 export interface HospitalStats {
@@ -130,6 +130,18 @@ export function useCreateHospital() {
   return useMutation({
     mutationFn: (hospital: NewHospital) => api.hospitals.create(hospital),
     onSuccess: () => afterWrite.hospitalCreated(qc),
+  });
+}
+
+/** The platform admin suspends or reactivates a hospital. */
+export function useSetHospitalStatus(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (status: Hospital['status']) => api.hospitals.setStatus(slug, status),
+    onSuccess: (hospital) => {
+      qc.setQueryData(queries.hospital(hospital.slug).queryKey, hospital);
+      return refetch(qc, ['hospitals'], ['audit']);
+    },
   });
 }
 

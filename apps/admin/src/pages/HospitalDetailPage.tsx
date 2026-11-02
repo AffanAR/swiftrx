@@ -13,6 +13,7 @@ import {
   hospitalSetPasswordUrl,
   queries,
   useInviteHospitalAdmin,
+  useSetHospitalStatus,
   type Hospital,
 } from '@swiftrx/shared';
 import { auditColor, auditTitle } from '../audit';
@@ -64,7 +65,7 @@ export function HospitalDetailPage() {
           <Link to={`/hospitals/${hospital.slug}/features`} className="rx-btn-ghost">
             Features &amp; Rx design
           </Link>
-          <button className="rx-btn-ghost">Suspend</button>
+          <StatusButton hospital={hospital} />
           <a
             className="rx-btn-primary"
             href={hospitalPortalUrl(hospital.slug)}
@@ -311,6 +312,42 @@ function InviteHospitalAdmin({ hospital }: { hospital: Hospital }) {
         </form>
       )}
     </Card>
+  );
+}
+
+/**
+ * Suspend a hospital, or reactivate one. Suspending signs out everyone there
+ * at once and refuses their sign-ins until it's reactivated, so it asks first.
+ */
+function StatusButton({ hospital }: { hospital: Hospital }) {
+  const setStatus = useSetHospitalStatus(hospital.slug);
+  const suspended = hospital.status === 'suspended';
+  const toggle = () => {
+    if (
+      !suspended &&
+      !window.confirm(
+        `Suspend ${hospital.name}? Everyone there is signed out at once and can't sign in until you reactivate it.`,
+      )
+    ) {
+      return;
+    }
+    setStatus.mutate(suspended ? 'active' : 'suspended');
+  };
+  return (
+    <>
+      <button
+        className={suspended ? 'rx-btn-primary' : 'rx-btn-ghost'}
+        disabled={setStatus.isPending}
+        onClick={toggle}
+      >
+        {setStatus.isPending ? <Spinner /> : suspended ? 'Reactivate' : 'Suspend'}
+      </button>
+      {setStatus.error && (
+        <span role="alert" className="text-xs text-rx-danger self-center">
+          {setStatus.error.message}
+        </span>
+      )}
+    </>
   );
 }
 

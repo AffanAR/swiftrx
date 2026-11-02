@@ -80,7 +80,11 @@ export function MedicationSearch() {
             id="rx-med-search"
             data-zone="med-search"
             type="text"
-            placeholder="Add drug · e.g. 'Napa' (brand) or 'paracetamol' (generic)"
+            placeholder={
+              brands.length > 0
+                ? "Add drug · e.g. 'Napa' (brand) or 'paracetamol' (generic)"
+                : "Add drug · e.g. 'paracetamol' (generic)"
+            }
             className={cx(
               'w-full px-3 py-2 rounded-md text-sm bg-ink-800 border border-ink-700 transition-all duration-200',
               'focus:border-rx-focus focus:shadow-glow',

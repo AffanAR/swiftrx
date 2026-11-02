@@ -110,6 +110,16 @@ export const api = {
         method: 'PATCH',
         body: settings,
       }),
+
+    /**
+     * PATCH /hospitals/:slug/status — by the platform admin. Suspending ends
+     * every session at the hospital.
+     */
+    setStatus: (slug: string, status: Hospital['status']): Promise<Hospital> =>
+      callApi<Hospital>(`/hospitals/${encodeURIComponent(slug)}/status`, {
+        method: 'PATCH',
+        body: { status },
+      }),
   },
 
   users: {

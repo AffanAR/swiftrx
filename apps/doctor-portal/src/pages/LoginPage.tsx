@@ -86,10 +86,10 @@ export function LoginPage({ hospital, onSignedIn, ended = false }: Props) {
             This is your hospital's SwiftRx workspace. Sign in to access the prescription pad, your
             patient roster, and the {hospital.plan}-plan sign-and-print tools.
           </p>
-          <div className="mt-8 grid grid-cols-3 gap-3 text-xs text-ink-400">
-            <Stat label="Drugs" value="1,500+" delay={220} />
-            <Stat label="ICD-10" value="200+" delay={300} />
-            <Stat label="Quick Packs" value="50+" delay={380} />
+          {/* The Bangladesh medicine list (scripts/bd-medicines). */}
+          <div className="mt-8 grid grid-cols-2 gap-3 text-xs text-ink-400">
+            <Stat label="Brands" value="21,700+" delay={220} />
+            <Stat label="Generics" value="1,600+" delay={300} />
           </div>
         </div>
 

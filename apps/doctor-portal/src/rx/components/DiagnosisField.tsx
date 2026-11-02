@@ -12,6 +12,7 @@ export function DiagnosisField({ diagnosisRef }: Props) {
   const diagnosis = useApp((s) => s.diagnosis);
   const investigations = useApp((s) => s.investigations);
   const diagnoses = useApp((s) => s.catalog.diagnoses);
+  const investigationsOn = useApp((s) => s.catalog.investigations.length > 0);
   const setQuery = actions.setDiagnosisQuery;
   const setDiagnosis = actions.setDiagnosis;
   const [open, setOpen] = React.useState(false);
@@ -145,7 +146,8 @@ export function DiagnosisField({ diagnosisRef }: Props) {
         </div>
       </div>
 
-      {diagnosis && <InvestigationList selected={investigations} />}
+      {/* A hospital with investigations switched off gets none from the server. */}
+      {diagnosis && investigationsOn && <InvestigationList selected={investigations} />}
     </div>
   );
 }

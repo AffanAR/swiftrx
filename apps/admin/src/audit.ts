@@ -9,6 +9,7 @@ export function auditColor(kind: AuditEvent['kind']): string {
   if (kind === 'login') return 'rgb(var(--rx-focus))';
   if (kind === 'create_patient') return 'rgb(var(--rx-warn))';
   if (kind === 'create_hospital') return '#8b5cf6';
+  if (kind === 'change_hospital_status') return 'rgb(var(--rx-danger))';
   return 'rgb(var(--ink-500))';
 }
 
@@ -25,5 +26,11 @@ export function auditTitle(e: AuditEvent): string {
       return `Provisioned hospital ${e.hospitalName}`;
     case 'invite_user':
       return `Invited ${e.invitedEmail}`;
+    case 'update_hospital':
+      return `Changed ${e.hospitalSlug}'s ${e.changed
+        .map((c) => (c === 'rxDesign' ? 'Rx design' : 'features'))
+        .join(' and ')}`;
+    case 'change_hospital_status':
+      return `Moved ${e.hospitalSlug} from ${e.from} to ${e.to}`;
   }
 }

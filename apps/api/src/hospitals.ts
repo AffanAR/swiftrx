@@ -7,6 +7,7 @@
 //    POST  /api/hospitals                  create one (platform admin)
 //    GET   /api/hospitals/:slug            one hospital, with its settings
 //    PATCH /api/hospitals/:slug            its features and Rx design
+//    PATCH /api/hospitals/:slug/status     suspend or reactivate it
 //                                          (platform admin: decision D12)
 //    GET   /api/hospitals/:slug/patients   its patients
 //    POST  /api/hospitals/:slug/patients   add one (the hospital's own users)
@@ -14,7 +15,12 @@
 //  Reads follow reads.ts: a platform admin sees every hospital, a hospital's
 //  users see their own (401 without a session, 403 otherwise). Writes check
 //  the body with the shared zod schemas and write their audit row in the
-//  same transaction.
+//  same transaction. Only the SwiftRx team (the platform admin) changes a
+//  hospital's settings or status, and both are audited.
+//
+//  Limits enforced here: a hospital's `maxPatients` (adding one more is a
+//  409), and a suspended hospital has no sessions at all (auth/routes.ts), so
+//  suspending one signs everyone there out at once.
 //
 //  `monthlyRxUsed` is counted from `prescriptions` signed since the start of
 //  this month in Bangladesh (UTC+6, no daylight saving). Prescriptions are
@@ -30,6 +36,7 @@ import type { z } from 'zod';
 
 import {
   hospitalSettingsSchema,
+  hospitalStatusChangeSchema,
   newHospitalSchema,
   newPatientSchema,
 } from '@swiftrx/shared/schemas';
@@ -142,14 +149,62 @@ export function hospitalRoutes(deps: Deps) {
     if (body instanceof Response) return body;
 
     const [row] = await db
-      .select({ id: hospitals.id })
+      .select({ id: hospitals.id, settings: hospitalSettings })
+      .from(hospitals)
+      .innerJoin(hospitalSettings, eq(hospitalSettings.hospitalId, hospitals.id))
+      .where(eq(hospitals.slug, slug));
+    if (!row) return c.json({ error: 'No such hospital.' }, 404);
+
+    const changed = (['features', 'rxDesign'] as const).filter(
+      (part) => !sameJson(row.settings[part], body[part]),
+    );
+    if (changed.length > 0) {
+      const now = deps.now();
+      await db.transaction(async (tx) => {
+        await tx
+          .update(hospitalSettings)
+          .set({ features: body.features, rxDesign: body.rxDesign, updatedAt: now })
+          .where(eq(hospitalSettings.hospitalId, row.id));
+        await tx.insert(auditEvents).values({
+          kind: 'update_hospital',
+          actorId: auth.user.id,
+          actorEmail: auth.user.email,
+          hospitalId: row.id,
+          at: now,
+          details: { changed },
+        });
+      });
+    }
+    const [hospital] = await readHospitals(deps, slug);
+    return c.json(hospital);
+  });
+
+  routes.patch('/hospitals/:slug/status', async (c) => {
+    const slug = c.req.param('slug');
+    const auth = await guard(c, deps, (a) => a.session.role === 'platform_admin');
+    if (auth instanceof Response) return auth;
+    const body = await parseBody(c, hospitalStatusChangeSchema);
+    if (body instanceof Response) return body;
+
+    const [row] = await db
+      .select({ id: hospitals.id, status: hospitals.status })
       .from(hospitals)
       .where(eq(hospitals.slug, slug));
     if (!row) return c.json({ error: 'No such hospital.' }, 404);
-    await db
-      .update(hospitalSettings)
-      .set({ features: body.features, rxDesign: body.rxDesign, updatedAt: deps.now() })
-      .where(eq(hospitalSettings.hospitalId, row.id));
+    if (row.status !== body.status) {
+      const now = deps.now();
+      await db.transaction(async (tx) => {
+        await tx.update(hospitals).set({ status: body.status }).where(eq(hospitals.id, row.id));
+        await tx.insert(auditEvents).values({
+          kind: 'change_hospital_status',
+          actorId: auth.user.id,
+          actorEmail: auth.user.email,
+          hospitalId: row.id,
+          at: now,
+          details: { from: row.status, to: body.status },
+        });
+      });
+    }
     const [hospital] = await readHospitals(deps, slug);
     return c.json(hospital);
   });
@@ -181,7 +236,20 @@ export function hospitalRoutes(deps: Deps) {
 
     const now = deps.now();
     const id = `p_${randomBytes(6).toString('hex')}`;
-    await db.transaction(async (tx) => {
+    const full = await db.transaction(async (tx) => {
+      // Locks the hospital's settings row, so two patients added at once
+      // can't both slip under the limit.
+      const [settings] = await tx
+        .select({ features: hospitalSettings.features })
+        .from(hospitalSettings)
+        .where(eq(hospitalSettings.hospitalId, hospital.id))
+        .for('update');
+      const [{ n }] = await tx
+        .select({ n: count() })
+        .from(patients)
+        .where(eq(patients.hospitalId, hospital.id));
+      if (n >= settings.features.maxPatients) return settings.features.maxPatients;
+
       await tx.insert(patients).values({
         id,
         hospitalId: hospital.id,
@@ -218,7 +286,11 @@ export function hospitalRoutes(deps: Deps) {
         at: now,
         details: { patientId: id, patientName: body.name },
       });
+      return null;
     });
+    if (full !== null) {
+      return c.json({ error: `This hospital has reached its limit of ${full} patients.` }, 409);
+    }
     const patient = (await readPatients(deps, slug)).find((p) => p.id === id)!;
     return c.json(patient, 201);
   });
@@ -308,6 +380,21 @@ async function readPatients(deps: Deps, slug: string): Promise<Patient[]> {
 }
 
 // --- helpers -----------------------------------------------------------------
+
+/** Equal as JSON values. Postgres stores jsonb with its keys reordered, so key order is ignored. */
+function sameJson(a: unknown, b: unknown): boolean {
+  const sorted = (v: unknown): unknown =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(
+          Object.keys(v)
+            .sort()
+            .map((k) => [k, sorted((v as Record<string, unknown>)[k])]),
+        )
+      : Array.isArray(v)
+        ? v.map(sorted)
+        : v;
+  return JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
+}
 
 function startOfMonthInDhaka(now: Date): Date {
   const local = new Date(now.getTime() + DHAKA_OFFSET_MS);

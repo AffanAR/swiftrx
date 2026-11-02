@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { AuditEvent, Hospital, HospitalProfile, Patient } from '@swiftrx/shared/types';
+import type {
+  AuditEvent,
+  Catalog,
+  Hospital,
+  HospitalProfile,
+  Patient,
+} from '@swiftrx/shared/types';
 
 import { createApp } from './app';
 import type { Database } from './db/client';
@@ -267,5 +273,187 @@ describe('patients', () => {
         )
       ).status,
     ).toBe(403);
+  });
+});
+
+describe('limits and status', () => {
+  /** Change some of City Hospital's features, as the platform admin. */
+  async function setCityFeatures(patch: Partial<Hospital['features']>) {
+    const admin = await platformAdmin();
+    const city = (await (await get(ADMIN, '/hospitals/city-hospital', admin)).json()) as Hospital;
+    const res = await send(
+      ADMIN,
+      'PATCH',
+      '/hospitals/city-hospital',
+      { features: { ...city.features, ...patch }, rxDesign: city.rxDesign },
+      admin,
+    );
+    expect(res.status).toBe(200);
+    return city.features;
+  }
+
+  const patient = (name: string) => ({
+    name,
+    age: 30,
+    sex: 'F',
+    weightKg: 55,
+    contact: '',
+    allergyStatus: 'not_recorded',
+    allergies: [],
+    activeProblems: [],
+  });
+
+  it("refuses a patient over the hospital's maxPatients", async () => {
+    const cookie = await doctor();
+    const roster = (await (
+      await get(CITY, '/hospitals/city-hospital/patients', cookie)
+    ).json()) as Patient[];
+    const before = await setCityFeatures({ maxPatients: roster.length });
+
+    const res = await send(
+      CITY,
+      'POST',
+      '/hospitals/city-hospital/patients',
+      patient('One Too Many'),
+      cookie,
+    );
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toContain(`${roster.length} patients`);
+
+    await setCityFeatures({ maxPatients: before.maxPatients });
+    expect(
+      (await send(CITY, 'POST', '/hospitals/city-hospital/patients', patient('Fits Again'), cookie))
+        .status,
+    ).toBe(201);
+  });
+
+  it('audits a settings change once, and not a save that changes nothing', async () => {
+    const admin = await platformAdmin();
+    const count = async () =>
+      (
+        (await (
+          await get(ADMIN, '/hospitals/riverside-clinic/audit-events', admin)
+        ).json()) as AuditEvent[]
+      ).filter((e) => e.kind === 'update_hospital').length;
+    const riverside = (await (
+      await get(ADMIN, '/hospitals/riverside-clinic', admin)
+    ).json()) as Hospital;
+    const before = await count();
+
+    const changed = { ...riverside.rxDesign, headerSubtitle: 'Audited in a test' };
+    await send(
+      ADMIN,
+      'PATCH',
+      '/hospitals/riverside-clinic',
+      { features: riverside.features, rxDesign: changed },
+      admin,
+    );
+    const log = (await (
+      await get(ADMIN, '/hospitals/riverside-clinic/audit-events', admin)
+    ).json()) as AuditEvent[];
+    expect(log[0]).toMatchObject({ kind: 'update_hospital', changed: ['rxDesign'] });
+
+    // Saving the same settings again records nothing.
+    await send(
+      ADMIN,
+      'PATCH',
+      '/hospitals/riverside-clinic',
+      { features: riverside.features, rxDesign: changed },
+      admin,
+    );
+    expect(await count()).toBe(before + 1);
+  });
+
+  it('suspends a hospital, which ends its sessions and refuses sign-in, and reactivates it', async () => {
+    const sana = await signIn(NORTHSTAR, 'sana@northstar-medical.com');
+    expect((await get(NORTHSTAR, '/hospitals/northstar-medical', sana)).status).toBe(200);
+
+    // Only the platform admin.
+    expect(
+      (
+        await send(
+          NORTHSTAR,
+          'PATCH',
+          '/hospitals/northstar-medical/status',
+          { status: 'suspended' },
+          sana,
+        )
+      ).status,
+    ).toBe(403);
+
+    const admin = await platformAdmin();
+    const res = await send(
+      ADMIN,
+      'PATCH',
+      '/hospitals/northstar-medical/status',
+      { status: 'suspended' },
+      admin,
+    );
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as Hospital).status).toBe('suspended');
+
+    expect((await get(NORTHSTAR, '/hospitals/northstar-medical', sana)).status).toBe(401);
+    const login = await send(NORTHSTAR, 'POST', '/auth/login', {
+      email: 'sana@northstar-medical.com',
+      password: 'demo1234',
+    });
+    expect(login.status).toBe(403);
+
+    const log = (await (
+      await get(ADMIN, '/hospitals/northstar-medical/audit-events', admin)
+    ).json()) as AuditEvent[];
+    expect(log[0]).toMatchObject({
+      kind: 'change_hospital_status',
+      from: 'active',
+      to: 'suspended',
+    });
+
+    await send(ADMIN, 'PATCH', '/hospitals/northstar-medical/status', { status: 'active' }, admin);
+    await signIn(NORTHSTAR, 'sana@northstar-medical.com');
+  });
+
+  it('refuses a status that does not exist', async () => {
+    const admin = await platformAdmin();
+    expect(
+      (
+        await send(
+          ADMIN,
+          'PATCH',
+          '/hospitals/northstar-medical/status',
+          { status: 'closed' },
+          admin,
+        )
+      ).status,
+    ).toBe(400);
+  });
+
+  it("leaves switched-off features out of the hospital's catalog", async () => {
+    const cookie = await doctor();
+    const catalog = async () => (await (await get(CITY, '/catalog', cookie)).json()) as Catalog;
+    const full = await catalog();
+    expect(full.brands.length).toBeGreaterThan(0);
+    expect(full.quickPacks.length).toBeGreaterThan(0);
+
+    const before = await setCityFeatures({
+      enableBrandSearch: false,
+      enableQuickPacks: false,
+      enableInvestigations: false,
+    });
+    const trimmed = await catalog();
+    expect(trimmed.brands).toEqual([]);
+    expect(trimmed.quickPacks).toEqual([]);
+    expect(trimmed.investigations).toEqual([]);
+    expect(trimmed.diagnoses.some((d) => d.recommendedInvestigations)).toBe(false);
+    expect(trimmed.drugs.length).toBe(full.drugs.length);
+
+    // Another hospital's switches are its own: the seed has Northstar's brand
+    // search off and its quick packs on.
+    const sana = await signIn(NORTHSTAR, 'sana@northstar-medical.com');
+    const northstar = (await (await get(NORTHSTAR, '/catalog', sana)).json()) as Catalog;
+    expect(northstar.brands).toEqual([]);
+    expect(northstar.quickPacks.length).toBe(full.quickPacks.length);
+
+    await setCityFeatures(before);
+    expect((await catalog()).brands.length).toBe(full.brands.length);
   });
 });

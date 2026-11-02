@@ -349,6 +349,25 @@ export type AuditEvent =
       at: string;
       hospitalSlug: string;
       invitedEmail: string;
+    }
+  | {
+      /** The SwiftRx team changed a hospital's feature switches or Rx design. */
+      kind: 'update_hospital';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      changed: ('features' | 'rxDesign')[];
+    }
+  | {
+      /** The SwiftRx team suspended, reactivated or otherwise moved a hospital. */
+      kind: 'change_hospital_status';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      from: Hospital['status'];
+      to: Hospital['status'];
     };
 
 // --- Sessions ----------------------------------------------------------------

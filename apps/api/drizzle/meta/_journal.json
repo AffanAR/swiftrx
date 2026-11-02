@@ -43,6 +43,13 @@
       "when": 1793450711954,
       "tag": "0005_drop_drug_brand_names",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793650022054,
+      "tag": "0006_hospital_audit_kinds",
+      "breakpoints": true
     }
   ]
 }

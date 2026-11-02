@@ -22,6 +22,15 @@ export function RightColumn({ onApply, onRepeat }: Props) {
       .slice(0, 3);
   }, [diagnosis, quickPacks]);
 
+  // A hospital with quick packs switched off gets none from the server.
+  if (quickPacks.length === 0) {
+    return (
+      <aside className="w-1/4 min-w-[320px] border-l border-ink-700 bg-ink-900/60 p-3 overflow-y-auto rx-bg-radial-focus">
+        <PreviousRx onRepeat={onRepeat} />
+      </aside>
+    );
+  }
+
   return (
     <aside className="w-1/4 min-w-[320px] border-l border-ink-700 bg-ink-900/60 p-3 overflow-y-auto rx-bg-radial-focus">
       <div className="flex items-center justify-between mb-2">
