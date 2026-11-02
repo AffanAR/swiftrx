@@ -4,6 +4,9 @@ node_modules/
 # Build output
 dist/
 coverage/
+# Playwright (npm run test:e2e)
+test-results/
+playwright-report/
 *.tsbuildinfo
 
 # Raw medicine dataset (scripts/bd-medicines/import.mjs reads it; not ours to publish)

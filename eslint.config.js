@@ -17,6 +17,11 @@ export default defineConfig(
   js.configs.recommended,
   tseslint.configs.recommended,
   {
+    // The Playwright end-to-end tests run in Node and drive a browser.
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ['apps/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks, 'jsx-a11y': jsxA11y },

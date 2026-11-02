@@ -659,9 +659,21 @@ In this order:
     `default-src 'none'`.
   - `npm run check:headers` (in `npm run check` and CI) starts the
     production server and checks what it actually sends.
-- [ ] Playwright e2e:
+- [x] Playwright e2e:
   - sign in → Rx → sign → visible in the portal and the admin audit log;
   - cross-tenant access is refused.
+
+  (Done 2026-11-03: `e2e/`, `npm run test:e2e`, in `npm run check` and the CI
+  Build job.) Four tests drive a real browser against the production server
+  (`serve.mjs`), started fresh from the demo snapshot: a doctor signs a
+  prescription that then shows on the doctor's list after a reload, the
+  admin's hospital page and the audit log; signing through an allergy needs a
+  reason that the server keeps; a City Hospital doctor gets 403 for
+  Northstar's data and is asked to sign in on Northstar's portal; the admin
+  panel doesn't take a hospital's session. Locally they use the installed
+  Edge (`PLAYWRIGHT_CHANNEL` picks another), so nothing is downloaded; CI
+  installs Playwright's Chromium. API checks run as `fetch` inside the page:
+  Node on Windows can't resolve `*.localhost`.
 
 **Exit:** data persists and flows across apps. No secrets in any bundle. Only
 the server creates a signed Rx.

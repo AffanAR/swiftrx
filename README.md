@@ -62,6 +62,7 @@ npm start
 npm run check           # format, lint, type check, tests w/ coverage, build
 npm test                # unit tests only (npm run test:watch re-runs on save)
 npm run test:coverage   # unit tests + a coverage report in coverage/
+npm run test:e2e        # browser tests (e2e/) against the built server; run npm run build first
 npm run lint            # ESLint
 npm run format          # rewrite files in Prettier style
 ```
