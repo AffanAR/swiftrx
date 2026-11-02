@@ -55,6 +55,7 @@ import {
 } from '@swiftrx/shared/seedData';
 
 import { hashPassword } from '../auth/passwords';
+import { rxHash } from '../rxHash';
 import type { Db } from './client';
 import demoPasswords from './demo-passwords.json';
 import {
@@ -321,6 +322,8 @@ export async function seed(
         doctorName: rx.doctorName,
         doctorLicense: rx.doctorLicense,
         safetyOverride: rx.safetyOverride ?? null,
+        // The seed's prescriptions get a fingerprint too, as the server signs.
+        recordHash: rxHash(rx),
       })),
     );
     await insertAll(

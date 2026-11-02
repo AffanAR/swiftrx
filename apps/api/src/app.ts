@@ -8,9 +8,8 @@
 //
 //  Sign-in is under /api/auth (auth/routes.ts, auth/invites.ts), and the first
 //  reads, doctors and the audit log, are in reads.ts; the Rx pad's catalog is in
-//  catalog.ts; hospitals and patients are in hospitals.ts. The routes to come
-//  (prescriptions next) take the paths that apps/shared/src/api.ts notes beside
-//  each data-client method, under /api.
+//  catalog.ts; hospitals and patients are in hospitals.ts; signing and listing
+//  prescriptions in prescriptions.ts.
 // =============================================================================
 
 import { getConnInfo } from '@hono/node-server/conninfo';
@@ -22,6 +21,7 @@ import { ROOT_DOMAIN } from '@swiftrx/shared/config';
 import { inviteRoutes } from './auth/invites';
 import { catalogRoutes } from './catalog';
 import { hospitalRoutes } from './hospitals';
+import { prescriptionRoutes } from './prescriptions';
 import { authRoutes } from './auth/routes';
 import { SIGN_IN_LIMITS, type SignInLimits } from './auth/rateLimit';
 import type { Db } from './db/client';
@@ -120,6 +120,7 @@ export function createApp({
   app.route('/', readRoutes({ db, now, rootDomain, secureCookies }));
   app.route('/', catalogRoutes({ db, now, rootDomain, secureCookies }));
   app.route('/', hospitalRoutes({ db, now, rootDomain, secureCookies }));
+  app.route('/', prescriptionRoutes({ db, now, rootDomain, secureCookies }));
 
   app.notFound((c) => c.json({ error: 'Not found.' }, 404));
 

@@ -1,43 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { api, type Actor, type NewPatient, type PrescriptionDraft } from './api';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { api, type NewPatient } from './api';
 import { onSessionEnded } from './http';
-import {
-  MOCK_AUDIT,
-  MOCK_DIAGNOSES,
-  MOCK_HOSPITALS,
-  MOCK_PATIENTS,
-  MOCK_SIGNED_RX,
-} from './mockDb';
+import { MOCK_HOSPITALS } from './mockDb';
+import type { PrescriptionDraft } from './types';
 
-const AYESHA: Actor = { id: 'd_001', email: 'ayesha@city-hospital.com' };
-
-// Signing changes the mock db's module state; put it back after each test.
-// Signed Rx and audit events are prepended.
-let before = { rx: 0, audit: 0, usage: [] as number[] };
-beforeEach(() => {
-  before = {
-    rx: MOCK_SIGNED_RX.length,
-    audit: MOCK_AUDIT.length,
-    usage: MOCK_HOSPITALS.map((h) => h.monthlyRxUsed),
-  };
-});
-afterEach(() => {
-  MOCK_SIGNED_RX.splice(0, MOCK_SIGNED_RX.length - before.rx);
-  MOCK_AUDIT.splice(0, MOCK_AUDIT.length - before.audit);
-  MOCK_HOSPITALS.forEach((h, i) => (h.monthlyRxUsed = before.usage[i]));
-  vi.unstubAllGlobals();
-});
-
-const draft = (): PrescriptionDraft => ({
-  hospitalSlug: 'city-hospital',
-  patient: MOCK_PATIENTS.find((p) => p.hospitalSlug === 'city-hospital')!,
-  diagnosis: MOCK_DIAGNOSES[0],
-  medications: [],
-  investigations: [],
-  doctorId: 'd_001',
-  doctorName: 'Dr. Ayesha Khan',
-  doctorLicense: 'BMDC A-44121',
-});
+afterEach(() => vi.unstubAllGlobals());
 
 /** Make every fetch answer `body` with `status`, and return the stub to inspect. */
 function serverAnswers(body: unknown, status = 200) {
@@ -46,48 +13,17 @@ function serverAnswers(body: unknown, status = 200) {
   return stub;
 }
 
-describe('mock reads', () => {
-  it('answer with copies, so changing a result changes nothing stored', async () => {
-    const [first] = await api.prescriptions.list('city-hospital');
-    first.patient.name = 'Changed';
-
-    const [again] = await api.prescriptions.list('city-hospital');
-    expect(again.patient.name).not.toBe('Changed');
-  });
-
-  it('never return a password hash', async () => {
-    const users = await api.users.list();
-    expect(users.length).toBeGreaterThan(0);
-    for (const u of users) expect(u).not.toHaveProperty('passwordHash');
-  });
-
-  it("keep each hospital's prescriptions to that hospital", async () => {
-    const city = 'city-hospital';
-    expect((await api.prescriptions.list(city)).every((r) => r.hospitalSlug === city)).toBe(true);
+describe('users.list (still from the seed)', () => {
+  it('answers with copies and no password hash', async () => {
+    const [first] = await api.users.list();
+    first.name = 'Changed';
+    const [again] = await api.users.list();
+    expect(again.name).not.toBe('Changed');
+    for (const u of await api.users.list()) expect(u).not.toHaveProperty('passwordHash');
   });
 });
 
-describe('prescriptions.sign', () => {
-  it('assigns each Rx its own id and time, stores it, counts it and audits it', async () => {
-    const city = MOCK_HOSPITALS.find((h) => h.slug === 'city-hospital')!;
-    const usedBefore = city.monthlyRxUsed;
-
-    // Two signs in the same millisecond must not share an id.
-    const [a, b] = await Promise.all([
-      api.prescriptions.sign(draft(), AYESHA),
-      api.prescriptions.sign(draft(), AYESHA),
-    ]);
-
-    expect(a.id).not.toBe(b.id);
-    expect(Number.isNaN(Date.parse(a.signedAt))).toBe(false);
-    const ids = (await api.prescriptions.list('city-hospital')).map((r) => r.id);
-    expect(ids).toEqual(expect.arrayContaining([a.id, b.id]));
-    expect(MOCK_AUDIT.slice(0, 2).map((e) => e.kind)).toEqual(['sign_rx', 'sign_rx']);
-    expect(city.monthlyRxUsed).toBe(usedBefore + 2);
-  });
-});
-
-describe('hospitals and patients, from the server', () => {
+describe('hospitals and patients', () => {
   it('read from their endpoints', async () => {
     const stub = serverAnswers([]);
     await api.hospitals.list();
@@ -129,15 +65,19 @@ describe('hospitals and patients, from the server', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ ...patient, hospitalSlug: undefined });
   });
 
-  it("save a hospital's settings with PATCH", async () => {
+  it("save a hospital's settings and status with PATCH", async () => {
     const stub = serverAnswers({ slug: 'city-hospital' });
     const city = MOCK_HOSPITALS.find((h) => h.slug === 'city-hospital')!;
     await api.hospitals.updateSettings('city-hospital', {
       features: city.features,
       rxDesign: city.rxDesign,
     });
-    expect(stub.mock.calls[0][0]).toBe('/api/hospitals/city-hospital');
-    expect(stub.mock.calls[0][1]?.method).toBe('PATCH');
+    await api.hospitals.setStatus('city-hospital', 'suspended');
+    expect(stub.mock.calls.map((c) => [c[0], c[1]?.method])).toEqual([
+      ['/api/hospitals/city-hospital', 'PATCH'],
+      ['/api/hospitals/city-hospital/status', 'PATCH'],
+    ]);
+    expect(JSON.parse(String(stub.mock.calls[1][1]?.body))).toEqual({ status: 'suspended' });
   });
 
   it('pass on what the server refuses', async () => {
@@ -149,30 +89,49 @@ describe('hospitals and patients, from the server', () => {
   });
 });
 
-describe('other reads from the server', () => {
-  it("ask the API for a hospital's doctors", async () => {
-    const stub = serverAnswers([{ id: 'd_001' }]);
-    expect(await api.users.listDoctors('city-hospital')).toEqual([{ id: 'd_001' }]);
-    expect(stub.mock.calls[0][0]).toBe('/api/hospitals/city-hospital/doctors');
+describe('prescriptions', () => {
+  it("list one hospital's, or every hospital's", async () => {
+    const stub = serverAnswers([]);
+    await api.prescriptions.list('city-hospital');
+    await api.prescriptions.list();
+    expect(stub.mock.calls.map((c) => c[0])).toEqual([
+      '/api/hospitals/city-hospital/prescriptions',
+      '/api/prescriptions',
+    ]);
   });
 
-  it("merge the server's audit log with what this tab wrote, newest first", async () => {
-    const rx = await api.prescriptions.sign(draft(), AYESHA);
-    const fromServer = {
-      kind: 'login',
-      userId: 'd_001',
-      userEmail: AYESHA.email,
-      at: '2000-01-01T00:00:00.000Z',
-      hospitalSlug: 'city-hospital',
+  it('sign by sending the draft to the hospital, and pass on a refusal', async () => {
+    const stub = serverAnswers({ id: 'rx_1' }, 201);
+    const draft: PrescriptionDraft = {
+      patientId: 'p_002',
+      diagnosisCode: 'I10',
+      medications: [],
+      investigations: [],
     };
-    const stub = serverAnswers([fromServer]);
-    const events = await api.audit.list('city-hospital');
-    expect(stub.mock.calls[0][0]).toBe('/api/hospitals/city-hospital/audit-events');
-    expect(events[0]).toMatchObject({ kind: 'sign_rx', rxId: rx.id });
-    expect(events.at(-1)).toEqual(fromServer);
-    // Another hospital's log leaves this tab's City Hospital write out.
-    serverAnswers([]);
-    expect(await api.audit.list('northstar-medical')).toEqual([]);
+    expect(await api.prescriptions.sign('city-hospital', draft)).toEqual({ id: 'rx_1' });
+    const [url, init] = stub.mock.calls[0];
+    expect(url).toBe('/api/hospitals/city-hospital/prescriptions');
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body))).toEqual(draft);
+
+    serverAnswers({ error: 'This hospital has reached its limit.' }, 409);
+    await expect(api.prescriptions.sign('city-hospital', draft)).rejects.toMatchObject({
+      status: 409,
+    });
+  });
+});
+
+describe('other reads from the server', () => {
+  it("ask the API for a hospital's doctors and audit log", async () => {
+    const stub = serverAnswers([]);
+    await api.users.listDoctors('city-hospital');
+    await api.audit.list('city-hospital');
+    await api.audit.list();
+    expect(stub.mock.calls.map((c) => c[0])).toEqual([
+      '/api/hospitals/city-hospital/doctors',
+      '/api/hospitals/city-hospital/audit-events',
+      '/api/audit-events',
+    ]);
   });
 
   it('throw ApiError with the status, and announce a 401', async () => {

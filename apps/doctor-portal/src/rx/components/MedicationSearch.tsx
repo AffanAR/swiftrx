@@ -1,8 +1,8 @@
 import React from 'react';
-import { useApp, actions } from '../store';
+import { useApp, actions, shownAlerts } from '../store';
 import { LiveDot, cx, type Drug, type Patient } from '@swiftrx/shared';
 import { buildMedicineIndex, searchMedicines, type MedicineHit } from '../search';
-import { evaluateMedication, severityRank } from '../safety';
+import { evaluateMedication, severityRank } from '@swiftrx/shared';
 import { NO_SAFETY_DATA, medicationFor } from '../dosing';
 
 export function MedicationSearch() {
@@ -14,6 +14,7 @@ export function MedicationSearch() {
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
   const drugs = useApp((s) => s.catalog.drugs);
   const brands = useApp((s) => s.catalog.brands);
+  const hideMinor = useApp((s) => s.hideMinorAlerts);
 
   // Built once per catalog: about 21,700 brands, searched on every keystroke.
   const index = React.useMemo(() => buildMedicineIndex({ drugs, brands }), [drugs, brands]);
@@ -59,7 +60,9 @@ export function MedicationSearch() {
   };
 
   // Preview alerts for the highlighted suggestion
-  const preview = enterAccepts ? alertsFor(enterAccepts, patient, drugs) : [];
+  const preview = enterAccepts
+    ? shownAlerts(alertsFor(enterAccepts, patient, drugs), hideMinor)
+    : [];
   const worstPreview = preview.reduce<null | ReturnType<typeof severityRank>>((acc, a) => {
     const r = severityRank(a.severity);
     if (acc === null || r > acc) return r;
@@ -134,7 +137,10 @@ export function MedicationSearch() {
             <ul className="absolute z-20 mt-1 left-0 right-0 bg-ink-800 border border-ink-700 rounded-md overflow-hidden shadow-2xl animate-slideUpIn max-h-72 overflow-y-auto">
               {suggestions.map((s, i) => {
                 const start = medicationFor(s.drug, s.kind === 'brand' ? s.brand : undefined);
-                const sev = evaluateMedication({ rowId: 'p', ...start }, patient, drugs);
+                const sev = shownAlerts(
+                  evaluateMedication({ rowId: 'p', ...start }, patient, drugs),
+                  hideMinor,
+                );
                 const worst = sev.reduce<number>(
                   (acc, a) => Math.max(acc, severityRank(a.severity)),
                   0,

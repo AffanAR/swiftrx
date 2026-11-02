@@ -456,6 +456,13 @@ export const prescriptions = pgTable(
     doctorLicense: text('doctor_license').notNull(),
     /** Set when the doctor signed through a critical safety alert. */
     safetyOverride: jsonb('safety_override').$type<{ reason: string; alerts: SafetyAlert[] }>(),
+    /**
+     * SHA-256 (hex) of the signed prescription as the apps see it
+     * (apps/api/src/rxHash.ts), printed on the Rx. Recomputing it from the
+     * stored rows shows whether anything was changed since signing. Null only
+     * for prescriptions a database held before hashes were added.
+     */
+    recordHash: text('record_hash'),
   },
   (t) => [
     unique('prescriptions_id_hospital_unique').on(t.id, t.hospitalId),

@@ -4,13 +4,13 @@ import { StatTile, LiveDot, Card, ProgressBar, cx, queries } from '@swiftrx/shar
 import { auditColor, auditTitle } from '../audit';
 
 export function DashboardPage() {
-  const [{ data: hospitals }, { data: users }, { data: signedRx }, { data: audit }] =
-    useSuspenseQueries({
-      queries: [queries.hospitals(), queries.users(), queries.prescriptions(), queries.audit()],
-    });
+  const [{ data: hospitals }, { data: users }, { data: audit }] = useSuspenseQueries({
+    queries: [queries.hospitals(), queries.users(), queries.audit()],
+  });
   const totalHospitals = hospitals.length;
   const totalDoctors = users.filter((u) => u.role === 'doctor').length;
-  const totalRxThisMonth = signedRx.length + hospitals.reduce((s, h) => s + h.monthlyRxUsed, 0);
+  // Each hospital's count since the start of the month (the server counts them).
+  const totalRxThisMonth = hospitals.reduce((s, h) => s + h.monthlyRxUsed, 0);
   const totalAudit = audit.length;
 
   const recentAudit = audit.slice(0, 8);

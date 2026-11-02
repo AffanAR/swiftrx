@@ -1,5 +1,5 @@
 import React from 'react';
-import { useApp, actions } from '../store';
+import { useApp, actions, shownAlerts } from '../store';
 import {
   cx,
   type DoseUnit,
@@ -8,7 +8,7 @@ import {
   type Severity,
 } from '@swiftrx/shared';
 import { NO_SAFETY_DATA } from '../dosing';
-import { evaluateMedication, findDrug, severityRank } from '../safety';
+import { evaluateMedication, findDrug, severityRank } from '@swiftrx/shared';
 
 interface RowProps {
   med: RxMedication;
@@ -26,10 +26,11 @@ export function MedicationRow({ med, index }: RowProps) {
   const remove = actions.removeMedication;
   const drugs = useApp((s) => s.catalog.drugs);
   const drug = findDrug(med.drugId, drugs);
+  const hideMinor = useApp((s) => s.hideMinorAlerts);
 
   const alerts = React.useMemo(
-    () => evaluateMedication(med, patient, drugs),
-    [med, patient, drugs],
+    () => shownAlerts(evaluateMedication(med, patient, drugs), hideMinor),
+    [med, patient, drugs, hideMinor],
   );
   const worstSeverity = alerts.reduce<Severity | null>((acc, a) => {
     const r = severityRank(a.severity);

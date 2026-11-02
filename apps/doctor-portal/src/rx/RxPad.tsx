@@ -64,8 +64,14 @@ export default function RxPad({
   });
   // Stable until the data itself changes, so the store only reloads on a real refetch.
   const data = React.useMemo<WorkspaceData>(
-    () => ({ patients, signed, catalog, rxDesign: hospital.rxDesign }),
-    [patients, signed, catalog, hospital.rxDesign],
+    () => ({
+      patients,
+      signed,
+      catalog,
+      rxDesign: hospital.rxDesign,
+      hideMinorAlerts: !hospital.features.enableSafetyAlerts,
+    }),
+    [patients, signed, catalog, hospital.rxDesign, hospital.features.enableSafetyAlerts],
   );
   const [loadedFor, setLoadedFor] = React.useState<DoctorIdentity | null>(null);
 

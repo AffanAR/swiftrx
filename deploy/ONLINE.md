@@ -39,15 +39,13 @@ Demo accounts are listed in the [README](../README.md#demo-credentials).
 
 ## 2. What the hosted demo is (and isn't)
 
-- **Most data is on the server, prescriptions aren't yet.** `scripts/serve.mjs`
-  runs the API under `/api` on a PGlite database in memory, started from the
-  snapshot `npm run build` writes. Sign-in, hospitals and their settings,
-  patients, doctors, the audit log and the medicine catalog live there, so
-  every visitor shares them, and they all reset whenever the instance
-  restarts or sleeps. Signed prescriptions still live in each visitor's
-  browser until `POST /prescriptions` exists: visitors don't see each other's,
-  and a reload drops them. A hospital created in the admin panel gets a portal
-  at its subdomain, with no users yet.
+- **The data is on the server, and resets.** `scripts/serve.mjs` runs the
+  API under `/api` on a PGlite database in memory, started from the snapshot
+  `npm run build` writes. Sign-in, hospitals and their settings, patients,
+  doctors, signed prescriptions, the audit log and the medicine catalog all
+  live there, so every visitor shares them, and they all reset whenever the
+  instance restarts or sleeps. A hospital created in the admin panel gets a
+  portal at its subdomain; invite its first admin from its page.
 - **Anyone can sign in.** The sign-in pages show the demo passwords, which
   the API lists in demo mode (they are no longer in the bundles), so anyone
   can sign in as the platform admin or a doctor.

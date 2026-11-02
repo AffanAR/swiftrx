@@ -2,26 +2,16 @@
 //  SwiftRx Shared — Data client
 // =============================================================================
 //  The one way the apps read and write data. Each method notes its endpoint.
-//  Sign-in (auth.ts), hospitals, patients, doctors, the audit log and the
-//  catalog go to the server (apps/api); the account list and prescriptions
-//  still answer from the in-memory mock db (mockDb.ts) until their endpoints
-//  exist. The pages, the query hooks (queries.ts) and the Rx store don't
-//  change when a method moves.
-//
-//  Like JSON over HTTP, every mock method is async and returns copies, so a
-//  caller can't change stored data by mutating a result. Mock writes assign
-//  ids and timestamps and record the audit event, as the server does.
+//  Everything goes to the server (apps/api) except the admin's list of every
+//  account (users.list), which still answers from the seed in the browser
+//  (mockDb.ts) until GET /users exists, as an async copy, like JSON over HTTP.
+//  The pages, the query hooks (queries.ts) and the Rx store don't change when
+//  a method moves.
 // =============================================================================
 
 import { MOCK_LATENCY_MS } from './config';
 import { ApiError, callApi } from './http';
-import {
-  MOCK_SIGNED_RX,
-  MOCK_USERS,
-  appendAudit,
-  appendSignedRx,
-  listSignedRxForHospital,
-} from './mockDb';
+import { MOCK_USERS } from './mockDb';
 import {
   type AuditEvent,
   type Catalog,
@@ -29,19 +19,11 @@ import {
   type HospitalFeatures,
   type HospitalProfile,
   type Patient,
+  type PrescriptionDraft,
   type RxDesign,
   type SignedRx,
   type User,
 } from './types';
-
-/**
- * Who is making a change, for the audit row. A real backend takes this from
- * the session cookie instead of trusting the client.
- */
-export interface Actor {
-  id: string;
-  email: string;
-}
 
 /** The patient fields a client sends; the server assigns the id and creation time. */
 export type NewPatient = Pick<
@@ -62,9 +44,6 @@ export type NewHospital = Pick<
   Hospital,
   'slug' | 'name' | 'city' | 'country' | 'plan' | 'contactEmail' | 'monthlyRxCap'
 >;
-
-/** A prescription as the Rx pad sends it; the server assigns the id and time. */
-export type PrescriptionDraft = Omit<SignedRx, 'id' | 'signedAt'>;
 
 /** A doctor a hospital admin invites; the server makes the account and a link. */
 export interface DoctorInvite {
@@ -169,38 +148,28 @@ export const api = {
   prescriptions: {
     /** GET /hospitals/:slug/prescriptions, or GET /prescriptions for every hospital. */
     list: (slug?: string): Promise<SignedRx[]> =>
-      reply(slug ? listSignedRxForHospital(slug) : MOCK_SIGNED_RX),
+      callApi<SignedRx[]>(
+        slug ? `/hospitals/${encodeURIComponent(slug)}/prescriptions` : '/prescriptions',
+      ),
 
-    /** POST /hospitals/:slug/prescriptions — the server assigns the id and time. */
-    sign: async (draft: PrescriptionDraft, by: Actor): Promise<SignedRx> => {
-      const rx: SignedRx = { ...structuredClone(draft), id: newId('rx'), signedAt: now() };
-      appendSignedRx(rx);
-      audit({
-        kind: 'sign_rx',
-        userId: by.id,
-        userEmail: by.email,
-        at: rx.signedAt,
-        hospitalSlug: rx.hospitalSlug,
-        rxId: rx.id,
-        patientName: rx.patient.name,
-        overrideReason: rx.safetyOverride?.reason,
-      });
-      return reply(rx);
-    },
+    /**
+     * POST /hospitals/:slug/prescriptions — the server checks the doctor, the
+     * patient, the catalog, the limits and the safety alerts, then assigns the
+     * id, the time and the record hash, and audits it.
+     */
+    sign: (slug: string, draft: PrescriptionDraft): Promise<SignedRx> =>
+      callApi<SignedRx>(`/hospitals/${encodeURIComponent(slug)}/prescriptions`, {
+        method: 'POST',
+        body: draft,
+      }),
   },
 
   audit: {
-    /**
-     * GET /audit-events, or GET /hospitals/:slug/audit-events. The server's
-     * log (the seed, sign-ins, invitations), plus what this tab wrote through
-     * the mock above, until those writes move to the server too.
-     */
-    list: async (slug?: string): Promise<AuditEvent[]> => {
-      const path = slug ? `/hospitals/${encodeURIComponent(slug)}/audit-events` : '/audit-events';
-      const server = await callApi<AuditEvent[]>(path);
-      const local = writtenHere.filter((e) => !slug || e.hospitalSlug === slug);
-      return [...server, ...structuredClone(local)].sort((a, b) => b.at.localeCompare(a.at));
-    },
+    /** GET /audit-events, or GET /hospitals/:slug/audit-events, newest first. */
+    list: (slug?: string): Promise<AuditEvent[]> =>
+      callApi<AuditEvent[]>(
+        slug ? `/hospitals/${encodeURIComponent(slug)}/audit-events` : '/audit-events',
+      ),
   },
 
   catalog: {
@@ -234,17 +203,3 @@ async function reply<T>(value: T): Promise<T> {
   if (MOCK_LATENCY_MS > 0) await new Promise((r) => setTimeout(r, MOCK_LATENCY_MS));
   return copy;
 }
-
-const now = () => new Date().toISOString();
-
-/** Time-based, with a random tail so two writes in the same millisecond differ. */
-const newId = (prefix: string) =>
-  `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-
-/** Audit events the mock wrote in this tab, which the server hasn't seen. */
-const writtenHere: AuditEvent[] = [];
-
-const audit = (e: AuditEvent) => {
-  appendAudit(structuredClone(e));
-  writtenHere.push(structuredClone(e));
-};

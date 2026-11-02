@@ -1,4 +1,16 @@
-import type { Drug, Patient, RxMedication, SafetyAlert } from '@swiftrx/shared';
+// The prescription safety checks: allergies, interactions with the patient's
+// own medicines, and duplicate therapy. Pure functions of the pad's rows, the
+// patient and the catalog, so the Rx pad runs them as the doctor types and the
+// server runs them again when it signs (apps/api/src/prescriptions.ts), and the
+// two can't disagree.
+
+import type { Drug, Patient, RxMedication, SafetyAlert } from './types';
+
+/**
+ * How long, in characters, a doctor's reason must be to sign through a
+ * critical (allergy) alert. The pad asks for it; the server refuses less.
+ */
+export const MIN_OVERRIDE_REASON = 10;
 
 // Normalize for comparison
 const norm = (s: string) => s.trim().toLowerCase();

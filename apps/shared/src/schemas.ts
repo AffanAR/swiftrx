@@ -24,6 +24,7 @@ import type {
   HospitalFeatures,
   Investigation,
   Patient,
+  PrescriptionDraft,
   QuickPack,
   QuickPackMed,
   RxDesign,
@@ -305,6 +306,18 @@ export const signedRxSchema = z.object({
   doctorName: text,
   doctorLicense: text,
   safetyOverride: z.object({ reason: text, alerts: z.array(safetyAlertSchema).min(1) }).optional(),
+  recordHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+});
+
+export const prescriptionDraftSchema = z.object({
+  patientId: text,
+  diagnosisCode: text,
+  medications: z.array(rxMedicationSchema).min(1),
+  investigations: z.array(investigationSchema),
+  overrideReason: z.string().max(2000).optional(),
 });
 
 // --- Audit log -----------------------------------------------------------------
@@ -386,5 +399,6 @@ export type SchemasMatchTypes = [
   Check<Same<z.infer<typeof rxMedicationSchema>, RxMedication>>,
   Check<Same<z.infer<typeof safetyAlertSchema>, SafetyAlert>>,
   Check<Same<z.infer<typeof signedRxSchema>, SignedRx>>,
+  Check<Same<z.infer<typeof prescriptionDraftSchema>, PrescriptionDraft>>,
   Check<Same<z.infer<typeof auditEventSchema>, AuditEvent>>,
 ];

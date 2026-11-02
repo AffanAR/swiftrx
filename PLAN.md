@@ -586,7 +586,7 @@ In this order:
   - Still from the browser's mock: the account list (`GET /users`, which the
     admin's doctor counts use) and prescriptions. A settings change isn't
     audited yet (no audit kind for it).
-- [ ] **`POST /prescriptions`:** the server
+- [x] **`POST /prescriptions`:** the server
   - assigns the id and timestamp;
   - re-runs `safety.ts` (pure, so it runs unchanged) and enforces role,
     license and the override reason;
@@ -594,9 +594,30 @@ In this order:
   - stores a SHA-256 of the record, which the print shows instead of
     `shortHash(id)`;
   - writes the audit row in the same transaction.
-- [ ] Server-side enforcement: tenant scoping, caps, flags, suspended status
-      and reserved slugs. (Most of it done 2026-11-03, checked in the
-      browser; the prescription limits wait for `POST /prescriptions`.)
+
+  (Done 2026-11-03, `apps/api/src/prescriptions.ts`, checked in the browser:
+  a doctor signed through an allergy override, the Rx survived a reload, and
+  the admin panel showed its audit entry and the monthly count.)
+  - The pad sends a `PrescriptionDraft`: ids and its rows only. The server
+    takes the doctor from the session (active, licensed, a doctor's role
+    there: D3), looks up the patient, diagnosis, medicines, brands and tests
+    itself, and takes their names from the catalog.
+  - `safety.ts` moved to `apps/shared` so the pad and the server run the
+    same checks. They always run on the server: decided 2026-11-03 that the
+    "safety alerts" switch only hides minor (duplicate-therapy) warnings in
+    the pad. A critical alert needs a reason of `MIN_OVERRIDE_REASON` (10)
+    characters, stored with the alerts the server found; 422 without.
+  - `record_hash` (migration `0007`) is the SHA-256 of the canonical JSON of
+    the `SignedRx` (`rxHash.ts`); the seed's prescriptions get one too, and a
+    test recomputes every stored one. The print shows its first 16 digits.
+  - Prescriptions, their medicines and tests are append-only (`0008`),
+    like the audit log.
+  - `GET /api/hospitals/:slug/prescriptions` and `GET /api/prescriptions`
+    (platform admin). The data client no longer has a mock for prescriptions
+    or the audit log; only the admin's account list (`users.list`) still
+    reads the seed in the browser.
+- [x] Server-side enforcement: tenant scoping, caps, flags, suspended status
+      and reserved slugs. (Done 2026-11-03, checked in the browser.)
   - **Tenant scoping:** every read and write since the read endpoints checks
     the session's hospital (403 otherwise). **Reserved slugs:** `admin`,
     `www` and `api` since the hospital endpoints.
@@ -614,10 +635,12 @@ In this order:
     brand search, Riverside no quick packs or investigations.
   - **Audit:** settings changes (`update_hospital`, only when something
     changed) and status changes (`change_hospital_status`), migration `0006`.
-  - Left for `POST /prescriptions`: the monthly Rx cap,
-    `maxMedicationsPerRx`, and what `enableSafetyAlerts` and
-    `allowPdfExport` should mean on the server (turning safety alerts off
-    for a hospital is a clinical-safety decision, not just a switch).
+  - **With `POST /prescriptions`:** the monthly Rx cap (409, counted with
+    the settings row locked), `maxMedicationsPerRx` (400), and brands or
+    tests on a draft when those switches are off (400). `enableSafetyAlerts`
+    hides minor warnings only (above). `allowPdfExport` still does nothing:
+    every print goes through the browser's print dialog, which can always
+    save a PDF, so it needs a server-rendered PDF (Phase 4) to mean anything.
 - [x] Hosting: the API under `/api` on the same origin, CSP and HSTS headers,
       and a managed Postgres for the hosted demo. (The API under `/api` was
       done with the auth step, and the demo runs PGlite in memory instead of

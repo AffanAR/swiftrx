@@ -1,7 +1,7 @@
 import React from 'react';
-import { useApp } from '../store';
+import { useApp, shownAlerts } from '../store';
 import { LiveDot, ProgressBar, cx, type QuickPack, type SignedRx } from '@swiftrx/shared';
-import { evaluateMedication, severityRank } from '../safety';
+import { evaluateMedication, severityRank } from '@swiftrx/shared';
 import { PreviousRx } from './PreviousRx';
 
 interface Props {
@@ -13,6 +13,7 @@ export function RightColumn({ onApply, onRepeat }: Props) {
   const diagnosis = useApp((s) => s.diagnosis);
   const patient = useApp((s) => s.patients.find((p) => p.id === s.patientId)!);
   const { drugs, quickPacks } = useApp((s) => s.catalog);
+  const hideMinor = useApp((s) => s.hideMinorAlerts);
 
   const packs = React.useMemo(() => {
     if (!diagnosis) return [];
@@ -57,18 +58,21 @@ export function RightColumn({ onApply, onRepeat }: Props) {
         {packs.map((pack, i) => {
           // Evaluate each med in the pack for safety indicators
           const alertsByMed = pack.medications.map((m) =>
-            evaluateMedication(
-              {
-                rowId: 'q',
-                drugId: m.drugId,
-                genericName: m.genericName,
-                dosage: m.dosage,
-                frequency: m.frequency,
-                durationDays: m.durationDays,
-                instructions: m.instructions,
-              },
-              patient,
-              drugs,
+            shownAlerts(
+              evaluateMedication(
+                {
+                  rowId: 'q',
+                  drugId: m.drugId,
+                  genericName: m.genericName,
+                  dosage: m.dosage,
+                  frequency: m.frequency,
+                  durationDays: m.durationDays,
+                  instructions: m.instructions,
+                },
+                patient,
+                drugs,
+              ),
+              hideMinor,
             ),
           );
           const worst = alertsByMed.reduce<number>(

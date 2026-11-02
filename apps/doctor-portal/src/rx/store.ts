@@ -16,7 +16,7 @@ import {
 } from '@swiftrx/shared';
 import { queryClient } from '../queryClient';
 import { medicationFor } from './dosing';
-import { evaluateAllMedications, findDrug } from './safety';
+import { MIN_OVERRIDE_REASON, evaluateAllMedications, findDrug } from '@swiftrx/shared';
 
 /** The signed-in doctor the pad prescribes as, taken from the portal session. */
 export interface DoctorIdentity {
@@ -54,6 +54,10 @@ export interface AppState {
   catalog: Catalog;
   // The hospital's printed Rx design (null until loadWorkspace)
   rxDesign: RxDesign | null;
+  // The hospital's "safety alerts" switch is off: the pad hides minor
+  // (duplicate-therapy) warnings. Allergies and interactions always show,
+  // and the server always checks them when signing.
+  hideMinorAlerts: boolean;
   // Doctor (null until loadWorkspace)
   doctor: DoctorIdentity | null;
   // A sign or a new patient is being saved
@@ -104,7 +108,7 @@ export interface AppActions {
 export type AppStore = AppState & AppActions;
 
 /** Shortest override reason accepted when signing past a critical alert. */
-export const MIN_OVERRIDE_REASON = 10;
+export { MIN_OVERRIDE_REASON };
 
 const newRowId = () => 'r_' + Math.random().toString(36).slice(2, 9);
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -121,6 +125,7 @@ const initialState: AppState = {
   signed: [],
   catalog: { drugs: [], brands: [], diagnoses: [], investigations: [], quickPacks: [] },
   rxDesign: null,
+  hideMinorAlerts: false,
   doctor: null,
   signing: false,
   savingPatient: false,
@@ -292,23 +297,20 @@ class Store {
           this.set({ overridePrompt: critical });
           return null;
         }
-        // The server assigns the id and time, stores a frozen copy of the
-        // patient, and records the audit event.
+        // The server checks it all again (the doctor, the patient, the
+        // catalog, the limits, the same safety checks), then assigns the id,
+        // the time and the record hash, freezes the patient, and audits it.
         const draft: PrescriptionDraft = {
-          hospitalSlug: patient.hospitalSlug,
-          patient,
-          diagnosis: s.diagnosis,
+          patientId: patient.id,
+          diagnosisCode: s.diagnosis.code,
           medications: s.medications,
           investigations: s.investigations,
-          doctorId: doctor.id,
-          doctorName: doctor.name,
-          doctorLicense: doctor.licenseNo,
-          safetyOverride: critical.length ? { reason, alerts: critical } : undefined,
+          ...(critical.length ? { overrideReason: reason } : {}),
         };
         this.set({ signing: true });
         let signed: SignedRx;
         try {
-          signed = await api.prescriptions.sign(draft, { id: doctor.id, email: doctor.email });
+          signed = await api.prescriptions.sign(doctor.hospitalSlug, draft);
         } catch (err) {
           this.set({
             signing: false,
@@ -420,6 +422,12 @@ export interface WorkspaceData {
   signed: SignedRx[];
   catalog: Catalog;
   rxDesign: RxDesign | null;
+  hideMinorAlerts?: boolean;
+}
+
+/** The alerts the pad shows: all, or with `hideMinorAlerts` all but the minor ones. */
+export function shownAlerts(alerts: SafetyAlert[], hideMinor: boolean): SafetyAlert[] {
+  return hideMinor ? alerts.filter((a) => a.severity !== 'low') : alerts;
 }
 
 /**

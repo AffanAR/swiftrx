@@ -302,6 +302,27 @@ export interface SignedRx {
   doctorLicense: string;
   /** Set when the doctor signed despite critical safety alerts. */
   safetyOverride?: { reason: string; alerts: SafetyAlert[] };
+  /**
+   * SHA-256 (hex) of everything above, which the server computes when it
+   * signs and the print shows. Missing only on prescriptions signed before
+   * the server signed them.
+   */
+  recordHash?: string;
+}
+
+/**
+ * A prescription as the Rx pad sends it (POST /api/hospitals/:slug/
+ * prescriptions). Only ids and the pad's rows: the server looks up the
+ * patient, the diagnosis and the doctor itself, re-runs the safety checks,
+ * and assigns the id, the time and the hash.
+ */
+export interface PrescriptionDraft {
+  patientId: string;
+  diagnosisCode: string;
+  medications: RxMedication[];
+  investigations: Investigation[];
+  /** Why the doctor signs through critical alerts (MIN_OVERRIDE_REASON+). */
+  overrideReason?: string;
 }
 
 // --- Audit log ---------------------------------------------------------------

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MOCK_DRUGS, type Drug, type Patient, type RxMedication } from '@swiftrx/shared';
+import { MOCK_DRUGS } from './mockDb';
+import type { Drug, Patient, RxMedication } from './types';
 import {
   baseName,
   checkAllergy,
@@ -10,7 +11,6 @@ import {
   findDrug,
   severityRank,
 } from './safety';
-import { medicationFor } from './dosing';
 
 // Generic ids from the Bangladesh list; these have reviewed safety data
 // (scripts/bd-medicines/reviewed.json).
@@ -44,10 +44,15 @@ const patient = (overrides: Partial<Patient> = {}): Patient => ({
   ...overrides,
 });
 
-/** A pad row for a catalog drug, with its starting dose. */
+/** A pad row for a catalog drug. The dose doesn't matter to these checks. */
 const row = (drugId: string): RxMedication => ({
   rowId: `r_${drugId}`,
-  ...medicationFor(drug(drugId)),
+  drugId,
+  genericName: drug(drugId).genericName,
+  dosage: { value: 1, unit: 'tablets' },
+  frequency: 'QD',
+  durationDays: 5,
+  instructions: '',
 });
 
 describe('findDrug', () => {

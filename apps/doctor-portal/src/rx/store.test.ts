@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  MOCK_AUDIT,
   MOCK_DIAGNOSES,
   MOCK_HOSPITALS,
   MOCK_PATIENTS,
+  MOCK_SIGNED_RX,
   api,
   type Diagnosis,
   type NewPatient,
@@ -45,18 +45,47 @@ const SANA: DoctorIdentity = {
 };
 
 /**
- * What RxPad fetches for a hospital. The patients, hospital and catalog come
- * from the server, so here from the seed it loads; signed Rx still come
- * through the data client's mock.
+ * What RxPad fetches for a hospital. It all comes from the server, so here
+ * from the seed the server loads.
  */
 async function workspaceFor(slug: string): Promise<WorkspaceData> {
   const hospital = MOCK_HOSPITALS.find((h) => h.slug === slug);
   return {
     patients: structuredClone(MOCK_PATIENTS.filter((p) => p.hospitalSlug === slug)),
-    signed: await api.prescriptions.list(slug),
+    signed: structuredClone(MOCK_SIGNED_RX.filter((r) => r.hospitalSlug === slug)),
     catalog: demoCatalog(),
     rxDesign: hospital?.rxDesign ?? null,
   };
+}
+
+/**
+ * Stands in for POST /hospitals/:slug/prescriptions, which the API's own
+ * tests cover: it answers with the draft signed, as the server would.
+ */
+function serverSigns() {
+  return vi.spyOn(api.prescriptions, 'sign').mockImplementation(async (slug, draft) => ({
+    id: 'rx_test',
+    signedAt: '2026-11-03T08:00:00.000Z',
+    hospitalSlug: slug,
+    patient: MOCK_PATIENTS.find((p) => p.id === draft.patientId)!,
+    diagnosis: MOCK_DIAGNOSES.find((d) => d.code === draft.diagnosisCode)!,
+    medications: draft.medications,
+    investigations: draft.investigations,
+    doctorId: AYESHA.id,
+    doctorName: AYESHA.name,
+    doctorLicense: AYESHA.licenseNo,
+    ...(draft.overrideReason
+      ? {
+          safetyOverride: {
+            reason: draft.overrideReason,
+            alerts: [
+              { severity: 'critical' as const, type: 'allergy' as const, message: '', drugId: '' },
+            ],
+          },
+        }
+      : {}),
+    recordHash: 'a'.repeat(64),
+  }));
 }
 
 const dx = (code: string): Diagnosis => {
@@ -150,10 +179,17 @@ describe('sign', () => {
     expect(getState().banner).toMatchObject({ kind: 'warn' });
   });
 
-  it('signs a complete pad as the signed-in doctor, records it and clears the pad', async () => {
+  it('sends the pad to the server as ids and rows, and clears it once signed', async () => {
+    const save = serverSigns();
     fillPad('p_002', 'I10', [AMLODIPINE]);
     const rx = await actions.sign();
 
+    expect(save).toHaveBeenCalledWith('city-hospital', {
+      patientId: 'p_002',
+      diagnosisCode: 'I10',
+      medications: [expect.objectContaining({ drugId: AMLODIPINE })],
+      investigations: expect.any(Array),
+    });
     expect(rx).toMatchObject({
       hospitalSlug: 'city-hospital',
       doctorId: 'd_001',
@@ -166,7 +202,6 @@ describe('sign', () => {
     expect(getState().medications).toEqual([]);
     expect(getState().diagnosis).toBeNull();
     expect(getState().signing).toBe(false);
-    expect(MOCK_AUDIT[0]).toMatchObject({ kind: 'sign_rx', rxId: rx?.id, userId: 'd_001' });
   });
 
   it('refuses a dose or duration of 0', async () => {
@@ -182,18 +217,22 @@ describe('sign', () => {
   });
 
   it('needs an override reason before signing past an allergy alert', async () => {
+    const save = serverSigns();
     fillPad('p_001', 'J02.9', [AMOXICILLIN]);
 
     expect(await actions.sign()).toBeNull();
     expect(getState().overridePrompt?.map((a) => a.type)).toEqual(['allergy']);
     expect(await actions.sign('too short')).toBeNull();
+    expect(save).not.toHaveBeenCalled();
 
     const reason = 'Mild rash only on record; patient consents';
     const rx = await actions.sign(reason);
+    expect(save).toHaveBeenCalledWith(
+      'city-hospital',
+      expect.objectContaining({ overrideReason: reason }),
+    );
     expect(rx?.safetyOverride?.reason).toBe(reason);
-    expect(rx?.safetyOverride?.alerts).toHaveLength(1);
     expect(getState().overridePrompt).toBeNull();
-    expect(MOCK_AUDIT[0]).toMatchObject({ kind: 'sign_rx', overrideReason: reason });
   });
 
   it('refuses to sign without a doctor, or for a doctor without a license number', async () => {
@@ -219,7 +258,6 @@ describe('sign', () => {
 
   it('keeps the pad and says why when saving fails', async () => {
     fillPad('p_002', 'I10', [AMLODIPINE]);
-    const auditBefore = MOCK_AUDIT.length;
     vi.spyOn(api.prescriptions, 'sign').mockRejectedValueOnce(new Error('network down'));
 
     expect(await actions.sign()).toBeNull();
@@ -228,7 +266,6 @@ describe('sign', () => {
     expect(s.banner?.text).toContain('network down');
     expect(s.medications.map((m) => m.drugId)).toEqual([AMLODIPINE]);
     expect(s.signing).toBe(false);
-    expect(MOCK_AUDIT.length).toBe(auditBefore);
   });
 });
 

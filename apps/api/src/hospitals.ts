@@ -23,9 +23,8 @@
 //  suspending one signs everyone there out at once.
 //
 //  `monthlyRxUsed` is counted from `prescriptions` signed since the start of
-//  this month in Bangladesh (UTC+6, no daylight saving). Prescriptions are
-//  still signed in the browser's mock until POST /prescriptions exists, so
-//  until then it only counts what the database holds.
+//  this month in Bangladesh (UTC+6, no daylight saving); prescriptions.ts
+//  signs them, and refuses one over the hospital's monthly cap.
 // =============================================================================
 
 import { randomBytes } from 'node:crypto';
@@ -301,7 +300,7 @@ export function hospitalRoutes(deps: Deps) {
 // --- reads -------------------------------------------------------------------
 
 /** Every hospital, or the one with `slug`, in the shape the apps use. */
-async function readHospitals(deps: Deps, slug?: string): Promise<Hospital[]> {
+export async function readHospitals(deps: Deps, slug?: string): Promise<Hospital[]> {
   const rows = await deps.db
     .select({ hospital: hospitals, settings: hospitalSettings })
     .from(hospitals)
@@ -343,12 +342,17 @@ async function readHospitals(deps: Deps, slug?: string): Promise<Hospital[]> {
 }
 
 /** A hospital's patients, oldest first, with their recorded allergies. */
-async function readPatients(deps: Deps, slug: string): Promise<Patient[]> {
+/** Every patient of a hospital, or just the one with `patientId`. */
+export async function readPatients(
+  deps: Pick<Deps, 'db'>,
+  slug: string,
+  patientId?: string,
+): Promise<Patient[]> {
   const rows = await deps.db
     .select({ patient: patients })
     .from(patients)
     .innerJoin(hospitals, eq(hospitals.id, patients.hospitalId))
-    .where(eq(hospitals.slug, slug))
+    .where(and(eq(hospitals.slug, slug), patientId ? eq(patients.id, patientId) : undefined))
     .orderBy(asc(patients.createdAt), asc(patients.id));
   if (rows.length === 0) return [];
   const allergyRows = await deps.db
@@ -396,13 +400,13 @@ function sameJson(a: unknown, b: unknown): boolean {
   return JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
 }
 
-function startOfMonthInDhaka(now: Date): Date {
+export function startOfMonthInDhaka(now: Date): Date {
   const local = new Date(now.getTime() + DHAKA_OFFSET_MS);
   return new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1) - DHAKA_OFFSET_MS);
 }
 
 /** The session when `allowed` says yes; otherwise the 401 or 403 to send. */
-async function guard(
+export async function guard(
   c: Context,
   deps: Deps,
   allowed: (auth: AuthSession) => boolean,
@@ -414,7 +418,7 @@ async function guard(
 }
 
 /** The JSON body checked against `schema`, or the 400 to send. */
-async function parseBody<S extends z.ZodType>(
+export async function parseBody<S extends z.ZodType>(
   c: Context,
   schema: S,
 ): Promise<z.infer<S> | Response> {
