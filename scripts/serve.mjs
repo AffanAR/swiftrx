@@ -29,9 +29,15 @@
 //  Other paths without a file extension fall back to the app's index.html
 //  (client-side routing); a missing file is a real 404. Run `npm run build`
 //  first. Listens on $PORT (Render sets it), default 8080.
+//
+//  Every response carries the security headers in apps/api/src/
+//  securityHeaders.ts (HSTS, no framing, no Referer to other sites, ...). The
+//  app pages also get a Content-Security-Policy built for them there, which
+//  allows each index.html's inline theme script by its hash, read from the
+//  build when the server starts. `npm run check:headers` checks them all.
 // =============================================================================
 
-import { createReadStream, existsSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
@@ -63,15 +69,6 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json',
 };
 
-// Sent with every response. The demo holds no real data and shouldn't be
-// indexed; the rest is cheap hardening for a public URL.
-const BASE_HEADERS = {
-  'X-Robots-Tag': 'noindex, nofollow',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'SAMEORIGIN',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-};
-
 function appFor(hostname) {
   for (const root of [ROOT_DOMAIN, 'localhost']) {
     if (hostname.endsWith('.' + root)) {
@@ -95,10 +92,14 @@ async function fileAt(root, urlPath) {
   }
 }
 
-function sendFile(req, res, { file, size }, cacheControl) {
+function sendFile(req, res, { file, size }, cacheControl, pageCsp) {
+  const type = path.extname(file);
   res.writeHead(200, {
     ...BASE_HEADERS,
-    'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream',
+    // The app's own policy for its pages; a script, stylesheet or image
+    // opened on its own runs nothing.
+    'Content-Security-Policy': type === '.html' ? pageCsp : NOTHING_CSP,
+    'Content-Type': TYPES[type] || 'application/octet-stream',
     'Content-Length': size,
     'Cache-Control': cacheControl,
   });
@@ -111,6 +112,7 @@ function sendFile(req, res, { file, size }, cacheControl) {
 function sendText(res, status, text, headers = {}) {
   res.writeHead(status, {
     ...BASE_HEADERS,
+    'Content-Security-Policy': NOTHING_CSP,
     'Content-Type': 'text/plain; charset=utf-8',
     ...headers,
   });
@@ -123,6 +125,32 @@ for (const [app, dir] of Object.entries(DIST)) {
     process.exit(1);
   }
 }
+
+// The API's TypeScript is loaded through tsx (below), with the API's own
+// tsconfig for its @swiftrx/shared paths. The security headers come from it
+// too, so the pages and the API send the same ones.
+const TS_OPTIONS = {
+  parentURL: import.meta.url,
+  tsconfig: path.join(REPO, 'apps', 'api', 'tsconfig.json'),
+};
+const { SECURITY_HEADERS, NOTHING_CSP, pageContentSecurityPolicy } = await tsImport(
+  '../apps/api/src/securityHeaders.ts',
+  TS_OPTIONS,
+);
+
+// Sent with every response. The demo holds no real data and shouldn't be
+// indexed.
+const BASE_HEADERS = { 'X-Robots-Tag': 'noindex, nofollow', ...SECURITY_HEADERS };
+
+// Each app's pages are its index.html, so its CSP allows that file's inline
+// scripts, by hash.
+const PAGE_CSP = Object.fromEntries(
+  Object.entries(DIST).map(([app, dir]) => [
+    app,
+    pageContentSecurityPolicy(readFileSync(path.join(dir, 'index.html'), 'utf8')),
+  ]),
+);
+
 if (!process.env.DATABASE_URL && !existsSync(path.join(REPO, 'apps/api/dist/demo-db.tgz'))) {
   console.warn(
     '[serve] No demo database snapshot (apps/api/dist/demo-db.tgz), so the API builds one at boot,',
@@ -130,14 +158,11 @@ if (!process.env.DATABASE_URL && !existsSync(path.join(REPO, 'apps/api/dist/demo
   );
 }
 
-// The API is TypeScript; tsx compiles it as it loads, with the API's own
-// tsconfig for its @swiftrx/shared paths. That, and starting its database,
-// takes a while on a small instance, so the apps are served meanwhile and
-// /api requests wait.
-const api = tsImport('../apps/api/src/listener.ts', {
-  parentURL: import.meta.url,
-  tsconfig: path.join(REPO, 'apps', 'api', 'tsconfig.json'),
-}).then(({ createApiListener }) => createApiListener());
+// Loading the API and starting its database take a while on a small
+// instance, so the apps are served meanwhile and /api requests wait.
+const api = tsImport('../apps/api/src/listener.ts', TS_OPTIONS).then(({ createApiListener }) =>
+  createApiListener(),
+);
 api
   .then((loaded) => loaded.ready)
   .then(
@@ -173,8 +198,11 @@ const server = createServer(async (req, res) => {
 
   // Before the static rules: the API takes every method, and an unknown /api
   // path must be its JSON 404, not the app's index.html.
+  // The API sends the security headers itself (apps/api/src/app.ts); these
+  // also cover its answers from before it has started.
   if (urlPath === '/api' || urlPath.startsWith('/api/')) {
     for (const [name, value] of Object.entries(BASE_HEADERS)) res.setHeader(name, value);
+    res.setHeader('Content-Security-Policy', NOTHING_CSP);
     return api.then(
       (loaded) => loaded.listener(req, res),
       () => {
@@ -190,7 +218,8 @@ const server = createServer(async (req, res) => {
   if (urlPath === '/healthz') return sendText(res, 200, 'ok');
 
   const hostname = (req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
-  const root = DIST[appFor(hostname)];
+  const app = appFor(hostname);
+  const root = DIST[app];
 
   const hit = await fileAt(root, urlPath);
   if (hit) {
@@ -198,13 +227,13 @@ const server = createServer(async (req, res) => {
     const cache = urlPath.startsWith('/assets/')
       ? 'public, max-age=31536000, immutable'
       : 'no-cache';
-    return sendFile(req, res, hit, cache);
+    return sendFile(req, res, hit, cache, PAGE_CSP[app]);
   }
   // A missing file is a real 404; answering a missing script with index.html
   // would surface as a confusing MIME-type error instead.
   if (path.extname(urlPath)) return sendText(res, 404, 'Not found');
 
-  return sendFile(req, res, await fileAt(root, '/index.html'), 'no-cache');
+  return sendFile(req, res, await fileAt(root, '/index.html'), 'no-cache', PAGE_CSP[app]);
 });
 
 server.listen(PORT, '0.0.0.0', () => {

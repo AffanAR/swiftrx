@@ -164,6 +164,11 @@ jobs:
       - name: Check the bundles for secrets
         run: npm run check:bundles
 
+      # Starts the production server and checks the CSP, HSTS and the other
+      # security headers on its pages, files and API.
+      - name: Check the security headers
+        run: npm run check:headers
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:

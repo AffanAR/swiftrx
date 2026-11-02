@@ -60,6 +60,12 @@ Demo accounts are listed in the [README](../README.md#demo-credentials).
   signature hash and no "valid until" date. `VITE_DEMO_MODE=false` at build
   time turns it off. Leave it on until the checklist in section 4 is done.
 - **Not indexed.** The server sends `X-Robots-Tag: noindex, nofollow`.
+- **Security headers.** Every response carries HSTS, a Content-Security-
+  Policy and the rest of `apps/api/src/securityHeaders.ts`. HSTS covers
+  subdomains, so every `*.thesyndicate.bond` host must serve HTTPS, as
+  Render and Cloudflare do. A new outside resource (another font host, an
+  analytics script) needs adding to the CSP there first, or browsers block
+  it.
 - **Optional: invited people only.** Cloudflare Zero Trust → Access can put an
   email sign-in in front of `thesyndicate.bond` and `*.thesyndicate.bond`
   (free for up to 50 users).

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from './app';
 import { openDatabase, type Database, type Db } from './db/client';
+import { NOTHING_CSP, SECURITY_HEADERS } from './securityHeaders';
 
 describe('GET /api/health', () => {
   let database: Database;
@@ -45,6 +46,31 @@ describe('the rest of the API', () => {
       const res = await app.request(path);
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: 'Not found.' });
+    }
+  });
+
+  it('sends the security headers with every answer, errors included', async () => {
+    const failing = createApp({ db: {} as Db, logError: () => {} });
+    failing.get('/boom', () => {
+      throw new Error('boom');
+    });
+    const answers = [
+      await failing.request('/api/nope'), // 404
+      await failing.request('/api/boom'), // 500
+      // 403: a write from another site.
+      await failing.request('/api/auth/login', {
+        method: 'POST',
+        headers: { origin: 'https://evil.example', 'content-type': 'application/json' },
+        body: '{}',
+      }),
+    ];
+
+    expect(answers.map((r) => r.status)).toEqual([404, 500, 403]);
+    for (const res of answers) {
+      for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+        expect(res.headers.get(name)).toBe(value);
+      }
+      expect(res.headers.get('content-security-policy')).toBe(NOTHING_CSP);
     }
   });
 

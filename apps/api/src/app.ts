@@ -27,6 +27,7 @@ import { SIGN_IN_LIMITS, type SignInLimits } from './auth/rateLimit';
 import type { Db } from './db/client';
 import demoPasswords from './db/demo-passwords.json';
 import { readRoutes } from './reads';
+import { NOTHING_CSP, SECURITY_HEADERS } from './securityHeaders';
 
 export interface AppDeps {
   db: Db;
@@ -63,9 +64,12 @@ export function createApp({
 }: AppDeps) {
   const app = new Hono().basePath('/api');
 
+  // Every response, errors included. The API only answers JSON, so its CSP
+  // allows nothing at all (securityHeaders.ts).
   app.use(async (c, next) => {
     await next();
-    c.header('X-Content-Type-Options', 'nosniff');
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) c.header(name, value);
+    c.header('Content-Security-Policy', NOTHING_CSP);
   });
 
   // Another site can't make a signed-in browser change anything here: a write

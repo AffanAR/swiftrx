@@ -596,10 +596,24 @@ In this order:
   - writes the audit row in the same transaction.
 - [ ] Server-side enforcement: tenant scoping, caps, flags, suspended status
       and reserved slugs.
-- [ ] Hosting: the API under `/api` on the same origin, CSP and HSTS headers,
+- [x] Hosting: the API under `/api` on the same origin, CSP and HSTS headers,
       and a managed Postgres for the hosted demo. (The API under `/api` was
       done with the auth step, and the demo runs PGlite in memory instead of
-      a managed Postgres, see above. CSP and HSTS are left.)
+      a managed Postgres, see above. CSP and HSTS were added 2026-11-03,
+      checked in the browser: no violations on sign-in, the Rx pad, brand
+      search, the theme switch, printing or the admin's Rx design preview.)
+  - `apps/api/src/securityHeaders.ts` holds them for `serve.mjs` and the API
+    alike: HSTS for a year with subdomains (no `preload`),
+    `X-Frame-Options: DENY`, `Referrer-Policy: same-origin` (not
+    `no-referrer`, which makes browsers send `Origin: null` on the apps' own
+    POSTs), `Permissions-Policy` and `Cross-Origin-Opener-Policy`.
+  - The pages' CSP allows the build's own files, the inline theme script by
+    its SHA-256 (read from the built `index.html` at start-up), Google Fonts
+    and inline styles (the print template needs them), and fetches to this
+    origin only. Everything else, the API's JSON included, gets
+    `default-src 'none'`.
+  - `npm run check:headers` (in `npm run check` and CI) starts the
+    production server and checks what it actually sends.
 - [ ] Playwright e2e:
   - sign in → Rx → sign → visible in the portal and the admin audit log;
   - cross-tenant access is refused.

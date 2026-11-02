@@ -18,6 +18,7 @@
     "build:demo-db": "npm run db:snapshot -w @swiftrx/api",
     "build": "npm run build:portal && npm run build:admin && npm run build:demo-db",
     "check:bundles": "node scripts/check-bundles.mjs",
+    "check:headers": "node scripts/check-headers.mjs",
     "start": "node --liftoff-only scripts/serve.mjs",
     "preview:portal": "npm run preview -w @swiftrx/doctor-portal",
     "preview:admin": "npm run preview -w @swiftrx/admin",
@@ -34,7 +35,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:bundles",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:bundles && npm run check:headers",
     "prepare": "husky"
   },
   "devDependencies": {
