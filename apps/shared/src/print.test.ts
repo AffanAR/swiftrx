@@ -78,6 +78,16 @@ describe('renderRxHtml', () => {
     expect(html).not.toContain('DRAFT');
   });
 
+  it('prints the record hash and the rules it was checked against, once signed', () => {
+    const html = renderRxHtml(
+      rx({ recordHash: 'ab'.repeat(32), ruleSetVersion: '0.1.0-draft' }),
+      design(),
+    );
+    expect(html).toContain('record hash');
+    expect(html).toContain('abababababababab');
+    expect(html).toContain('checked against rules 0.1.0-draft');
+  });
+
   it('marks a draft as not valid, without the signature hash or valid-until date', () => {
     const html = renderRxHtml(rx(), design(), { draft: true });
     expect(html).toContain('NOT A VALID PRESCRIPTION');

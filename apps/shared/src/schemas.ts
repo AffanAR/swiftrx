@@ -370,6 +370,7 @@ export const signedRxSchema = z.object({
     .string()
     .regex(/^[0-9a-f]{64}$/)
     .optional(),
+  ruleSetVersion: z.string().min(1).optional(),
 });
 
 export const prescriptionDraftSchema = z.object({

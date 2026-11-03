@@ -7,6 +7,7 @@ export * from './types';
 export * from './api';
 export * from './medicine';
 export * from './patient';
+export * from './rules';
 export * from './safety';
 export { onSessionEnded } from './http';
 export * from './queries';

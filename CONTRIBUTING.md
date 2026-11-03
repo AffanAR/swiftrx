@@ -37,16 +37,23 @@ is two commits.
 
 ## Clinical safety changes
 
-The Rx pad refuses to sign when it detects a critical allergy or interaction
-(`apps/doctor-portal/src/rx/safety.ts`), and `store.sign()` blocks on an
-unresolved critical alert unless the doctor types an override reason.
+The safety checks (`apps/shared/src/safety.ts`) run in the Rx pad and again
+on the server when it signs; a critical alert can only be signed through with
+a written reason. The clinical rules they apply live in one file,
+`apps/shared/src/rules/ruleset.json` (dose limits, allergy groups and
+cross-reactions, pregnancy, breastfeeding and kidney flags, interactions),
+checked against a schema in `rules.ts` when it loads. Every signed
+prescription records the rule-set `version` it was checked against.
 
-If you touch safety rules, dose limits or quick packs:
+If you touch the rule set, the checks or quick packs:
 
 1. Say so in the PR description, and name the clinician who reviewed it.
 2. Do not raise or lower a dose ceiling without that review.
-3. Add or update the tests in `safety.test.ts` — including the case that was
-   previously wrong.
+3. Bump the rule set's `version`. Keep `-draft` and `"status": "draft"` until
+   the clinician signs off that exact version; then drop `-draft`, set
+   `"status": "reviewed"` and fill in `reviewedBy` and `reviewedOn`.
+4. Add or update the tests in `safety.test.ts` and `rules.test.ts`, including
+   the case that was previously wrong.
 
 **No dose or interaction rule ships without a clinician sign-off.**
 

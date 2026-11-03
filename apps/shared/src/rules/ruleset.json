@@ -1,0 +1,382 @@
+{
+  "version": "0.1.0-draft",
+  "status": "draft",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "note": "A first draft for the demo, written from common published adult and paediatric dosing guidance. It has NOT been reviewed by a clinician and must not be used for real patients. It covers only the 12 generics in scripts/bd-medicines/reviewed.json, plus allergy groups and interactions for some others. Doses are maximums, not recommendations.",
+
+  "allergyGroups": [
+    {
+      "id": "penicillins",
+      "label": "Penicillins",
+      "allergyTerms": [
+        "penicillin",
+        "amoxicillin",
+        "ampicillin",
+        "cloxacillin",
+        "beta-lactam",
+        "beta lactam"
+      ],
+      "ingredients": [
+        "penicillin",
+        "benzylpenicillin",
+        "phenoxymethylpenicillin",
+        "amoxicillin",
+        "ampicillin",
+        "cloxacillin",
+        "flucloxacillin",
+        "piperacillin",
+        "pivmecillinam"
+      ],
+      "classes": ["penicillin"]
+    },
+    {
+      "id": "cephalosporins",
+      "label": "Cephalosporins",
+      "allergyTerms": [
+        "cephalosporin",
+        "cefuroxime",
+        "cefixime",
+        "ceftriaxone",
+        "cephalexin",
+        "cephradine"
+      ],
+      "ingredients": [
+        "cefuroxime",
+        "cefixime",
+        "ceftriaxone",
+        "cephalexin",
+        "cephradine",
+        "cefaclor",
+        "cefpodoxime",
+        "cefepime",
+        "ceftazidime",
+        "cefotaxime",
+        "cefadroxil"
+      ],
+      "classes": ["cephalosporin"]
+    },
+    {
+      "id": "sulfonamides",
+      "label": "Sulfonamides",
+      "allergyTerms": [
+        "sulfa",
+        "sulpha",
+        "sulfonamide",
+        "sulphonamide",
+        "co-trimoxazole",
+        "cotrimoxazole"
+      ],
+      "ingredients": [
+        "sulfamethoxazole",
+        "sulphamethoxazole",
+        "sulfadiazine",
+        "sulfasalazine",
+        "sulfacetamide",
+        "cotrimoxazole"
+      ],
+      "classes": []
+    },
+    {
+      "id": "nsaids",
+      "label": "NSAIDs and aspirin",
+      "allergyTerms": ["nsaid", "aspirin", "ibuprofen", "diclofenac", "naproxen", "ketorolac"],
+      "ingredients": [
+        "aspirin",
+        "ibuprofen",
+        "diclofenac",
+        "naproxen",
+        "ketorolac",
+        "ketoprofen",
+        "aceclofenac",
+        "mefenamic",
+        "indomethacin",
+        "piroxicam",
+        "meloxicam",
+        "etoricoxib",
+        "celecoxib",
+        "flurbiprofen",
+        "tiaprofenic"
+      ],
+      "classes": []
+    }
+  ],
+
+  "crossReactions": [
+    {
+      "allergyGroup": "penicillins",
+      "drugGroup": "cephalosporins",
+      "severity": "moderate",
+      "note": "About 1–2% of people with a penicillin allergy also react to a cephalosporin; avoid after a severe (anaphylactic) penicillin reaction."
+    },
+    {
+      "allergyGroup": "cephalosporins",
+      "drugGroup": "penicillins",
+      "severity": "moderate",
+      "note": "Some people with a cephalosporin allergy also react to penicillins."
+    }
+  ],
+
+  "doses": {
+    "g860": {
+      "unit": "mg",
+      "bands": [
+        {
+          "minAgeMonths": 144,
+          "maxSingle": 1000,
+          "maxDaily": 4000,
+          "note": "Adults and children 12 and over."
+        },
+        {
+          "minAgeMonths": 1,
+          "maxAgeMonths": 143,
+          "perKgDay": { "min": 40, "max": 75 },
+          "maxSingle": 1000,
+          "maxDaily": 4000,
+          "note": "About 10–15 mg/kg a dose, at most four doses a day."
+        }
+      ]
+    },
+    "g593": {
+      "unit": "mg",
+      "bands": [
+        { "minAgeMonths": 144, "maxSingle": 800, "maxDaily": 2400 },
+        {
+          "minAgeMonths": 3,
+          "maxAgeMonths": 143,
+          "perKgDay": { "min": 20, "max": 30 },
+          "maxDaily": 2400
+        }
+      ]
+    },
+    "g69": {
+      "unit": "mg",
+      "bands": [
+        { "minAgeMonths": 216, "maxSingle": 1000, "maxDaily": 3000 },
+        {
+          "minAgeMonths": 1,
+          "maxAgeMonths": 215,
+          "perKgDay": { "min": 40, "max": 90 },
+          "maxDaily": 3000
+        }
+      ]
+    },
+    "g100": {
+      "unit": "mg",
+      "bands": [
+        {
+          "minAgeMonths": 216,
+          "maxSingle": 500,
+          "maxDaily": 500,
+          "note": "Usually 500 mg once a day for three days."
+        },
+        {
+          "minAgeMonths": 6,
+          "maxAgeMonths": 215,
+          "perKgDay": { "min": 10, "max": 10 },
+          "maxDaily": 500
+        }
+      ]
+    },
+    "g234": {
+      "unit": "mg",
+      "bands": [
+        { "minAgeMonths": 72, "maxDaily": 10 },
+        { "minAgeMonths": 24, "maxAgeMonths": 71, "maxDaily": 5 }
+      ]
+    },
+    "g1317": {
+      "unit": "mcg",
+      "bands": [
+        {
+          "minAgeMonths": 0,
+          "maxSingle": 200,
+          "maxDaily": 800,
+          "note": "Inhaler: one or two puffs of 100 mcg as needed, up to four times a day."
+        }
+      ]
+    },
+    "g918": {
+      "unit": "mg",
+      "bands": [
+        { "minAgeMonths": 216, "maxDaily": 60 },
+        {
+          "minAgeMonths": 1,
+          "maxAgeMonths": 215,
+          "perKgDay": { "min": 1, "max": 2 },
+          "maxDaily": 60
+        }
+      ]
+    },
+    "g734": {
+      "unit": "mg",
+      "bands": [
+        {
+          "minAgeMonths": 120,
+          "maxSingle": 1000,
+          "maxDaily": 2000,
+          "note": "Immediate-release tablets."
+        }
+      ]
+    },
+    "g62": {
+      "unit": "mg",
+      "bands": [{ "minAgeMonths": 72, "maxSingle": 10, "maxDaily": 10 }]
+    },
+    "g691": {
+      "unit": "mg",
+      "bands": [{ "minAgeMonths": 216, "maxSingle": 40, "maxDaily": 40 }]
+    },
+    "g92": {
+      "unit": "mg",
+      "bands": [{ "minAgeMonths": 120, "maxSingle": 80, "maxDaily": 80 }]
+    },
+    "g827": {
+      "unit": "mg",
+      "bands": [
+        { "minAgeMonths": 216, "maxSingle": 8, "maxDaily": 24 },
+        {
+          "minAgeMonths": 6,
+          "maxAgeMonths": 215,
+          "perKgDay": { "min": 0.1, "max": 0.45 },
+          "maxSingle": 8,
+          "maxDaily": 24
+        }
+      ]
+    }
+  },
+
+  "pregnancy": {
+    "g593": {
+      "level": "avoid",
+      "note": "NSAIDs: avoid in pregnancy, and don't use from 20 weeks unless essential (kidney and heart effects on the baby)."
+    },
+    "g691": {
+      "level": "contraindicated",
+      "note": "ACE inhibitors harm the baby's kidneys and skull in the second and third trimesters."
+    },
+    "g92": { "level": "contraindicated", "note": "Statins: stop before and during pregnancy." },
+    "g62": {
+      "level": "caution",
+      "note": "Limited data; use only if no safer option controls the blood pressure."
+    },
+    "g918": {
+      "level": "caution",
+      "note": "Use the lowest effective dose; long courses need monitoring."
+    },
+    "g827": {
+      "level": "caution",
+      "note": "Avoid in the first trimester unless other anti-sickness treatment has failed."
+    },
+    "g734": {
+      "level": "caution",
+      "note": "Usually switched to insulin in pregnancy; specialist decision."
+    }
+  },
+
+  "breastfeeding": {
+    "g92": { "level": "avoid", "note": "Statins: avoid while breastfeeding." },
+    "g691": { "level": "caution", "note": "Limited data; other ACE inhibitors are preferred." },
+    "g62": { "level": "caution", "note": "Limited data." }
+  },
+
+  "kidney": {
+    "g734": [
+      {
+        "bands": ["moderate"],
+        "level": "reduce",
+        "note": "eGFR 30–44: at most 1000 mg a day; review the dose at eGFR 45–59."
+      },
+      {
+        "bands": ["severe", "failure", "dialysis"],
+        "level": "contraindicated",
+        "note": "Risk of lactic acidosis below eGFR 30."
+      }
+    ],
+    "g593": [
+      {
+        "bands": ["moderate"],
+        "level": "caution",
+        "note": "NSAIDs can worsen kidney function; use the lowest dose for the shortest time."
+      },
+      {
+        "bands": ["severe", "failure", "dialysis"],
+        "level": "avoid",
+        "note": "Avoid NSAIDs below eGFR 30."
+      }
+    ],
+    "g691": [
+      {
+        "bands": ["moderate", "severe"],
+        "level": "reduce",
+        "note": "Start low and check potassium and creatinine."
+      },
+      { "bands": ["failure", "dialysis"], "level": "caution", "note": "Specialist decision." }
+    ],
+    "g69": [
+      {
+        "bands": ["severe", "failure", "dialysis"],
+        "level": "reduce",
+        "note": "Below eGFR 30, lengthen the dosing interval."
+      }
+    ],
+    "g234": [
+      {
+        "bands": ["moderate", "severe", "failure", "dialysis"],
+        "level": "reduce",
+        "note": "Halve the dose when eGFR is below 50."
+      }
+    ],
+    "g860": [
+      {
+        "bands": ["severe", "failure", "dialysis"],
+        "level": "caution",
+        "note": "Lengthen the interval to at least six hours."
+      }
+    ]
+  },
+
+  "interactions": [
+    {
+      "between": ["warfarin", "ibuprofen"],
+      "severity": "critical",
+      "note": "Bleeding risk: NSAIDs with warfarin."
+    },
+    { "between": ["warfarin", "aspirin"], "severity": "critical", "note": "Bleeding risk." },
+    {
+      "between": ["warfarin", "atorvastatin"],
+      "severity": "moderate",
+      "note": "May raise the INR; check it when starting."
+    },
+    {
+      "between": ["aspirin", "ibuprofen"],
+      "severity": "moderate",
+      "note": "Ibuprofen can blunt aspirin's antiplatelet effect, and both irritate the stomach."
+    },
+    {
+      "between": ["lisinopril", "ibuprofen"],
+      "severity": "moderate",
+      "note": "NSAIDs reduce the blood-pressure effect and, with ACE inhibitors, can harm the kidneys."
+    },
+    {
+      "between": ["methotrexate", "amoxicillin"],
+      "severity": "moderate",
+      "note": "Penicillins can raise methotrexate levels."
+    },
+    {
+      "between": ["prednisolone", "ibuprofen"],
+      "severity": "moderate",
+      "note": "Steroids with NSAIDs raise the risk of stomach bleeding."
+    },
+    {
+      "between": ["prednisolone", "aspirin"],
+      "severity": "moderate",
+      "note": "Steroids with aspirin raise the risk of stomach bleeding."
+    },
+    {
+      "between": ["azithromycin", "ondansetron"],
+      "severity": "moderate",
+      "note": "Both can prolong the QT interval."
+    }
+  ]
+}

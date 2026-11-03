@@ -1,0 +1,1 @@
+ALTER TABLE "prescriptions" ADD COLUMN "rule_set_version" text;

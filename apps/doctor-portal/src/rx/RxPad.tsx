@@ -8,6 +8,7 @@ import {
   type QuickPack,
   type SignedRx,
   type User,
+  RULE_SET,
 } from '@swiftrx/shared';
 import {
   actions,
@@ -363,6 +364,19 @@ function StatusLine() {
         <span>v0.1</span>
         <span className="hidden lg:inline">
           {brandCount.toLocaleString()} brands · {genericCount.toLocaleString()} generics
+        </span>
+        {/* Which clinical rules the checks apply, and whether a clinician has signed them off. */}
+        <span
+          className={cx(
+            'hidden md:inline font-mono',
+            RULE_SET.status === 'draft' && 'text-rx-warn',
+          )}
+          title={RULE_SET.note}
+        >
+          rules {RULE_SET.version}
+          {RULE_SET.status === 'draft'
+            ? ' · not clinically reviewed'
+            : ` · reviewed ${RULE_SET.reviewedOn}`}
         </span>
         {medCount > 0 && (
           <span className="font-mono text-rx-accent animate-fadeIn">

@@ -329,6 +329,11 @@ export interface SignedRx {
    * the server signed them.
    */
   recordHash?: string;
+  /**
+   * The clinical rule set (rules.ts) the server checked it against, like
+   * "0.1.0-draft". Missing on prescriptions signed before there was one.
+   */
+  ruleSetVersion?: string;
 }
 
 /**

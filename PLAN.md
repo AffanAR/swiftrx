@@ -698,7 +698,26 @@ the server creates a signed Rx.
     stored age. Still missing: editing a patient's facts after they're
     added (pregnancy and kidney function change).
 - [ ] Drug model: ATC class, route, strengths/forms, and dose rules (mg/kg/day
-      range, max daily dose, age bands).
+      range, max daily dose, age bands). (The rules half done 2026-11-03, below; ATC
+      class and route wait for the licensed drug data.)
+- [x] **A versioned clinical rule set** (2026-11-03,
+      `apps/shared/src/rules/ruleset.json`, schema in `rules.ts`):
+  - allergy groups (penicillins, cephalosporins, sulfonamides, NSAIDs and
+    aspirin), matched by ingredient because the catalog's classes are uneven,
+    and cross-reactions between them (penicillin allergy → cephalosporins,
+    moderate);
+  - dose limits per generic by age band: per kg per day, single and daily
+    maximum, in one unit;
+  - pregnancy, breastfeeding and kidney-band flags; drug–drug interaction
+    pairs.
+  - Version `0.1.0-draft`, status draft, written from common published
+    guidance for the 12 reviewed generics and **not clinically reviewed**;
+    the pad's status line says so in amber. `rules.test.ts` checks every id
+    and ingredient against the catalog, and that age bands don't overlap.
+  - Every signed Rx records the `ruleSetVersion` it was checked against
+    (migration `0011`), inside its record hash, and the print names it.
+    `CONTRIBUTING.md` says how to bump a version and mark it reviewed.
+  - The checks don't use it yet: that's the next step.
 - [ ] Checks:
   - allergy, including cross-sensitivity groups;
   - drug–drug interactions across the pad *and* active meds;

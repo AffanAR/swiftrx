@@ -487,6 +487,8 @@ export const prescriptions = pgTable(
      * for prescriptions a database held before hashes were added.
      */
     recordHash: text('record_hash'),
+    /** The clinical rule set it was checked against (apps/shared/src/rules.ts). */
+    ruleSetVersion: text('rule_set_version'),
   },
   (t) => [
     unique('prescriptions_id_hospital_unique').on(t.id, t.hospitalId),

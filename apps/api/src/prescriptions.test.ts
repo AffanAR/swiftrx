@@ -14,6 +14,8 @@ import type { Database } from './db/client';
 import { hospitals } from './db/schema';
 import { seed } from './db/seed';
 import { SLOW, freshDatabase } from './db/testDatabase';
+import { RULE_SET } from '@swiftrx/shared/rules';
+
 import { rxHash } from './rxHash';
 
 const CITY = 'http://city-hospital.swiftrx.com';
@@ -133,6 +135,7 @@ describe('POST /api/hospitals/:slug/prescriptions', () => {
     });
     expect(rx.id).toMatch(/^rx_[0-9a-f]{12}$/);
     expect(rx.recordHash).toBe(rxHash(rx));
+    expect(rx.ruleSetVersion).toBe(RULE_SET.version);
     expect(rx.safetyOverride).toBeUndefined();
 
     // Stored exactly as answered.

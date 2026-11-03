@@ -24,7 +24,9 @@
 //    - freezes the patient, the diagnosis and the hospital's Rx design,
 //      assigns the id and the time, computes the record hash (rxHash.ts), and
 //      writes the prescription, its rows and the audit entry in one
-//      transaction. The rows are append-only (migration 0008).
+//      transaction. The rows are append-only (migration 0008). Each Rx
+//      records the version of the clinical rule set (rules.ts) it was
+//      checked against, inside its hash.
 // =============================================================================
 
 import { randomBytes } from 'node:crypto';
@@ -32,6 +34,7 @@ import { randomBytes } from 'node:crypto';
 import { and, asc, count, desc, eq, gte, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 
+import { RULE_SET } from '@swiftrx/shared/rules';
 import { MIN_OVERRIDE_REASON, evaluateAllMedications } from '@swiftrx/shared/safety';
 import { prescriptionDraftSchema } from '@swiftrx/shared/schemas';
 import type {
@@ -223,6 +226,7 @@ export function prescriptionRoutes(deps: Deps) {
       doctorName: auth.user.name,
       doctorLicense: auth.user.licenseNo!.trim(),
       ...(critical.length > 0 ? { safetyOverride: { reason, alerts: critical } } : {}),
+      ruleSetVersion: RULE_SET.version,
     };
     rx.recordHash = rxHash(rx);
 
@@ -263,6 +267,7 @@ export function prescriptionRoutes(deps: Deps) {
         doctorLicense: rx.doctorLicense,
         safetyOverride: rx.safetyOverride ?? null,
         recordHash: rx.recordHash,
+        ruleSetVersion: rx.ruleSetVersion,
       });
       await tx.insert(prescriptionItems).values(
         medications.map((m, position) => ({
@@ -377,6 +382,7 @@ export async function readPrescriptions(
     doctorLicense: rx.doctorLicense,
     ...(rx.safetyOverride ? { safetyOverride: rx.safetyOverride } : {}),
     ...(rx.recordHash ? { recordHash: rx.recordHash } : {}),
+    ...(rx.ruleSetVersion ? { ruleSetVersion: rx.ruleSetVersion } : {}),
   }));
 }
 

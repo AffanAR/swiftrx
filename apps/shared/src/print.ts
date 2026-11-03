@@ -86,7 +86,9 @@ export function renderRxHtml(
     ? `<div style="color:#dc2626; font-weight:600;">${draft ? 'Unsigned draft' : 'Demo print'} &middot; not valid for dispensing</div>`
     : // The server's SHA-256 of the signed record (first 16 hex digits).
       `<div>Verified digitally &middot; record hash
-          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color:${accent}; font-weight:600;">${escape(rx.recordHash ? rx.recordHash.slice(0, 16) : shortHash(rx.id))}</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color:${accent}; font-weight:600;">${escape(rx.recordHash ? rx.recordHash.slice(0, 16) : shortHash(rx.id))}</span>${
+            rx.ruleSetVersion ? ` &middot; checked against rules ${escape(rx.ruleSetVersion)}` : ''
+          }
         </div>`;
 
   const headerBadge = design.showRxBadge
