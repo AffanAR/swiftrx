@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp, actions, shownAlerts } from '../store';
-import { LiveDot, cx, type Drug, type Patient } from '@swiftrx/shared';
+import { LiveDot, cx, type Drug, type Patient, type RxMedication } from '@swiftrx/shared';
 import { buildMedicineIndex, searchMedicines, type MedicineHit } from '../search';
 import { evaluateMedication, severityRank } from '@swiftrx/shared';
 import { NO_SAFETY_DATA, medicationFor } from '../dosing';
@@ -15,6 +15,8 @@ export function MedicationSearch() {
   const drugs = useApp((s) => s.catalog.drugs);
   const brands = useApp((s) => s.catalog.brands);
   const hideMinor = useApp((s) => s.hideMinorAlerts);
+  // What's already on the pad: a suggestion is checked against it too.
+  const onPad = useApp((s) => s.medications);
 
   // Built once per catalog: about 21,700 brands, searched on every keystroke.
   const index = React.useMemo(() => buildMedicineIndex({ drugs, brands }), [drugs, brands]);
@@ -61,7 +63,7 @@ export function MedicationSearch() {
 
   // Preview alerts for the highlighted suggestion
   const preview = enterAccepts
-    ? shownAlerts(alertsFor(enterAccepts, patient, drugs), hideMinor)
+    ? shownAlerts(alertsFor(enterAccepts, patient, drugs, onPad), hideMinor)
     : [];
   const worstPreview = preview.reduce<null | ReturnType<typeof severityRank>>((acc, a) => {
     const r = severityRank(a.severity);
@@ -138,7 +140,7 @@ export function MedicationSearch() {
               {suggestions.map((s, i) => {
                 const start = medicationFor(s.drug, s.kind === 'brand' ? s.brand : undefined);
                 const sev = shownAlerts(
-                  evaluateMedication({ rowId: 'p', ...start }, patient, drugs),
+                  evaluateMedication({ rowId: 'p', ...start }, patient, drugs, { others: onPad }),
                   hideMinor,
                 );
                 const worst = sev.reduce<number>(
@@ -277,11 +279,12 @@ export function MedicationSearch() {
 }
 
 /** The safety alerts a search hit would raise once added, at its starting dose. */
-function alertsFor(hit: MedicineHit, patient: Patient, drugs: Drug[]) {
+function alertsFor(hit: MedicineHit, patient: Patient, drugs: Drug[], onPad: RxMedication[]) {
   const brand = hit.kind === 'brand' ? hit.brand : undefined;
   return evaluateMedication(
     { rowId: 'preview', ...medicationFor(hit.drug, brand) },
     patient,
     drugs,
+    { others: onPad },
   );
 }

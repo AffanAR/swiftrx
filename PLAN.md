@@ -67,13 +67,13 @@ shows up for the hospital and the platform) can't work end to end yet.
   Classes come from the dataset and are uneven (statins are filed under
   "Other Anti-anginal & Anti-ischaemic drugs"), so it still needs the Phase 3
   drug model.
-- **Interactions are only checked against the patient's existing meds,** not
-  between drugs on the same Rx. Ibuprofen + Lisinopril on one pad gives no
-  alert. `src/safety.ts:51`
-- **There are no dose checks** (weight, age or daily maximum). Example: J02.9
-  Quick Pack #1 gives Paracetamol 500 mg QID (2 g/day). For Ayan Khan (6 y,
-  21 kg) that's about 95 mg/kg/day, above common paediatric ceilings. Nothing
-  warns. *Any dose rules must be reviewed by a clinician.*
+- ~~**Interactions are only checked against the patient's existing meds,**~~
+  Fixed 2026-11-03: each row is checked against the other rows on the same Rx
+  too (`apps/shared/src/safety.ts`, Phase 3).
+- ~~**There are no dose checks**~~ (weight, age or daily maximum). Since
+  2026-11-03 the pad and the server check doses against the rule set, so
+  Paracetamol 500 mg QID for Ayan Khan (6 y, 21 kg) is flagged critical. The
+  rules are a draft: *any dose rules must be reviewed by a clinician.*
 - **The dose field turns an empty value into 0,** and 0 mg or 0 days is
   accepted. `src/components/MedicationRow.tsx:158`
 - **"No allergies" shows for patients whose allergies were never recorded.**
@@ -717,15 +717,30 @@ the server creates a signed Rx.
   - Every signed Rx records the `ruleSetVersion` it was checked against
     (migration `0011`), inside its record hash, and the print names it.
     `CONTRIBUTING.md` says how to bump a version and mark it reviewed.
-  - The checks don't use it yet: that's the next step.
-- [ ] Checks:
-  - allergy, including cross-sensitivity groups;
-  - drug–drug interactions across the pad *and* active meds;
-  - same-ingredient and same-class duplicates;
-  - weight/age dose range;
-  - pregnancy and renal flags.
-- [ ] Override workflow with a mandatory reason, stored on the Rx and in the
-      audit log.
+- [x] Checks (2026-11-03, `apps/shared/src/safety.ts`; the pad and the
+      server run the same code, against the rule set above; checked in the
+      browser):
+  - allergy, including cross-sensitivity groups: the rule set's groups by
+    ingredient, then its cross-reactions (penicillin allergy → cephalosporins
+    at moderate), then the drug's own list and its name and class;
+  - drug–drug interactions across the pad *and* active meds: the rule set's
+    pairs at their own severity (warfarin + ibuprofen is critical), plus the
+    drugs' own lists;
+  - same-ingredient and same-class duplicates, including the same drug twice
+    on one Rx;
+  - weight/age dose range: the row's dose in the rule's unit (a syrup's ml
+    and tablets through the brand's strength), against the band for the
+    patient's age: above the daily or per-kg-per-day maximum is critical,
+    above the single maximum moderate, below the per-kg range low; no band
+    for the age is moderate, and a dose that can't be read is low;
+  - pregnancy and renal flags: by the rule's level (contraindicated is
+    critical; avoid and reduce moderate; caution low), and a low reminder
+    when kidney function isn't recorded for a drug it would rule out.
+  - A critical alert of any kind needs a written reason to sign through;
+    the success message says "safety override".
+- [x] Override workflow with a mandatory reason, stored on the Rx and in the
+      audit log. (Done with `POST /prescriptions`: the reason and the alerts
+      the server found are stored on the Rx, and the reason on its audit row.)
 - [ ] Catalog source: DGDA-registered brands plus an interaction dataset
       (a licensing decision; see §4). Until then the demo uses the Kaggle
       "Assorted Medicine Dataset of Bangladesh" (scraped from MedEx, about

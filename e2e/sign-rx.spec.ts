@@ -84,7 +84,7 @@ test('signing through an allergy needs a reason, and the server keeps it', async
   await dialog.getByRole('textbox').fill(reason);
   await dialog.getByRole('button', { name: /Override & sign/ }).click();
   await expect(
-    page.getByText(/Signed rx_[0-9a-f]{12} for Bilal Ahmed with an allergy override/).first(),
+    page.getByText(/Signed rx_[0-9a-f]{12} for Bilal Ahmed with a safety override/).first(),
   ).toBeVisible();
 
   // Stored with the reason, the alert the server found, and a record hash.

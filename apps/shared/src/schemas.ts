@@ -349,7 +349,7 @@ export const rxMedicationSchema = z.object({
 
 export const safetyAlertSchema = z.object({
   severity: severitySchema,
-  type: z.enum(['allergy', 'drug_interaction', 'duplicate_therapy']),
+  type: z.enum(['allergy', 'drug_interaction', 'duplicate_therapy', 'dose', 'pregnancy', 'kidney']),
   message: z.string(),
   drugId: z.string(),
 });

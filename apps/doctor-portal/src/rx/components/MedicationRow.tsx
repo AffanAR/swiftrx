@@ -27,10 +27,13 @@ export function MedicationRow({ med, index }: RowProps) {
   const drugs = useApp((s) => s.catalog.drugs);
   const drug = findDrug(med.drugId, drugs);
   const hideMinor = useApp((s) => s.hideMinorAlerts);
+  // The other rows: interactions and duplicates within this prescription.
+  const meds = useApp((s) => s.medications);
+  const others = React.useMemo(() => meds.filter((m) => m.rowId !== med.rowId), [meds, med.rowId]);
 
   const alerts = React.useMemo(
-    () => shownAlerts(evaluateMedication(med, patient, drugs), hideMinor),
-    [med, patient, drugs, hideMinor],
+    () => shownAlerts(evaluateMedication(med, patient, drugs, { others }), hideMinor),
+    [med, patient, drugs, others, hideMinor],
   );
   const worstSeverity = alerts.reduce<Severity | null>((acc, a) => {
     const r = severityRank(a.severity);

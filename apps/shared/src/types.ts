@@ -302,7 +302,8 @@ export interface RxMedication {
 
 // --- Safety alerts ------------------------------------------------------------
 
-export type SafetyAlertType = 'allergy' | 'drug_interaction' | 'duplicate_therapy';
+export type SafetyAlertType =
+  'allergy' | 'drug_interaction' | 'duplicate_therapy' | 'dose' | 'pregnancy' | 'kidney';
 export interface SafetyAlert {
   severity: Severity;
   type: SafetyAlertType;

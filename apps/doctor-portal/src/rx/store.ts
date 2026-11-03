@@ -320,7 +320,7 @@ class Store {
           banner: critical.length
             ? {
                 kind: 'warn',
-                text: `Signed ${signed.id} for ${patient.name} with an allergy override.`,
+                text: `Signed ${signed.id} for ${patient.name} with a safety override.`,
               }
             : { kind: 'success', text: `Signed ${signed.id} for ${patient.name}.` },
           diagnosis: null,
