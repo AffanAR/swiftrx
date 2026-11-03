@@ -24,6 +24,7 @@ import type { Context } from 'hono';
 import { readFile } from 'node:fs/promises';
 
 import { createApp, demoModeFromEnv, socketAddress } from './app';
+import { jsonLogger, sentryReporter } from './log';
 import { DEMO_SNAPSHOT, openDatabase, type DatabaseConfig } from './db/client';
 import { seed } from './db/seed';
 
@@ -89,8 +90,26 @@ async function start(env: NodeJS.ProcessEnv, snapshotFile: string) {
     clientIp: forwardedClientIp,
     secureCookies: env.NODE_ENV === 'production',
     demoMode: demoModeFromEnv(env),
+    errorSink: errorSinkFromEnv(env),
   });
   return { app, database, describe };
+}
+
+/**
+ * Sentry, when SENTRY_DSN is set (Render: the service's Environment tab).
+ * SENTRY_ENVIRONMENT names the deployment ("demo" by default) and Render's
+ * own RENDER_GIT_COMMIT the release, so an error points at its commit.
+ */
+export function errorSinkFromEnv(env: NodeJS.ProcessEnv) {
+  const dsn = env.SENTRY_DSN?.trim();
+  if (!dsn) return undefined;
+  const sink = sentryReporter(dsn, {
+    environment: env.SENTRY_ENVIRONMENT || (demoModeFromEnv(env) ? 'demo' : 'production'),
+    release: env.RENDER_GIT_COMMIT,
+    log: jsonLogger,
+  });
+  if (!sink) jsonLogger({ level: 'warn', event: 'sentry_dsn_invalid' });
+  return sink ?? undefined;
 }
 
 /**

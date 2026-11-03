@@ -459,8 +459,9 @@ export const quickPacks = pgTable(
 
 /**
  * A hospital's own pack in one slot (diagnosis and Alt+1/2/3). It replaces
- * the default `quick_packs` row in that slot for this hospital only;
- * deleting it brings the default back. Edited by the SwiftRx team.
+ * the default `quick_packs` row in that slot for this hospital only, or,
+ * `hidden` and with no medicines, shows no pack there. Deleting it brings
+ * the default back. Edited by the hospital's admins and the SwiftRx team.
  */
 export const hospitalQuickPacks = pgTable(
   'hospital_quick_packs',
@@ -474,11 +475,17 @@ export const hospitalQuickPacks = pgTable(
     shortcutKey: text('shortcut_key', { enum: ['1', '2', '3'] }).notNull(),
     recommendationReason: text('recommendation_reason').notNull().default(''),
     medications: jsonb('medications').$type<QuickPackMed[]>().notNull(),
+    hidden: boolean('hidden').notNull().default(false),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.hospitalId, t.diagnosisCode, t.shortcutKey] }),
     check('hospital_quick_packs_shortcut_valid', sql`${t.shortcutKey} in ('1', '2', '3')`),
+    // A hidden slot has no medicines; a pack has at least one.
+    check(
+      'hospital_quick_packs_hidden_empty',
+      sql`${t.hidden} = (jsonb_array_length(${t.medications}) = 0)`,
+    ),
   ],
 );
 

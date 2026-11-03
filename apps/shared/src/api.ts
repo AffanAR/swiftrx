@@ -20,8 +20,9 @@ import {
   type HospitalProfile,
   type Patient,
   type PrescriptionDraft,
-  type QuickPack,
+  type HospitalQuickPacks,
   type QuickPackMed,
+  type QuickPackSlot,
   type RxDesign,
   type SignedRx,
   type User,
@@ -65,19 +66,13 @@ export type NewHospital = Pick<
 >;
 
 /** A doctor a hospital admin invites; the server makes the account and a link. */
-/** One quick-pack slot: a diagnosis and its Alt+1/2/3 key. */
-export interface SlotOf {
-  diagnosisCode: string;
-  shortcutKey: QuickPack['shortcutKey'];
-}
-
 /** A hospital's pack as the admin sends it; the server fills in generic names. */
 export interface HospitalQuickPackInput {
   recommendationReason: string;
   medications: QuickPackMed[];
 }
 
-const packPath = (slug: string, { diagnosisCode, shortcutKey }: SlotOf) =>
+const packPath = (slug: string, { diagnosisCode, shortcutKey }: QuickPackSlot) =>
   `/hospitals/${encodeURIComponent(slug)}/quick-packs/${encodeURIComponent(diagnosisCode)}/${shortcutKey}`;
 
 export interface DoctorInvite {
@@ -226,20 +221,30 @@ export const api = {
   },
 
   quickPacks: {
-    /** GET /hospitals/:slug/quick-packs — the hospital's own packs (none when switched off). */
-    list: (slug: string): Promise<QuickPack[]> =>
-      callApi<QuickPack[]>(`/hospitals/${encodeURIComponent(slug)}/quick-packs`),
+    /**
+     * GET /hospitals/:slug/quick-packs — the hospital's own packs and hidden
+     * defaults (none for its doctors when quick packs are switched off).
+     */
+    list: (slug: string): Promise<HospitalQuickPacks> =>
+      callApi<HospitalQuickPacks>(`/hospitals/${encodeURIComponent(slug)}/quick-packs`),
 
     /** PUT /hospitals/:slug/quick-packs/:dx/:key — set the hospital's pack in that slot. */
-    set: (slug: string, pack: HospitalQuickPackInput & SlotOf): Promise<QuickPack> =>
-      callApi<QuickPack>(packPath(slug, pack), {
+    set: (
+      slug: string,
+      pack: HospitalQuickPackInput & QuickPackSlot,
+    ): Promise<HospitalQuickPacks> =>
+      callApi<HospitalQuickPacks>(packPath(slug, pack), {
         method: 'PUT',
         body: { recommendationReason: pack.recommendationReason, medications: pack.medications },
       }),
 
+    /** PUT /hospitals/:slug/quick-packs/:dx/:key — show no pack in that slot. */
+    hide: (slug: string, slot: QuickPackSlot): Promise<HospitalQuickPacks> =>
+      callApi<HospitalQuickPacks>(packPath(slug, slot), { method: 'PUT', body: { hidden: true } }),
+
     /** DELETE /hospitals/:slug/quick-packs/:dx/:key — back to the default pack. */
-    remove: (slug: string, slot: SlotOf): Promise<null> =>
-      callApi<null>(packPath(slug, slot), { method: 'DELETE' }),
+    remove: (slug: string, slot: QuickPackSlot): Promise<HospitalQuickPacks> =>
+      callApi<HospitalQuickPacks>(packPath(slug, slot), { method: 'DELETE' }),
   },
 
   catalog: {

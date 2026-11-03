@@ -52,7 +52,7 @@ export function PortalShell({
               to={n.to}
               className={({ isActive }) =>
                 cx(
-                  'px-3 py-1.5 rounded-md transition-colors',
+                  'px-3 py-1.5 rounded-md transition-colors whitespace-nowrap',
                   isActive
                     ? 'bg-rx-accent/15 text-rx-accent border border-rx-accent/30'
                     : 'text-ink-300 hover:bg-ink-700/40 border border-transparent',
@@ -98,6 +98,7 @@ const NAV_ADMIN = [
   { to: '/patients', label: 'Patients' },
   { to: '/prescriptions', label: 'Prescriptions' },
   { to: '/doctors', label: 'Doctors' },
+  { to: '/quick-packs', label: 'Quick packs' },
   { to: '/settings', label: 'Settings' },
 ];
 

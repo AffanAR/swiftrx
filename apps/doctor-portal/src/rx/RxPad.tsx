@@ -67,7 +67,8 @@ export default function RxPad({
         queries.quickPacks(hospital.slug),
       ],
     });
-  // The hospital's own packs replace the defaults in their slots.
+  // The hospital's own packs replace the defaults in their slots, and its
+  // hidden slots show none.
   const catalog = React.useMemo(
     () => ({ ...shared, quickPacks: mergeQuickPacks(shared.quickPacks, ownPacks) }),
     [shared, ownPacks],

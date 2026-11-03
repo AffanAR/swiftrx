@@ -25,9 +25,15 @@ import {
   type HospitalQuickPackInput,
   type NewHospital,
   type NewPatient,
-  type SlotOf,
 } from './api';
-import type { Hospital, HospitalFeatures, RxDesign, User } from './types';
+import type {
+  Hospital,
+  HospitalFeatures,
+  HospitalQuickPacks,
+  QuickPackSlot,
+  RxDesign,
+  User,
+} from './types';
 
 /** Doctors, patients and signed Rx per hospital, for the admin's hospital list. */
 export interface HospitalStats {
@@ -60,7 +66,7 @@ export const queries = {
       queryKey: ['hospitals', 'detail', slug, 'patients'],
       queryFn: () => api.patients.list(slug),
     }),
-  /** The hospital's own quick packs; the catalog has the defaults. */
+  /** The hospital's own quick packs and hidden defaults; the catalog has the defaults. */
   quickPacks: (slug: string) =>
     queryOptions({
       queryKey: ['hospitals', 'detail', slug, 'quick-packs'],
@@ -222,23 +228,34 @@ export function useInviteHospitalAdmin(slug: string) {
   });
 }
 
-/** The platform admin sets a hospital's own pack in one slot. */
-export function useSetQuickPack(slug: string) {
+/**
+ * A change to a hospital's packs: set one, hide a default, or remove either.
+ * Each answers with the hospital's packs as they now are, shown at once.
+ */
+function usePackChange<V>(slug: string, change: (v: V) => Promise<HospitalQuickPacks>) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (pack: HospitalQuickPackInput & SlotOf) => api.quickPacks.set(slug, pack),
-    onSuccess: () => refetch(qc, [...queries.quickPacks(slug).queryKey], ['audit']),
+    mutationFn: change,
+    onSuccess: (packs) => {
+      qc.setQueryData(queries.quickPacks(slug).queryKey, packs);
+      return refetch(qc, [...queries.quickPacks(slug).queryKey], ['audit']);
+    },
   });
 }
 
-/** The platform admin removes a hospital's own pack, so the default is back. */
-export function useRemoveQuickPack(slug: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (slot: SlotOf) => api.quickPacks.remove(slug, slot),
-    onSuccess: () => refetch(qc, [...queries.quickPacks(slug).queryKey], ['audit']),
-  });
-}
+/** A hospital admin or the SwiftRx team sets the hospital's own pack in one slot. */
+export const useSetQuickPack = (slug: string) =>
+  usePackChange(slug, (pack: HospitalQuickPackInput & QuickPackSlot) =>
+    api.quickPacks.set(slug, pack),
+  );
+
+/** …hides the default pack in one slot. */
+export const useHideQuickPack = (slug: string) =>
+  usePackChange(slug, (slot: QuickPackSlot) => api.quickPacks.hide(slug, slot));
+
+/** …removes its own pack or hidden slot, so the default is back. */
+export const useRemoveQuickPack = (slug: string) =>
+  usePackChange(slug, (slot: QuickPackSlot) => api.quickPacks.remove(slug, slot));
 
 /** A new password link for one of the admin's hospital's users. */
 export function usePasswordLink() {

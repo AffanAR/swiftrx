@@ -99,6 +99,13 @@
       "when": 1793721712204,
       "tag": "0013_hospital_quick_packs",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793724177817,
+      "tag": "0014_quick_pack_hidden",
+      "breakpoints": true
     }
   ]
 }

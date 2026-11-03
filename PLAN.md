@@ -769,8 +769,10 @@ the server creates a signed Rx.
   - The admin panel edits them per diagnosis (Hospital → Quick packs); the
     pad merges them over the defaults (`mergeQuickPacks`) and labels them
     "Your hospital's pack".
-  - Still to do: letting a hospital's own admin edit them, and hiding a
-    default without replacing it.
+  - The hospital's own admins edit them too, from the portal's Quick packs
+    page, and either can hide a default without replacing it (a `hidden`
+    slot, migration `0014`), 2026-11-03. Both pages share
+    `QuickPacksEditor` (`apps/shared/src/quickPacksEditor.tsx`).
 - [ ] Paediatric quick packs (the feature above can hold them; a clinician
       has to write them).
 - [ ] A clinician signs off on all rules before any pilot.
@@ -797,6 +799,24 @@ the server creates a signed Rx.
       patient data. (A public demo with no patient data is set up instead for
       now: Render + Cloudflare at `thesyndicate.bond`, `scripts/serve.mjs`,
       demo banner and DEMO print stamp. 2026-10-22; see `deploy/ONLINE.md`.)
+  - [x] **Logs and error reports without patient details** (2026-11-03,
+        `apps/api/src/log.ts`): one JSON line per request with the route's
+        pattern, never its ids, query or body; errors scrubbed through an
+        allowlist. Before this, a failed database write logged Drizzle's
+        "Failed query … params:" message, which carries the row's values. A
+        failed request answers with a request id that finds its log line.
+        The apps' crashes are reported to `POST /api/client-errors` and
+        scrubbed the same way. Sentry gets the same scrubbed errors when
+        `SENTRY_DSN` is set (a small envelope client, no SDK); setting it up
+        is in `deploy/ONLINE.md`.
+  - [ ] Backups (none for the in-memory demo; with a real database), and a
+        Sentry project with its DSN on Render.
+- [x] **Prescriptions search and filters** (2026-11-03): the portal's
+      Prescriptions page searches patient names and phones, Rx ids and
+      medicines, and filters by doctor, diagnosis and the day signed (Dhaka
+      time), kept in the URL. Client-side, from the list it already has
+      (`apps/doctor-portal/src/prescriptionFilters.ts`); a hospital with
+      thousands of Rx will need the server to page and filter.
 - [ ] Security review, privacy policy, data-retention rules and a
       data-processing agreement with hospitals.
 - [ ] Pilot with one hospital.

@@ -160,6 +160,32 @@ to **Proxied** (orange cloud).
 | `https://city-hospital.thesyndicate.bond`    | City Hospital sign-in        |
 | `https://city-hospital.thesyndicate.bond/rx` | Rx pad, after a doctor signs in |
 
+### Logs and error reports
+
+The API writes one JSON line per request and per error to Render's **Logs**
+tab (`apps/api/src/log.ts`). None of it holds patient details:
+
+- A request line has the method, the route's pattern
+  (`/api/hospitals/:slug/patients/:id`, never the ids), the hospital's slug,
+  the status, the time taken and a `requestId`. Search the logs for
+  `"event":"request_failed"` to find errors, or for a request id: a failed
+  request answers `{"error":"Something went wrong.","requestId":"…"}` and
+  sends the same id in its `X-Request-Id` header.
+- An error keeps its type, the database's error code and constraint name, its
+  stack frames and its message, with the query's values, emails, quoted
+  values and phone numbers cut out.
+- A crash in the portal or the admin panel is sent to `POST /api/client-errors`
+  and logged the same way, as `"event":"client_error"`.
+
+**Sentry** (optional): create a Node project at sentry.io, copy its DSN, and
+add it to the Render service as the environment variable `SENTRY_DSN`. The
+same scrubbed errors then also go to Sentry, tagged with the route, the
+hospital and where they came from (`api` or the app), with Render's commit as
+the release. Nothing else is sent: no user, no request, no IP address.
+`SENTRY_ENVIRONMENT` overrides the environment name, which is `demo` while
+the demo banner is on. A DSN that isn't one is logged as
+`sentry_dsn_invalid` and ignored.
+
 ### Limits of this setup
 
 - **Cold starts.** A free Render instance sleeps after 15 minutes without

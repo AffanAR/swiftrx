@@ -32,8 +32,10 @@ export function auditTitle(e: AuditEvent): string {
         .join(' and ')}`;
     case 'set_quick_pack':
       return e.action === 'set'
-        ? `Set ${e.hospitalSlug}'s quick pack ${e.shortcutKey} for ${e.diagnosisCode}`
-        : `Removed ${e.hospitalSlug}'s quick pack ${e.shortcutKey} for ${e.diagnosisCode}`;
+        ? `${e.userEmail} set ${e.hospitalSlug}'s quick pack ${e.shortcutKey} for ${e.diagnosisCode}`
+        : e.action === 'hidden'
+          ? `${e.userEmail} hid the default quick pack ${e.shortcutKey} for ${e.diagnosisCode} at ${e.hospitalSlug}`
+          : `${e.userEmail} reset ${e.hospitalSlug}'s quick pack ${e.shortcutKey} for ${e.diagnosisCode}`;
     case 'update_patient':
       return `${e.userEmail} updated ${e.patientName}'s ${e.changed.join(', ')}`;
     case 'change_hospital_status':

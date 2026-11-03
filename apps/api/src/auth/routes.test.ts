@@ -41,7 +41,7 @@ function server(deps: Partial<AppDeps> = {}) {
     rootDomain: 'swiftrx.com',
     now: () => now,
     clientIp: (c) => c.req.header('x-test-ip') ?? '203.0.113.7',
-    logError: () => {},
+    log: () => {},
     ...deps,
   });
 

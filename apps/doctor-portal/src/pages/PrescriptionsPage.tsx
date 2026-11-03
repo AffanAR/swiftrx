@@ -1,6 +1,10 @@
+import * as React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   LiveDot,
   Card,
+  Select,
+  TextField,
   api,
   cx,
   medicineLabel,
@@ -9,11 +13,28 @@ import {
   type User,
   ageSexLabel,
 } from '@swiftrx/shared';
+import {
+  NO_FILTERS,
+  filterChoices,
+  filterPrescriptions,
+  filtersFrom,
+  hasFilters,
+  withFilters,
+  type RxFilters,
+} from '../prescriptionFilters';
 
 type Props = { hospital: Hospital; user: User };
 
 export function PrescriptionsPage({ hospital }: Props) {
-  const rx = usePrescriptions(hospital.slug);
+  const all = usePrescriptions(hospital.slug);
+  const [params, setParams] = useSearchParams();
+  const query = params.toString();
+  const filters = React.useMemo(() => filtersFrom(new URLSearchParams(query)), [query]);
+  const set = (patch: Partial<RxFilters>) =>
+    setParams((p) => withFilters(p, { ...filtersFrom(p), ...patch }), { replace: true });
+  const choices = React.useMemo(() => filterChoices(all), [all]);
+  const rx = React.useMemo(() => filterPrescriptions(all, filters), [all, filters]);
+  const filtered = hasFilters(filters);
 
   return (
     <div className="p-6 sm:p-8 max-w-6xl mx-auto space-y-4 animate-fadeIn">
@@ -23,15 +44,60 @@ export function PrescriptionsPage({ hospital }: Props) {
           <span>Prescriptions</span>
         </div>
         <h1 className="mt-1 text-2xl font-semibold text-ink-100">Signed Rx</h1>
-        <p className="text-sm text-ink-400">
-          {rx.length} prescription{rx.length === 1 ? '' : 's'} signed in {hospital.name}
+        <p className="text-sm text-ink-400" aria-live="polite">
+          {filtered
+            ? `Showing ${rx.length} of ${all.length} prescriptions signed in ${hospital.name}`
+            : `${all.length} prescription${all.length === 1 ? '' : 's'} signed in ${hospital.name}`}
         </p>
       </header>
 
-      {rx.length === 0 ? (
+      {all.length > 0 && (
+        <div
+          role="search"
+          aria-label="Search prescriptions"
+          className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[2fr_1fr_1fr_auto_auto_auto] items-end"
+        >
+          <TextField
+            label="Search"
+            value={filters.q}
+            onChange={(q) => set({ q })}
+            placeholder="Patient, phone, Rx id or medicine…"
+          />
+          <Select
+            label="Doctor"
+            value={filters.doctor}
+            onChange={(doctor) => set({ doctor })}
+            options={[{ value: '', label: 'All doctors' }, ...choices.doctors]}
+          />
+          <Select
+            label="Diagnosis"
+            value={filters.dx}
+            onChange={(dx) => set({ dx })}
+            options={[{ value: '', label: 'All diagnoses' }, ...choices.diagnoses]}
+          />
+          <DateField label="From" value={filters.from} onChange={(from) => set({ from })} />
+          <DateField label="To" value={filters.to} onChange={(to) => set({ to })} />
+          <button
+            type="button"
+            className="rx-btn-ghost h-9"
+            disabled={!filtered}
+            onClick={() => set(NO_FILTERS)}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {all.length === 0 ? (
         <Card>
           <div className="text-sm text-ink-400 italic text-center py-8">
             No prescriptions signed yet. Open the Rx Pad to write one.
+          </div>
+        </Card>
+      ) : rx.length === 0 ? (
+        <Card>
+          <div className="text-sm text-ink-400 italic text-center py-8">
+            No prescriptions match these filters.
           </div>
         </Card>
       ) : (
@@ -109,5 +175,30 @@ export function PrescriptionsPage({ hospital }: Props) {
         </div>
       )}
     </div>
+  );
+}
+
+/** A day picker; the value is YYYY-MM-DD, or '' when cleared. */
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const id = React.useId();
+  return (
+    <label htmlFor={id} className="block">
+      <span className="rx-label">{label}</span>
+      <input
+        id={id}
+        type="date"
+        className="rx-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
   );
 }

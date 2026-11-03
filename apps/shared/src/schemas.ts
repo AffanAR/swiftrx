@@ -350,16 +350,20 @@ export const quickPackSchema = z.object({
 });
 
 /**
- * What PUT /hospitals/:slug/quick-packs/:dx/:key takes: the slot comes from
- * the path, and the server fills in each medicine's generic name.
+ * What PUT /hospitals/:slug/quick-packs/:dx/:key takes: a pack for the slot
+ * (the server fills in each medicine's generic name), or `{ hidden: true }`
+ * to show no pack there. The slot comes from the path.
  */
-export const hospitalQuickPackSchema = z.object({
-  recommendationReason: z.string().trim().max(200),
-  medications: z
-    .array(quickPackMedSchema.extend({ genericName: z.string() }))
-    .min(1)
-    .max(10),
-});
+export const hospitalQuickPackSchema = z.union([
+  z.strictObject({ hidden: z.literal(true) }),
+  z.strictObject({
+    recommendationReason: z.string().trim().max(200),
+    medications: z
+      .array(quickPackMedSchema.extend({ genericName: z.string() }))
+      .min(1)
+      .max(10),
+  }),
+]);
 
 // --- Prescriptions -------------------------------------------------------------
 
@@ -464,7 +468,7 @@ export const auditEventSchema = z.discriminatedUnion('kind', [
     hospitalSlug: slug,
     diagnosisCode: text,
     shortcutKey: z.enum(['1', '2', '3']),
-    action: z.enum(['set', 'removed']),
+    action: z.enum(['set', 'hidden', 'removed']),
   }),
   z.object({
     kind: z.literal('update_patient'),

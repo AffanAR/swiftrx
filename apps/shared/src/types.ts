@@ -275,6 +275,21 @@ export interface QuickPack {
   medications: QuickPackMed[];
 }
 
+/** One quick-pack slot: a diagnosis and its Alt+1/2/3 key. */
+export interface QuickPackSlot {
+  diagnosisCode: string;
+  shortcutKey: QuickPack['shortcutKey'];
+}
+
+/**
+ * GET /api/hospitals/:slug/quick-packs: the hospital's own packs, and the
+ * slots where it hides the catalog's default (see quickPacks.ts).
+ */
+export interface HospitalQuickPacks {
+  packs: QuickPack[];
+  hidden: QuickPackSlot[];
+}
+
 /** Everything the Rx pad searches and checks against (GET /api/catalog). */
 export interface Catalog {
   drugs: Drug[];
@@ -409,8 +424,9 @@ export type AuditEvent =
     }
   | {
       /**
-       * The SwiftRx team set or removed one of a hospital's own quick packs
-       * (removing one brings back the default pack in that slot).
+       * A hospital admin or the SwiftRx team set one of the hospital's own
+       * quick packs, hid the default in a slot, or removed either (which
+       * brings the default back).
        */
       kind: 'set_quick_pack';
       userId: string;
@@ -419,7 +435,7 @@ export type AuditEvent =
       hospitalSlug: string;
       diagnosisCode: string;
       shortcutKey: '1' | '2' | '3';
-      action: 'set' | 'removed';
+      action: 'set' | 'hidden' | 'removed';
     }
   | {
       /** A hospital's user changed a patient's facts; `changed` names which. */

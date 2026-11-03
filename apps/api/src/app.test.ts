@@ -26,20 +26,22 @@ describe('GET /api/health', () => {
     const down = {
       execute: () => Promise.reject(new Error('connect ECONNREFUSED 10.0.0.5:5432')),
     } as unknown as Db;
-    const logError = vi.fn();
+    const log = vi.fn();
 
-    const res = await createApp({ db: down, logError }).request('/api/health');
+    const res = await createApp({ db: down, log }).request('/api/health');
 
     expect(res.status).toBe(503);
     const body = await res.text();
     expect(JSON.parse(body)).toEqual({ status: 'error', database: 'unreachable' });
     expect(body).not.toContain('ECONNREFUSED');
-    expect(logError).toHaveBeenCalledOnce();
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'error', event: 'health_check_failed' }),
+    );
   });
 });
 
 describe('the rest of the API', () => {
-  const app = createApp({ db: {} as Db, logError: () => {} });
+  const app = createApp({ db: {} as Db, log: () => {} });
 
   it('answers JSON 404 for unknown routes, inside /api and out', async () => {
     for (const path of ['/api/nope', '/health', '/']) {
@@ -50,7 +52,7 @@ describe('the rest of the API', () => {
   });
 
   it('sends the security headers with every answer, errors included', async () => {
-    const failing = createApp({ db: {} as Db, logError: () => {} });
+    const failing = createApp({ db: {} as Db, log: () => {} });
     failing.get('/boom', () => {
       throw new Error('boom');
     });
@@ -74,9 +76,9 @@ describe('the rest of the API', () => {
     }
   });
 
-  it('answers 500 without details when a route throws', async () => {
-    const logError = vi.fn();
-    const failing = createApp({ db: {} as Db, logError });
+  it('answers 500 without details when a route throws, with an id for the log', async () => {
+    const log = vi.fn();
+    const failing = createApp({ db: {} as Db, log });
     failing.get('/boom', () => {
       throw new Error('patient p_001 broke something');
     });
@@ -85,8 +87,54 @@ describe('the rest of the API', () => {
 
     expect(res.status).toBe(500);
     const body = await res.text();
-    expect(JSON.parse(body)).toEqual({ error: 'Something went wrong.' });
+    const requestId = res.headers.get('x-request-id');
+    expect(requestId).toMatch(/^[0-9a-f]{16}$/);
+    expect(JSON.parse(body)).toEqual({ error: 'Something went wrong.', requestId });
     expect(body).not.toContain('p_001');
-    expect(logError).toHaveBeenCalledWith('GET /api/boom failed.', expect.any(Error));
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'error',
+        event: 'request_failed',
+        method: 'GET',
+        route: '/api/boom',
+        requestId,
+      }),
+    );
+  });
+
+  it('logs each request by its route pattern, never its ids or query', async () => {
+    const lines: Record<string, unknown>[] = [];
+    const logged = createApp({ db: {} as Db, log: (l) => lines.push(l) });
+    logged.get('/hospitals/:slug/patients/:id', (c) => c.json({ ok: true }));
+
+    const res = await logged.request('/api/hospitals/city-hospital/patients/p_001?q=Rahima');
+
+    expect(res.status).toBe(200);
+    expect(lines).toEqual([
+      {
+        level: 'info',
+        event: 'request',
+        method: 'GET',
+        route: '/api/hospitals/:slug/patients/:id',
+        hospital: 'city-hospital',
+        status: 200,
+        ms: expect.any(Number),
+        requestId: res.headers.get('x-request-id'),
+      },
+    ]);
+    expect(JSON.stringify(lines)).not.toMatch(/p_001|Rahima/);
+  });
+
+  it("logs the answering route's pattern past the routers' own middleware", async () => {
+    const lines: Record<string, unknown>[] = [];
+    const logged = createApp({ db: {} as Db, log: (l) => lines.push(l) });
+
+    // Without a session: the quick-packs route itself answers 401.
+    const res = await logged.request('/api/hospitals/city-hospital/quick-packs');
+
+    expect(res.status).toBe(401);
+    expect(lines[0]).toMatchObject({ route: '/api/hospitals/:slug/quick-packs', status: 401 });
+    await logged.request('/api/nowhere');
+    expect(lines[1]).toMatchObject({ route: '(no route)', status: 404 });
   });
 });

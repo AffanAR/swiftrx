@@ -10,6 +10,7 @@
 
 import * as React from 'react';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
+import { reportClientError } from './errorReport';
 import { Spinner } from './ui';
 
 /** Shown while a page's data loads. The spinner waits a moment, so fast loads don't flash. */
@@ -78,6 +79,7 @@ export class ErrorBoundary extends React.Component<BoundaryProps, { error: Error
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('SwiftRx:', error, info.componentStack);
+    reportClientError(error);
   }
 
   reset = () => {

@@ -2,23 +2,31 @@
 //  SwiftRx Shared — Quick packs per hospital
 // =============================================================================
 //  The catalog carries the default packs every hospital starts with: up to
-//  three per diagnosis, on Alt+1/2/3. A hospital can have its own pack in any
-//  of those slots (GET /api/hospitals/:slug/quick-packs), and its own pack
-//  replaces the default in that slot. Removing it brings the default back.
+//  three per diagnosis, on Alt+1/2/3. In any of those slots a hospital can
+//  have its own pack, which replaces the default, or hide the default and
+//  show nothing there (GET /api/hospitals/:slug/quick-packs). Removing
+//  either brings the default back.
 // =============================================================================
 
-import type { QuickPack } from './types';
+import type { HospitalQuickPacks, QuickPack, QuickPackSlot } from './types';
 
-const slotOf = (p: QuickPack) => `${p.diagnosisCode}#${p.shortcutKey}`;
+const slotOf = (p: QuickPackSlot) => `${p.diagnosisCode}#${p.shortcutKey}`;
 
-/** The packs a hospital's pad offers: its own, and the defaults in the slots it hasn't set. */
-export function mergeQuickPacks(defaults: QuickPack[], own: QuickPack[]): QuickPack[] {
-  const taken = new Set(own.map(slotOf));
-  return [...own, ...defaults.filter((p) => !taken.has(slotOf(p)))].sort(
+/**
+ * The packs a hospital's pad offers: its own, and the defaults in the slots
+ * it has neither set nor hidden.
+ */
+export function mergeQuickPacks(defaults: QuickPack[], own: HospitalQuickPacks): QuickPack[] {
+  const taken = new Set([...own.packs, ...own.hidden].map(slotOf));
+  return [...own.packs, ...defaults.filter((p) => !taken.has(slotOf(p)))].sort(
     (a, b) =>
       a.diagnosisCode.localeCompare(b.diagnosisCode) || a.shortcutKey.localeCompare(b.shortcutKey),
   );
 }
+
+/** Whether the hospital hides the default pack in this slot. */
+export const isHiddenSlot = (own: HospitalQuickPacks, slot: QuickPackSlot) =>
+  own.hidden.some((h) => slotOf(h) === slotOf(slot));
 
 /** A hospital pack's id: one per slot, so it is stable across edits. */
 export const hospitalPackId = (diagnosisCode: string, shortcutKey: string) =>

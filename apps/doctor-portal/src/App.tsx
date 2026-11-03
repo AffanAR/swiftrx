@@ -11,6 +11,7 @@ import { PatientsPage } from './pages/PatientsPage';
 import { PrescriptionsPage } from './pages/PrescriptionsPage';
 import { DoctorsPage } from './pages/DoctorsPage';
 import { HospitalSettingsPage } from './pages/HospitalSettingsPage';
+import { QuickPacksPage } from './pages/QuickPacksPage';
 import { SetPasswordPage } from './pages/SetPasswordPage';
 import { TenantNotFound } from './pages/TenantNotFound';
 
@@ -121,6 +122,16 @@ function SignedInPortal({
         element={
           isAdmin ? (
             shell(<DoctorsPage hospital={hospital} user={user} />)
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
+      />
+      <Route
+        path="/quick-packs"
+        element={
+          isAdmin ? (
+            shell(<QuickPacksPage hospital={hospital} />)
           ) : (
             <Navigate to="/dashboard" replace />
           )

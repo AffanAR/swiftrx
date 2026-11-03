@@ -16,3 +16,7 @@ services:
         value: thesyndicate.bond
       - key: NODE_VERSION
         value: '22'
+      # Optional: send scrubbed errors to Sentry (deploy/ONLINE.md, "Logs and
+      # error reports"). Render asks for the value; leave it empty to skip.
+      - key: SENTRY_DSN
+        sync: false

@@ -1,0 +1,2 @@
+ALTER TABLE "hospital_quick_packs" ADD COLUMN "hidden" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "hospital_quick_packs" ADD CONSTRAINT "hospital_quick_packs_hidden_empty" CHECK ("hospital_quick_packs"."hidden" = (jsonb_array_length("hospital_quick_packs"."medications") = 0));
