@@ -281,6 +281,141 @@ describe('patients', () => {
   });
 });
 
+describe('PATCH /api/hospitals/:slug/patients/:id', () => {
+  /** A patient's editable facts, as the pad sends them. */
+  const factsOf = (p: Patient) => ({
+    weightKg: p.weightKg,
+    pregnancy: p.pregnancy,
+    kidney: p.kidney,
+    ...(p.egfr !== undefined ? { egfr: p.egfr } : {}),
+    allergyStatus: p.allergyStatus,
+    allergies: p.allergies,
+    activeProblems: p.activeProblems,
+    activeMedications: p.activeMedications,
+  });
+  const fatima = async (cookie: string) =>
+    (
+      (await (await get(CITY, '/hospitals/city-hospital/patients', cookie)).json()) as Patient[]
+    ).find((p) => p.id === 'p_002')!;
+
+  it("updates a patient's facts, keeps the rest, and audits what changed", async () => {
+    const cookie = await doctor();
+    const before = await fatima(cookie);
+    const res = await send(
+      CITY,
+      'PATCH',
+      '/hospitals/city-hospital/patients/p_002',
+      {
+        ...factsOf(before),
+        pregnancy: 'pregnant',
+        kidney: 'moderate',
+        egfr: 52,
+        allergyStatus: 'recorded',
+        allergies: ['Penicillin'],
+        activeMedications: [{ name: 'Warfarin', dose: '5mg QD' }],
+      },
+      cookie,
+    );
+    expect(res.status).toBe(200);
+    const after = (await res.json()) as Patient;
+    expect(after).toMatchObject({
+      id: 'p_002',
+      name: before.name,
+      dateOfBirth: before.dateOfBirth,
+      pregnancy: 'pregnant',
+      kidney: 'moderate',
+      egfr: 52,
+      allergyStatus: 'recorded',
+      allergies: ['Penicillin'],
+      activeMedications: [{ name: 'Warfarin', dose: '5mg QD' }],
+    });
+    expect(await fatima(cookie)).toEqual(after);
+
+    const log = (await (
+      await get(ADMIN, '/hospitals/city-hospital/audit-events', await platformAdmin())
+    ).json()) as AuditEvent[];
+    expect(log[0]).toMatchObject({
+      kind: 'update_patient',
+      patientId: 'p_002',
+      userEmail: 'ayesha@city-hospital.com',
+      changed: expect.arrayContaining(['pregnancy', 'kidney', 'egfr', 'allergies']),
+    });
+
+    // Saving the same facts again records nothing.
+    const again = await send(
+      CITY,
+      'PATCH',
+      '/hospitals/city-hospital/patients/p_002',
+      factsOf(after),
+      cookie,
+    );
+    expect(again.status).toBe(200);
+    const log2 = (await (
+      await get(ADMIN, '/hospitals/city-hospital/audit-events', await platformAdmin())
+    ).json()) as AuditEvent[];
+    expect(log2.length).toBe(log.length);
+  });
+
+  it('refuses facts that contradict the patient, and anyone outside the hospital', async () => {
+    const cookie = await doctor();
+    const bilal = (
+      (await (await get(CITY, '/hospitals/city-hospital/patients', cookie)).json()) as Patient[]
+    ).find((p) => p.id === 'p_001')!;
+    // Bilal is a man.
+    const pregnantMan = await send(
+      CITY,
+      'PATCH',
+      '/hospitals/city-hospital/patients/p_001',
+      { ...factsOf(bilal), pregnancy: 'pregnant' },
+      cookie,
+    );
+    expect(pregnantMan.status).toBe(400);
+    // An eGFR of 20 is "severe", not "normal".
+    const wrongBand = await send(
+      CITY,
+      'PATCH',
+      '/hospitals/city-hospital/patients/p_001',
+      { ...factsOf(bilal), egfr: 20, kidney: 'normal' },
+      cookie,
+    );
+    expect(wrongBand.status).toBe(400);
+
+    expect(
+      (
+        await send(
+          CITY,
+          'PATCH',
+          '/hospitals/northstar-medical/patients/p_004',
+          factsOf(bilal),
+          cookie,
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await send(
+          ADMIN,
+          'PATCH',
+          '/hospitals/city-hospital/patients/p_001',
+          factsOf(bilal),
+          await platformAdmin(),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await send(
+          CITY,
+          'PATCH',
+          '/hospitals/city-hospital/patients/p_nobody',
+          factsOf(bilal),
+          cookie,
+        )
+      ).status,
+    ).toBe(404);
+  });
+});
+
 describe('limits and status', () => {
   /** Change some of City Hospital's features, as the platform admin. */
   async function setCityFeatures(patch: Partial<Hospital['features']>) {

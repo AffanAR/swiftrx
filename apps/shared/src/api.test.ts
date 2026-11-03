@@ -67,6 +67,26 @@ describe('hospitals and patients', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ ...patient, hospitalSlug: undefined });
   });
 
+  it("edit a patient's facts with PATCH", async () => {
+    const stub = serverAnswers({ id: 'p_002' });
+    const facts = {
+      weightKg: 60,
+      pregnancy: 'pregnant' as const,
+      kidney: 'moderate' as const,
+      egfr: 52,
+      allergyStatus: 'recorded' as const,
+      allergies: ['Penicillin'],
+      activeProblems: [],
+      activeMedications: [{ name: 'Warfarin', dose: '5mg QD' }],
+    };
+    await api.patients.update('city-hospital', 'p_002', facts);
+
+    const [url, init] = stub.mock.calls[0];
+    expect(url).toBe('/api/hospitals/city-hospital/patients/p_002');
+    expect(init?.method).toBe('PATCH');
+    expect(JSON.parse(String(init?.body))).toEqual(facts);
+  });
+
   it("save a hospital's settings and status with PATCH", async () => {
     const stub = serverAnswers({ slug: 'city-hospital' });
     const city = MOCK_HOSPITALS.find((h) => h.slug === 'city-hospital')!;

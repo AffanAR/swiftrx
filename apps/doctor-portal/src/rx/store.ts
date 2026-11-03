@@ -8,6 +8,7 @@ import {
   type Investigation,
   type NewPatient,
   type Patient,
+  type PatientFacts,
   type PrescriptionDraft,
   type RxDesign,
   type RxMedication,
@@ -55,6 +56,8 @@ export interface AppState {
   // A sign or a new patient is being saved
   signing: boolean;
   savingPatient: boolean;
+  // The form that edits the selected patient's facts (EditPatientModal).
+  showEditPatient: boolean;
   // Active focused input (for tab/keyboard management)
   focusZone: 'patient' | 'diagnosis' | 'med-search' | 'med-row' | 'sign' | null;
   activeRowId: string | null;
@@ -64,12 +67,18 @@ export interface AppState {
   overridePrompt: SafetyAlert[] | null;
   // Toast / banner
   banner: { kind: 'info' | 'success' | 'warn' | 'danger'; text: string } | null;
+  // When a clear was asked for, waiting for the second press (requestClear).
+  clearArmedAt: number | null;
 }
 
 export interface AppActions {
   setPatient: (id: string) => void;
   /** Saves a patient to the doctor's hospital and selects them. Resolves to the id, or '' if it failed. */
   createPatient: (input: NewPatientInput) => Promise<string>;
+  openEditPatient: () => void;
+  closeEditPatient: () => void;
+  /** Save the selected patient's facts; true once the server has them. */
+  updatePatient: (facts: PatientFacts) => Promise<boolean>;
   setDiagnosisQuery: (q: string) => void;
   setDiagnosis: (d: Diagnosis | null) => void;
   setInvestigations: (list: Investigation[]) => void;
@@ -80,6 +89,11 @@ export interface AppActions {
   updateMedication: (rowId: string, patch: Partial<RxMedication>) => void;
   removeMedication: (rowId: string) => void;
   clearAll: () => void;
+  /**
+   * Esc and the Clear button: the first press warns and names what would go,
+   * a second within CLEAR_CONFIRM_MS clears. An empty pad has nothing to clear.
+   */
+  requestClear: (now?: number) => void;
   setActiveRow: (id: string | null) => void;
   setFocusZone: (z: AppState['focusZone']) => void;
   setBanner: (banner: AppState['banner']) => void;
@@ -102,6 +116,9 @@ export type AppStore = AppState & AppActions;
 /** Shortest override reason accepted when signing past a critical alert. */
 export { MIN_OVERRIDE_REASON };
 
+/** How long a first Esc waits for the second that clears the pad. */
+export const CLEAR_CONFIRM_MS = 4000;
+
 const newRowId = () => 'r_' + Math.random().toString(36).slice(2, 9);
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -121,11 +138,13 @@ const initialState: AppState = {
   doctor: null,
   signing: false,
   savingPatient: false,
+  showEditPatient: false,
   focusZone: null,
   activeRowId: null,
   showNewPatient: false,
   overridePrompt: null,
   banner: null,
+  clearArmedAt: null,
 };
 
 class Store {
@@ -177,6 +196,31 @@ class Store {
         });
         void afterWrite.patientCreated(queryClient);
         return p.id;
+      },
+      openEditPatient: () => this.set({ showEditPatient: true }),
+      closeEditPatient: () => this.set({ showEditPatient: false }),
+      updatePatient: async (facts: PatientFacts) => {
+        const { doctor, patientId } = this.state;
+        if (!doctor || !patientId || this.state.savingPatient) return false;
+        this.set({ savingPatient: true });
+        let p: Patient;
+        try {
+          p = await api.patients.update(doctor.hospitalSlug, patientId, facts);
+        } catch (err) {
+          this.set({
+            savingPatient: false,
+            banner: { kind: 'danger', text: `Couldn't save the patient: ${messageOf(err)}` },
+          });
+          return false;
+        }
+        this.set({
+          patients: this.state.patients.map((x) => (x.id === p.id ? p : x)),
+          showEditPatient: false,
+          savingPatient: false,
+          banner: { kind: 'success', text: `Saved ${p.name}'s details.` },
+        });
+        void afterWrite.patientCreated(queryClient);
+        return true;
       },
       setDiagnosisQuery: (q: string) => this.set({ diagnosisQuery: q }),
       setDiagnosis: (d: Diagnosis | null) =>
@@ -233,7 +277,31 @@ class Store {
           investigations: [],
           medications: [],
           activeRowId: null,
+          clearArmedAt: null,
         }),
+      requestClear: (now = Date.now()) => {
+        const s = this.state;
+        const meds = s.medications.length;
+        const tests = s.investigations.length;
+        if (!s.diagnosis && meds === 0 && tests === 0 && !s.diagnosisQuery) return;
+        if (s.clearArmedAt !== null && now - s.clearArmedAt <= CLEAR_CONFIRM_MS) {
+          this.actions.clearAll();
+          this.set({ banner: { kind: 'info', text: 'Pad cleared.' } });
+          return;
+        }
+        const parts = [
+          s.diagnosis ? 'the diagnosis' : '',
+          meds ? `${meds} medicine${meds === 1 ? '' : 's'}` : '',
+          tests ? `${tests} test${tests === 1 ? '' : 's'}` : '',
+        ].filter(Boolean);
+        this.set({
+          clearArmedAt: now,
+          banner: {
+            kind: 'warn',
+            text: `Press Esc again (or Clear) to clear ${parts.join(', ') || 'the pad'}.`,
+          },
+        });
+      },
       setActiveRow: (id: string | null) => this.set({ activeRowId: id }),
       setFocusZone: (z: AppState['focusZone']) => this.set({ focusZone: z }),
       setBanner: (banner: AppState['banner']) => this.set({ banner }),

@@ -133,7 +133,7 @@ export function CenterColumn({
           </button>
           <div className="flex-1" />
           <button
-            onClick={actions.clearAll}
+            onClick={() => actions.requestClear()}
             className="px-3 py-2 rounded-md border border-ink-700 text-ink-300 hover:bg-ink-700/40 flex items-center gap-2 transition-colors"
           >
             <span>Clear</span>

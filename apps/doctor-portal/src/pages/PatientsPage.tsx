@@ -11,7 +11,24 @@ import {
   ageSexLabel,
   dateOfBirthForAge,
   pregnancyFor,
+  KIDNEY_LABELS,
+  PREGNANCY_LABELS,
+  type KidneyFunction,
+  type PregnancyStatus,
 } from '@swiftrx/shared';
+import { KIDNEY_CHOICES, PREGNANCY_CHOICES } from '../rx/components/PatientFormParts';
+
+const EMPTY_FORM = {
+  name: '',
+  age: '',
+  sex: 'M' as 'M' | 'F',
+  weight: '',
+  contact: '',
+  allergies: '',
+  noneKnown: false,
+  pregnancy: 'unknown' as PregnancyStatus,
+  kidney: 'unknown' as KidneyFunction,
+};
 
 type Props = { hospital: Hospital; user: User };
 
@@ -20,13 +37,13 @@ export function PatientsPage({ hospital }: Props) {
   const createPatient = useCreatePatient();
   const [query, setQuery] = React.useState('');
   const [adding, setAdding] = React.useState(false);
-  const [form, setForm] = React.useState({
-    name: '',
-    age: '',
-    sex: 'M' as 'M' | 'F',
-    weight: '',
-    contact: '',
-  });
+  const [form, setForm] = React.useState(EMPTY_FORM);
+  const ageNum = parseInt(form.age, 10);
+  // Asked only of a woman of 10 or over; the server checks the same.
+  const pregnancyApplies =
+    ageNum >= 0 &&
+    pregnancyFor({ sex: form.sex, dateOfBirth: dateOfBirthForAge(ageNum) }, 'unknown') !==
+      'not_applicable';
 
   const filtered = patients.filter(
     (p) =>
@@ -43,6 +60,14 @@ export function PatientsPage({ hospital }: Props) {
     const weight = parseFloat(form.weight);
     // 0 years is a baby, so only a missing or bad age is refused.
     if (!name || !(age >= 0 && age < 130) || !(weight > 0)) return;
+    const allergies = [
+      ...new Set(
+        form.allergies
+          .split(',')
+          .map((a) => a.trim())
+          .filter(Boolean),
+      ),
+    ];
     createPatient.mutate(
       {
         hospitalSlug: hospital.slug,
@@ -52,16 +77,19 @@ export function PatientsPage({ hospital }: Props) {
         sex: form.sex,
         weightKg: weight,
         contact: form.contact.trim() || '—',
-        // This short form asks none of these; the Rx pad's form does.
-        pregnancy: pregnancyFor({ sex: form.sex, dateOfBirth: dateOfBirthForAge(age) }, 'unknown'),
-        kidney: 'unknown',
-        allergyStatus: 'not_recorded',
-        allergies: [],
+        pregnancy: pregnancyFor(
+          { sex: form.sex, dateOfBirth: dateOfBirthForAge(age) },
+          form.pregnancy,
+        ),
+        kidney: form.kidney,
+        allergyStatus:
+          allergies.length > 0 ? 'recorded' : form.noneKnown ? 'none_known' : 'not_recorded',
+        allergies,
         activeProblems: [],
       },
       {
         onSuccess: () => {
-          setForm({ name: '', age: '', sex: 'M', weight: '', contact: '' });
+          setForm(EMPTY_FORM);
           setAdding(false);
         },
       },
@@ -218,6 +246,58 @@ export function PatientsPage({ hospital }: Props) {
                   placeholder="Phone or MRN"
                 />
               </div>
+              <div className="sm:col-span-2">
+                <TextField
+                  label="Allergies (comma-separated)"
+                  value={form.allergies}
+                  onChange={(v: string) => setForm((f) => ({ ...f, allergies: v }))}
+                  placeholder="e.g. Penicillin, Sulfa"
+                />
+                {!form.allergies.trim() && (
+                  <label className="mt-1.5 flex items-center gap-2 text-xs text-ink-300">
+                    <input
+                      type="checkbox"
+                      checked={form.noneKnown}
+                      onChange={(e) => setForm((f) => ({ ...f, noneKnown: e.target.checked }))}
+                    />
+                    No known allergies (asked the patient)
+                  </label>
+                )}
+              </div>
+              {pregnancyApplies && (
+                <label>
+                  <span className="rx-label">Pregnancy</span>
+                  <select
+                    value={form.pregnancy}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, pregnancy: e.target.value as PregnancyStatus }))
+                    }
+                    className="rx-input w-full"
+                  >
+                    {PREGNANCY_CHOICES.map((p) => (
+                      <option key={p} value={p}>
+                        {PREGNANCY_LABELS[p]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label>
+                <span className="rx-label">Kidney function</span>
+                <select
+                  value={form.kidney}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, kidney: e.target.value as KidneyFunction }))
+                  }
+                  className="rx-input w-full"
+                >
+                  {KIDNEY_CHOICES.map((k) => (
+                    <option key={k} value={k}>
+                      {KIDNEY_LABELS[k]}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-ink-700 bg-ink-900/40">
               {createPatient.isError && (

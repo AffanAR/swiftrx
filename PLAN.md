@@ -76,9 +76,10 @@ shows up for the hospital and the platform) can't work end to end yet.
   rules are a draft: *any dose rules must be reviewed by a clinician.*
 - **The dose field turns an empty value into 0,** and 0 mg or 0 days is
   accepted. `src/components/MedicationRow.tsx:158`
-- **"No allergies" shows for patients whose allergies were never recorded.**
-  The portal's add-patient form has no allergy field.
-  `apps/doctor-portal/src/pages/PatientsPage.tsx:45`
+- ~~**"No allergies" shows for patients whose allergies were never recorded.**
+  The portal's add-patient form has no allergy field.~~ Fixed 2026-11-03: the
+  Patients page form asks for allergies (or "no known allergies"), pregnancy
+  and kidney function.
 - **Non-doctors can prescribe.** Hospital admins get an Rx bridge session with
   an empty license, and the dashboard offers to "prescribe as any doctor".
   `apps/doctor-portal/src/auth.ts:50`, `pages/DashboardPage.tsx:196`.
@@ -87,8 +88,9 @@ shows up for the hospital and the platform) can't work end to end yet.
 - **"Send to Pharmacy" prints an unsigned draft** that still says "Verified
   digitally · signature hash". `src/components/CenterColumn.tsx:34`,
   `src/print.ts:203`
-- **Esc (outside inputs) wipes the whole prescription,** with no confirm and
-  no undo. `src/App.tsx:120`
+- ~~**Esc (outside inputs) wipes the whole prescription,** with no confirm and
+  no undo.~~ Fixed 2026-11-03: Esc or Clear asks first ("Press Esc again…")
+  and clears only on a second press within 4 seconds.
 
 ### 2.3 Security and tenant isolation
 
@@ -695,8 +697,15 @@ the server creates a signed Rx.
     allowed now: babies under one couldn't be added before), pregnancy, kidney
     function and eGFR; the pad shows them beside the allergies, in amber when
     unknown. Existing databases get an estimated date of birth from the
-    stored age. Still missing: editing a patient's facts after they're
-    added (pregnancy and kidney function change).
+    stored age.
+  - Editing a patient's facts after they're added (2026-11-03): weight,
+    allergies, pregnancy, kidney function and eGFR, current medicines and
+    problems, from "Edit" beside the pad's Allergies and Pregnancy & kidneys.
+    `PATCH /api/hospitals/:slug/patients/:id` takes the hospital's own
+    users, checks the facts agree with the patient (no pregnant man, an eGFR
+    in its band), and audits what changed (`update_patient`, migration
+    `0012`); saving the same facts records nothing. Name, sex and date of
+    birth stay as added.
 - [ ] Drug model: ATC class, route, strengths/forms, and dose rules (mg/kg/day
       range, max daily dose, age bands). (The rules half done 2026-11-03, below; ATC
       class and route wait for the licensed drug data.)

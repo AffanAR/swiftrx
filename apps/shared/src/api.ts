@@ -26,6 +26,19 @@ import {
 } from './types';
 
 /** The patient fields a client sends; the server assigns the id and creation time. */
+/** The facts a client sends to edit a patient: all of them, each time. */
+export type PatientFacts = Pick<
+  Patient,
+  | 'weightKg'
+  | 'pregnancy'
+  | 'kidney'
+  | 'egfr'
+  | 'allergyStatus'
+  | 'allergies'
+  | 'activeProblems'
+  | 'activeMedications'
+>;
+
 export type NewPatient = Pick<
   Patient,
   | 'hospitalSlug'
@@ -147,6 +160,16 @@ export const api = {
         method: 'POST',
         body: patient,
       }),
+
+    /**
+     * PATCH /hospitals/:slug/patients/:id — the facts that change (all of them,
+     * each time); the server checks they agree with the rest and audits it.
+     */
+    update: (slug: string, id: string, facts: PatientFacts): Promise<Patient> =>
+      callApi<Patient>(
+        `/hospitals/${encodeURIComponent(slug)}/patients/${encodeURIComponent(id)}`,
+        { method: 'PATCH', body: facts },
+      ),
   },
 
   prescriptions: {

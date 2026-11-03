@@ -229,11 +229,14 @@ export function LeftColumn({
       <Section
         title="Allergies"
         right={
-          current.allergies.length > 0 ? (
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rx-danger/15 text-rx-danger border border-rx-danger/30 animate-breathe">
-              {current.allergies.length}
-            </span>
-          ) : null
+          <>
+            {current.allergies.length > 0 && (
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rx-danger/15 text-rx-danger border border-rx-danger/30 animate-breathe">
+                {current.allergies.length}
+              </span>
+            )}
+            <EditButton what="allergies" />
+          </>
         }
       >
         {current.allergies.length === 0 ? (
@@ -260,7 +263,7 @@ export function LeftColumn({
       </Section>
 
       {/* What the dose and pregnancy checks need: shown, and flagged when unknown. */}
-      <Section title="Pregnancy & kidneys">
+      <Section title="Pregnancy & kidneys" right={<EditButton what="pregnancy and kidneys" />}>
         <dl className="text-sm px-2 space-y-1">
           {current.pregnancy !== 'not_applicable' && (
             <div className="flex justify-between gap-2">
@@ -305,6 +308,19 @@ export function LeftColumn({
         </dl>
       </Section>
     </aside>
+  );
+}
+
+// Opens the form that edits the patient's facts (EditPatientModal).
+function EditButton({ what }: { what: string }) {
+  return (
+    <button
+      onClick={actions.openEditPatient}
+      className="ml-auto normal-case tracking-normal text-[11px] text-ink-400 hover:text-rx-accent"
+      aria-label={`Edit ${what}`}
+    >
+      Edit
+    </button>
   );
 }
 

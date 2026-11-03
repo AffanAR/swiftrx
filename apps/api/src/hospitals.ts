@@ -11,6 +11,10 @@
 //                                          (platform admin: decision D12)
 //    GET   /api/hospitals/:slug/patients   its patients
 //    POST  /api/hospitals/:slug/patients   add one (the hospital's own users)
+//    PATCH /api/hospitals/:slug/patients/:id
+//                                          edit the facts that change: weight,
+//                                          allergies, pregnancy, kidneys,
+//                                          current medicines and problems
 //
 //  Reads follow reads.ts: a platform admin sees every hospital, a hospital's
 //  users see their own (401 without a session, 403 otherwise). Writes check
@@ -38,6 +42,8 @@ import {
   hospitalStatusChangeSchema,
   newHospitalSchema,
   newPatientSchema,
+  patientFactsSchema,
+  patientSchema,
 } from '@swiftrx/shared/schemas';
 import {
   DEFAULT_HOSPITAL_FEATURES,
@@ -296,6 +302,79 @@ export function hospitalRoutes(deps: Deps) {
     }
     const patient = (await readPatients(deps, slug)).find((p) => p.id === id)!;
     return c.json(patient, 201);
+  });
+
+  routes.patch('/hospitals/:slug/patients/:id', async (c) => {
+    const slug = c.req.param('slug');
+    const auth = await guard(
+      c,
+      deps,
+      (a) => a.session.role !== 'platform_admin' && a.session.hospitalSlug === slug,
+    );
+    if (auth instanceof Response) return auth;
+    const body = await parseBody(c, patientFactsSchema);
+    if (body instanceof Response) return body;
+
+    const [current] = await readPatients(deps, slug, c.req.param('id'));
+    if (!current) return c.json({ error: 'No such patient at this hospital.' }, 404);
+    // The new facts must agree with what stays: no pregnant man, an eGFR that
+    // matches its band, allergies listed exactly when recorded.
+    const { egfr: _oldEgfr, ...rest } = current;
+    void _oldEgfr;
+    const merged = patientSchema.safeParse({ ...rest, ...body });
+    if (!merged.success) {
+      const issue = merged.error.issues[0];
+      return c.json({ error: `${issue.path.join('.')}: ${issue.message}` }, 400);
+    }
+
+    const changed = (Object.keys(body) as (keyof typeof body)[]).filter(
+      (k) => !sameJson(current[k], body[k]),
+    );
+    if (current.egfr !== undefined && body.egfr === undefined) changed.push('egfr');
+    if (changed.length > 0) {
+      const now = deps.now();
+      const [row] = await db
+        .select({ hospitalId: patients.hospitalId })
+        .from(patients)
+        .where(eq(patients.id, current.id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(patients)
+          .set({
+            weightKg: body.weightKg,
+            pregnancy: body.pregnancy,
+            kidney: body.kidney,
+            egfr: body.egfr ?? null,
+            allergyStatus: body.allergyStatus,
+            activeProblems: body.activeProblems,
+            activeMedications: body.activeMedications,
+          })
+          .where(eq(patients.id, current.id));
+        if (changed.includes('allergies')) {
+          await tx.delete(patientAllergies).where(eq(patientAllergies.patientId, current.id));
+          if (body.allergies.length > 0) {
+            await tx.insert(patientAllergies).values(
+              body.allergies.map((substance) => ({
+                hospitalId: row.hospitalId,
+                patientId: current.id,
+                substance,
+                createdAt: now,
+              })),
+            );
+          }
+        }
+        await tx.insert(auditEvents).values({
+          kind: 'update_patient',
+          actorId: auth.user.id,
+          actorEmail: auth.user.email,
+          hospitalId: row.hospitalId,
+          at: now,
+          details: { patientId: current.id, patientName: current.name, changed },
+        });
+      });
+    }
+    const [patient] = await readPatients(deps, slug, current.id);
+    return c.json(patient);
   });
 
   return routes;

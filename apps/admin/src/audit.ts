@@ -30,6 +30,8 @@ export function auditTitle(e: AuditEvent): string {
       return `Changed ${e.hospitalSlug}'s ${e.changed
         .map((c) => (c === 'rxDesign' ? 'Rx design' : 'features'))
         .join(' and ')}`;
+    case 'update_patient':
+      return `${e.userEmail} updated ${e.patientName}'s ${e.changed.join(', ')}`;
     case 'change_hospital_status':
       return `Moved ${e.hospitalSlug} from ${e.from} to ${e.to}`;
   }

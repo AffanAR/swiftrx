@@ -325,6 +325,76 @@ describe('createPatient', () => {
   });
 });
 
+describe('updatePatient', () => {
+  const facts = {
+    weightKg: 60,
+    pregnancy: 'pregnant' as const,
+    kidney: 'unknown' as const,
+    allergyStatus: 'recorded' as const,
+    allergies: ['Penicillin'],
+    activeProblems: [],
+    activeMedications: [],
+  };
+
+  it("saves the selected patient's facts, replaces them in the roster and closes the form", async () => {
+    actions.setPatient('p_002');
+    const update = vi.spyOn(api.patients, 'update').mockImplementation(async (_slug, id, f) => ({
+      ...getState().patients.find((p) => p.id === id)!,
+      ...f,
+    }));
+    actions.openEditPatient();
+
+    expect(await actions.updatePatient(facts)).toBe(true);
+    expect(update).toHaveBeenCalledWith('city-hospital', 'p_002', facts);
+    const s = getState();
+    expect(s.showEditPatient).toBe(false);
+    expect(s.savingPatient).toBe(false);
+    expect(s.patients.find((p) => p.id === 'p_002')).toMatchObject({
+      pregnancy: 'pregnant',
+      allergies: ['Penicillin'],
+    });
+    expect(s.banner?.kind).toBe('success');
+  });
+
+  it('keeps the form open and says why when saving fails', async () => {
+    actions.setPatient('p_002');
+    actions.openEditPatient();
+    vi.spyOn(api.patients, 'update').mockRejectedValueOnce(new Error('pregnancy: not for a man'));
+
+    expect(await actions.updatePatient(facts)).toBe(false);
+    const s = getState();
+    expect(s.showEditPatient).toBe(true);
+    expect(s.savingPatient).toBe(false);
+    expect(s.banner?.text).toContain('pregnancy: not for a man');
+  });
+});
+
+describe('requestClear', () => {
+  it('asks first, then clears on a second press within the time', () => {
+    fillPad('p_001', 'I10', [AMLODIPINE]);
+    actions.requestClear(1000);
+    expect(getState().medications).toHaveLength(1);
+    expect(getState().banner?.kind).toBe('warn');
+
+    actions.requestClear(2000);
+    expect(getState().medications).toEqual([]);
+    expect(getState().diagnosis).toBeNull();
+  });
+
+  it('asks again when the second press comes too late', () => {
+    fillPad('p_001', 'I10', [AMLODIPINE]);
+    actions.requestClear(1000);
+    actions.requestClear(1000 + 60_000);
+    expect(getState().medications).toHaveLength(1);
+  });
+
+  it('does nothing on an empty pad', () => {
+    actions.setPatient('p_001');
+    actions.requestClear(1000);
+    expect(getState().banner).toBeNull();
+  });
+});
+
 describe('setPatient', () => {
   it('clears the pad and the diagnosis search when switching patients', () => {
     fillPad('p_001', 'I10', [AMLODIPINE]);

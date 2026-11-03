@@ -267,6 +267,23 @@ export const newPatientSchema = patientFields
   })
   .superRefine(patientFactsAgree);
 
+/**
+ * The facts that change and feed the safety checks, as a client sends them to
+ * edit a patient (PATCH /api/hospitals/:slug/patients/:id): all of them, each
+ * time. Name, sex and date of birth stay as they were added. The server checks
+ * the result against patientSchema, so they must agree with the rest.
+ */
+export const patientFactsSchema = patientFields.pick({
+  weightKg: true,
+  pregnancy: true,
+  kidney: true,
+  egfr: true,
+  allergyStatus: true,
+  allergies: true,
+  activeProblems: true,
+  activeMedications: true,
+});
+
 // --- Catalog -------------------------------------------------------------------
 
 const dosage = z.object({ value: z.number().positive(), unit: doseUnitSchema });
@@ -428,6 +445,14 @@ export const auditEventSchema = z.discriminatedUnion('kind', [
     ...auditBase,
     hospitalSlug: slug,
     changed: z.array(z.enum(['features', 'rxDesign'])),
+  }),
+  z.object({
+    kind: z.literal('update_patient'),
+    ...auditBase,
+    hospitalSlug: slug,
+    patientId: text,
+    patientName: text,
+    changed: z.array(text),
   }),
   z.object({
     kind: z.literal('change_hospital_status'),

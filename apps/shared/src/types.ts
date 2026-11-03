@@ -408,6 +408,17 @@ export type AuditEvent =
       changed: ('features' | 'rxDesign')[];
     }
   | {
+      /** A hospital's user changed a patient's facts; `changed` names which. */
+      kind: 'update_patient';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      patientId: string;
+      patientName: string;
+      changed: string[];
+    }
+  | {
       /** The SwiftRx team suspended, reactivated or otherwise moved a hospital. */
       kind: 'change_hospital_status';
       userId: string;

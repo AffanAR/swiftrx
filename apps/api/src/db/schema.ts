@@ -99,6 +99,7 @@ export const AUDIT_KINDS = [
   'invite_user',
   'update_hospital',
   'change_hospital_status',
+  'update_patient',
 ] as const;
 
 /** `column IN ('a', 'b', …)`, for a CHECK constraint. */

@@ -26,6 +26,7 @@ import { LeftColumn } from './components/LeftColumn';
 import { CenterColumn } from './components/CenterColumn';
 import { RightColumn } from './components/RightColumn';
 import { NewPatientModal } from './components/NewPatientModal';
+import { EditPatientModal } from './components/EditPatientModal';
 import { SafetyOverrideModal } from './components/SafetyOverrideModal';
 import { printCurrent, signAndPrint } from './print';
 import './rx.css';
@@ -94,6 +95,7 @@ export default function RxPad({
 
 function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: () => void }) {
   const showNewPatient = useApp((s) => s.showNewPatient);
+  const showEditPatient = useApp((s) => s.showEditPatient);
   const overrideOpen = useApp((s) => s.overridePrompt !== null);
   const hasPatient = useApp((s) => s.patients.some((p) => p.id === s.patientId));
   const patientSearchRef = React.useRef<HTMLInputElement>(null);
@@ -195,8 +197,8 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
       },
       {
         key: 'Escape',
-        description: 'Clear workspace',
-        handler: () => actions.clearAll(),
+        description: 'Clear workspace (press twice)',
+        handler: () => actions.requestClear(),
       },
       {
         key: '1',
@@ -246,7 +248,7 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
         },
       },
     ],
-    !showNewPatient && !overrideOpen,
+    !showNewPatient && !showEditPatient && !overrideOpen,
   ); // off while a modal is open
 
   return (
@@ -265,6 +267,7 @@ function Workspace({ doctor, onSignOut }: { doctor: DoctorIdentity; onSignOut: (
       )}
       <StatusLine />
       <NewPatientModal />
+      <EditPatientModal />
       <SafetyOverrideModal />
     </SignedInShell>
   );
