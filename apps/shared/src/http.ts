@@ -37,7 +37,7 @@ export function onSessionEnded(listener: () => void): () => void {
 /** GET, POST or PATCH `path` (under /api) and return its JSON body; throws ApiError. */
 export async function callApi<T>(
   path: string,
-  options: { method?: 'GET' | 'POST' | 'PATCH'; body?: unknown } = {},
+  options: { method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown } = {},
 ): Promise<T> {
   let res: Response;
   try {

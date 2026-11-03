@@ -349,6 +349,18 @@ export const quickPackSchema = z.object({
   medications: z.array(quickPackMedSchema).min(1),
 });
 
+/**
+ * What PUT /hospitals/:slug/quick-packs/:dx/:key takes: the slot comes from
+ * the path, and the server fills in each medicine's generic name.
+ */
+export const hospitalQuickPackSchema = z.object({
+  recommendationReason: z.string().trim().max(200),
+  medications: z
+    .array(quickPackMedSchema.extend({ genericName: z.string() }))
+    .min(1)
+    .max(10),
+});
+
 // --- Prescriptions -------------------------------------------------------------
 
 export const rxMedicationSchema = z.object({
@@ -445,6 +457,14 @@ export const auditEventSchema = z.discriminatedUnion('kind', [
     ...auditBase,
     hospitalSlug: slug,
     changed: z.array(z.enum(['features', 'rxDesign'])),
+  }),
+  z.object({
+    kind: z.literal('set_quick_pack'),
+    ...auditBase,
+    hospitalSlug: slug,
+    diagnosisCode: text,
+    shortcutKey: z.enum(['1', '2', '3']),
+    action: z.enum(['set', 'removed']),
   }),
   z.object({
     kind: z.literal('update_patient'),

@@ -10,6 +10,7 @@ import { NewHospitalPage } from './pages/NewHospitalPage';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { PlatformSettingsPage } from './pages/PlatformSettingsPage';
 import { HospitalFeaturesPage } from './pages/HospitalFeaturesPage';
+import { HospitalQuickPacksPage } from './pages/HospitalQuickPacksPage';
 
 export default function App() {
   const [session, signOut, signIn] = useAdminSession();
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/hospitals/new" element={<NewHospitalPage />} />
           <Route path="/hospitals/:slug" element={<HospitalDetailPage />} />
           <Route path="/hospitals/:slug/features" element={<HospitalFeaturesPage />} />
+          <Route path="/hospitals/:slug/quick-packs" element={<HospitalQuickPacksPage />} />
           <Route path="/audit" element={<AuditLogPage />} />
           <Route path="/settings" element={<PlatformSettingsPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

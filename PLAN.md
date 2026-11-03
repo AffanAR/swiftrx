@@ -757,13 +757,37 @@ the server creates a signed Rx.
       21,712 brands and 1,661 generics. Only the 12 generics in
       `scripts/bd-medicines/reviewed.json` have dose defaults and safety lists;
       the pad marks the rest "no safety data".
-- [ ] Paediatric quick packs, and quick packs configurable per hospital.
+- [x] **Quick packs configurable per hospital** (2026-11-03). A hospital's own
+      pack replaces the catalog's default in its slot (diagnosis and
+      Alt+1/2/3), for that hospital only; removing it brings the default back.
+  - `hospital_quick_packs` (migration `0013`), routes in
+    `apps/api/src/quickPacks.ts`: GET for the hospital's users (none when
+    quick packs are switched off), PUT and DELETE for the SwiftRx team only,
+    like the rest of a hospital's settings. The server checks the diagnosis
+    and each medicine against the catalog, writes the generic names itself,
+    and audits each change (`set_quick_pack`).
+  - The admin panel edits them per diagnosis (Hospital → Quick packs); the
+    pad merges them over the defaults (`mergeQuickPacks`) and labels them
+    "Your hospital's pack".
+  - Still to do: letting a hospital's own admin edit them, and hiding a
+    default without replacing it.
+- [ ] Paediatric quick packs (the feature above can hold them; a clinician
+      has to write them).
 - [ ] A clinician signs off on all rules before any pilot.
 
 #### Phase 4: Pilot readiness (≈2–3 weeks)
 
-- [ ] Server-rendered PDF, plus a verification page and QR code per Rx (City
-      Hospital's footer already promises a verify URL).
+- [x] **Server-rendered PDF** (2026-11-03): `GET
+      /api/hospitals/:slug/prescriptions/:id/pdf`, drawn by `apps/api/src/rxPdf.ts`
+      (pdf-lib) in the Rx design frozen when the Rx was signed, so it is the
+      same file on every device and every time. It carries on over pages, is
+      stamped DEMO on a demo server, and follows the hospital's existing
+      "Allow PDF export" switch (403 when off). The portal's Prescriptions page
+      and the pad's previous Rx have a download link. Text outside Latin
+      (WinAnsi) prints as "?" until a Bangla font is embedded (with the Bangla
+      instructions below).
+- [ ] A verification page and QR code per Rx (City Hospital's footer already
+      promises a verify URL).
 - [ ] BMDC registration check for doctors (Bangladesh, ROADMAP.md D13; the
       seed uses BMDC-style numbers, "BMDC A-44121", since 2026-11-02).
 - [ ] Bangla patient instructions. `languageSchema` is already English and

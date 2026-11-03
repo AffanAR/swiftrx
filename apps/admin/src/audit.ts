@@ -30,6 +30,10 @@ export function auditTitle(e: AuditEvent): string {
       return `Changed ${e.hospitalSlug}'s ${e.changed
         .map((c) => (c === 'rxDesign' ? 'Rx design' : 'features'))
         .join(' and ')}`;
+    case 'set_quick_pack':
+      return e.action === 'set'
+        ? `Set ${e.hospitalSlug}'s quick pack ${e.shortcutKey} for ${e.diagnosisCode}`
+        : `Removed ${e.hospitalSlug}'s quick pack ${e.shortcutKey} for ${e.diagnosisCode}`;
     case 'update_patient':
       return `${e.userEmail} updated ${e.patientName}'s ${e.changed.join(', ')}`;
     case 'change_hospital_status':

@@ -6,6 +6,11 @@
 //                                              platform admin)
 //    GET  /api/prescriptions                   every hospital's (platform admin)
 //    POST /api/hospitals/:slug/prescriptions   sign one (a licensed doctor there)
+//    GET  /api/hospitals/:slug/prescriptions/:id/pdf
+//                                              one as a PDF (rxPdf.ts), in the
+//                                              Rx design frozen when it was
+//                                              signed; refused when the
+//                                              hospital's PDF export is off
 //
 //  Only the server creates a signed prescription. The pad sends ids and its
 //  rows (PrescriptionDraft); the server:
@@ -60,8 +65,12 @@ import {
 import { guard, parseBody, readPatients, startOfMonthInDhaka } from './hospitals';
 import { mayRead } from './reads';
 import { rxHash } from './rxHash';
+import { renderRxPdf } from './rxPdf';
 
-type Deps = Pick<AuthDeps, 'db' | 'now' | 'rootDomain' | 'secureCookies'>;
+type Deps = Pick<AuthDeps, 'db' | 'now' | 'rootDomain' | 'secureCookies'> & {
+  /** A demo server stamps its PDFs DEMO (see demoModeFromEnv in app.ts). */
+  demoMode?: boolean;
+};
 
 /** What the server checks a draft against; the catalog doesn't change while it runs. */
 interface Reference {
@@ -86,6 +95,28 @@ export function prescriptionRoutes(deps: Deps) {
     const auth = await guard(c, deps, (a) => mayRead(a, slug));
     if (auth instanceof Response) return auth;
     return c.json(await readPrescriptions(deps, slug));
+  });
+
+  routes.get('/hospitals/:slug/prescriptions/:id/pdf', async (c) => {
+    const { slug, id } = c.req.param();
+    const auth = await guard(c, deps, (a) => mayRead(a, slug));
+    if (auth instanceof Response) return auth;
+    const [row] = await db
+      .select({ design: prescriptions.rxDesignSnapshot, features: hospitalSettings.features })
+      .from(prescriptions)
+      .innerJoin(hospitals, eq(hospitals.id, prescriptions.hospitalId))
+      .innerJoin(hospitalSettings, eq(hospitalSettings.hospitalId, hospitals.id))
+      .where(and(eq(hospitals.slug, slug), eq(prescriptions.id, id)));
+    if (!row) return c.json({ error: 'No such prescription at this hospital.' }, 404);
+    if (auth.session.role !== 'platform_admin' && !row.features.allowPdfExport) {
+      return c.json({ error: 'PDF export is switched off for this hospital.' }, 403);
+    }
+    const [rx] = await readPrescriptions(deps, slug, id);
+    const pdf = await renderRxPdf(rx, row.design, { demo: deps.demoMode ?? true });
+    // Ids are letters, digits and underscores, so they are safe in the header.
+    c.header('Content-Type', 'application/pdf');
+    c.header('Content-Disposition', `attachment; filename="${rx.id}.pdf"`);
+    return c.body(pdf.slice().buffer as ArrayBuffer);
   });
 
   routes.get('/prescriptions', async (c) => {
@@ -325,16 +356,22 @@ export function prescriptionRoutes(deps: Deps) {
   return routes;
 }
 
-/** Signed prescriptions, newest first, as the apps see them: every hospital's, or one's. */
+/**
+ * Signed prescriptions, newest first, as the apps see them: every hospital's,
+ * one hospital's, or one prescription.
+ */
 export async function readPrescriptions(
   deps: Pick<Deps, 'db'>,
   slug?: string,
+  id?: string,
 ): Promise<SignedRx[]> {
   const rows = await deps.db
     .select({ rx: prescriptions, hospitalSlug: hospitals.slug })
     .from(prescriptions)
     .innerJoin(hospitals, eq(hospitals.id, prescriptions.hospitalId))
-    .where(slug ? eq(hospitals.slug, slug) : undefined)
+    .where(
+      and(slug ? eq(hospitals.slug, slug) : undefined, id ? eq(prescriptions.id, id) : undefined),
+    )
     .orderBy(desc(prescriptions.signedAt), desc(prescriptions.id));
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.rx.id);

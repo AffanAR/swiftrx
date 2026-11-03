@@ -1,6 +1,7 @@
 import {
   LiveDot,
   Card,
+  api,
   cx,
   medicineLabel,
   usePrescriptions,
@@ -64,6 +65,15 @@ export function PrescriptionsPage({ hospital }: Props) {
                   <div className="text-[11px] text-ink-400">
                     {new Date(r.signedAt).toLocaleString()}
                   </div>
+                  {hospital.features.allowPdfExport && (
+                    <a
+                      href={api.prescriptions.pdfUrl(hospital.slug, r.id)}
+                      download
+                      className="mt-1 inline-block text-[11px] text-rx-accent hover:underline"
+                    >
+                      Download PDF
+                    </a>
+                  )}
                 </div>
               </div>
               <ul className="mt-3 grid sm:grid-cols-2 gap-1.5">

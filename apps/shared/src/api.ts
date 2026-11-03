@@ -10,7 +10,7 @@
 // =============================================================================
 
 import { MOCK_LATENCY_MS } from './config';
-import { ApiError, callApi } from './http';
+import { ApiError, callApi, withSurface } from './http';
 import { MOCK_USERS } from './mockDb';
 import {
   type AuditEvent,
@@ -20,12 +20,13 @@ import {
   type HospitalProfile,
   type Patient,
   type PrescriptionDraft,
+  type QuickPack,
+  type QuickPackMed,
   type RxDesign,
   type SignedRx,
   type User,
 } from './types';
 
-/** The patient fields a client sends; the server assigns the id and creation time. */
 /** The facts a client sends to edit a patient: all of them, each time. */
 export type PatientFacts = Pick<
   Patient,
@@ -39,6 +40,7 @@ export type PatientFacts = Pick<
   | 'activeMedications'
 >;
 
+/** The patient fields a client sends; the server assigns the id and creation time. */
 export type NewPatient = Pick<
   Patient,
   | 'hospitalSlug'
@@ -63,6 +65,21 @@ export type NewHospital = Pick<
 >;
 
 /** A doctor a hospital admin invites; the server makes the account and a link. */
+/** One quick-pack slot: a diagnosis and its Alt+1/2/3 key. */
+export interface SlotOf {
+  diagnosisCode: string;
+  shortcutKey: QuickPack['shortcutKey'];
+}
+
+/** A hospital's pack as the admin sends it; the server fills in generic names. */
+export interface HospitalQuickPackInput {
+  recommendationReason: string;
+  medications: QuickPackMed[];
+}
+
+const packPath = (slug: string, { diagnosisCode, shortcutKey }: SlotOf) =>
+  `/hospitals/${encodeURIComponent(slug)}/quick-packs/${encodeURIComponent(diagnosisCode)}/${shortcutKey}`;
+
 export interface DoctorInvite {
   email: string;
   name: string;
@@ -173,6 +190,15 @@ export const api = {
   },
 
   prescriptions: {
+    /**
+     * Where GET /hospitals/:slug/prescriptions/:id/pdf downloads a signed Rx
+     * as a PDF; a plain link, since the browser sends the session cookie.
+     */
+    pdfUrl: (slug: string, id: string): string =>
+      withSurface(
+        `/api/hospitals/${encodeURIComponent(slug)}/prescriptions/${encodeURIComponent(id)}/pdf`,
+      ),
+
     /** GET /hospitals/:slug/prescriptions, or GET /prescriptions for every hospital. */
     list: (slug?: string): Promise<SignedRx[]> =>
       callApi<SignedRx[]>(
@@ -197,6 +223,23 @@ export const api = {
       callApi<AuditEvent[]>(
         slug ? `/hospitals/${encodeURIComponent(slug)}/audit-events` : '/audit-events',
       ),
+  },
+
+  quickPacks: {
+    /** GET /hospitals/:slug/quick-packs — the hospital's own packs (none when switched off). */
+    list: (slug: string): Promise<QuickPack[]> =>
+      callApi<QuickPack[]>(`/hospitals/${encodeURIComponent(slug)}/quick-packs`),
+
+    /** PUT /hospitals/:slug/quick-packs/:dx/:key — set the hospital's pack in that slot. */
+    set: (slug: string, pack: HospitalQuickPackInput & SlotOf): Promise<QuickPack> =>
+      callApi<QuickPack>(packPath(slug, pack), {
+        method: 'PUT',
+        body: { recommendationReason: pack.recommendationReason, medications: pack.medications },
+      }),
+
+    /** DELETE /hospitals/:slug/quick-packs/:dx/:key — back to the default pack. */
+    remove: (slug: string, slot: SlotOf): Promise<null> =>
+      callApi<null>(packPath(slug, slot), { method: 'DELETE' }),
   },
 
   catalog: {

@@ -18,7 +18,15 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { ApiError, api, type DoctorInvite, type NewHospital, type NewPatient } from './api';
+import {
+  ApiError,
+  api,
+  type DoctorInvite,
+  type HospitalQuickPackInput,
+  type NewHospital,
+  type NewPatient,
+  type SlotOf,
+} from './api';
 import type { Hospital, HospitalFeatures, RxDesign, User } from './types';
 
 /** Doctors, patients and signed Rx per hospital, for the admin's hospital list. */
@@ -51,6 +59,12 @@ export const queries = {
     queryOptions({
       queryKey: ['hospitals', 'detail', slug, 'patients'],
       queryFn: () => api.patients.list(slug),
+    }),
+  /** The hospital's own quick packs; the catalog has the defaults. */
+  quickPacks: (slug: string) =>
+    queryOptions({
+      queryKey: ['hospitals', 'detail', slug, 'quick-packs'],
+      queryFn: () => api.quickPacks.list(slug),
     }),
   /** Counts per hospital slug. Built from the lists until the API has a stats endpoint. */
   hospitalStats: () =>
@@ -205,6 +219,24 @@ export function useInviteHospitalAdmin(slug: string) {
     mutationFn: (input: { email: string; name: string }) =>
       api.users.inviteHospitalAdmin(slug, input),
     onSuccess: () => refetch(qc, ['audit']),
+  });
+}
+
+/** The platform admin sets a hospital's own pack in one slot. */
+export function useSetQuickPack(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pack: HospitalQuickPackInput & SlotOf) => api.quickPacks.set(slug, pack),
+    onSuccess: () => refetch(qc, [...queries.quickPacks(slug).queryKey], ['audit']),
+  });
+}
+
+/** The platform admin removes a hospital's own pack, so the default is back. */
+export function useRemoveQuickPack(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slot: SlotOf) => api.quickPacks.remove(slug, slot),
+    onSuccess: () => refetch(qc, [...queries.quickPacks(slug).queryKey], ['audit']),
   });
 }
 

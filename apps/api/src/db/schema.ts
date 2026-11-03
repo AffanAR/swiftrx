@@ -100,6 +100,7 @@ export const AUDIT_KINDS = [
   'update_hospital',
   'change_hospital_status',
   'update_patient',
+  'set_quick_pack',
 ] as const;
 
 /** `column IN ('a', 'b', …)`, for a CHECK constraint. */
@@ -434,7 +435,8 @@ export const diagnosisInvestigations = pgTable(
 /**
  * Up to three ranked medication sets per diagnosis, injected with Alt+1/2/3.
  * The medications are a template the doctor edits on the pad, kept as one
- * jsonb list. Packs are platform-wide for now; per-hospital packs are Phase 3.
+ * jsonb list. These are the defaults every hospital gets; a hospital's own
+ * packs (`hospital_quick_packs`) replace them slot by slot.
  */
 export const quickPacks = pgTable(
   'quick_packs',
@@ -452,6 +454,31 @@ export const quickPacks = pgTable(
     unique('quick_packs_shortcut_unique').on(t.diagnosisCode, t.shortcutKey),
     check('quick_packs_shortcut_valid', sql`${t.shortcutKey} in ('1', '2', '3')`),
     check('quick_packs_rank_range', sql`${t.rankScore} between 0 and 1`),
+  ],
+);
+
+/**
+ * A hospital's own pack in one slot (diagnosis and Alt+1/2/3). It replaces
+ * the default `quick_packs` row in that slot for this hospital only;
+ * deleting it brings the default back. Edited by the SwiftRx team.
+ */
+export const hospitalQuickPacks = pgTable(
+  'hospital_quick_packs',
+  {
+    hospitalId: uuid('hospital_id')
+      .notNull()
+      .references(() => hospitals.id, { onDelete: 'cascade' }),
+    diagnosisCode: text('diagnosis_code')
+      .notNull()
+      .references(() => diagnoses.code, { onDelete: 'cascade' }),
+    shortcutKey: text('shortcut_key', { enum: ['1', '2', '3'] }).notNull(),
+    recommendationReason: text('recommendation_reason').notNull().default(''),
+    medications: jsonb('medications').$type<QuickPackMed[]>().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.hospitalId, t.diagnosisCode, t.shortcutKey] }),
+    check('hospital_quick_packs_shortcut_valid', sql`${t.shortcutKey} in ('1', '2', '3')`),
   ],
 );
 

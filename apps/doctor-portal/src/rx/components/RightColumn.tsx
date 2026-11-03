@@ -1,6 +1,13 @@
 import React from 'react';
 import { useApp, shownAlerts } from '../store';
-import { LiveDot, ProgressBar, cx, type QuickPack, type SignedRx } from '@swiftrx/shared';
+import {
+  LiveDot,
+  ProgressBar,
+  cx,
+  isHospitalPack,
+  type QuickPack,
+  type SignedRx,
+} from '@swiftrx/shared';
 import { evaluateMedication, severityRank } from '@swiftrx/shared';
 import { PreviousRx } from './PreviousRx';
 
@@ -105,7 +112,11 @@ export function RightColumn({ onApply, onRepeat }: Props) {
                   <div className="text-[11px] text-ink-400 mb-0.5 flex items-center gap-1.5">
                     <span>Pack #{pack.shortcutKey}</span>
                     <span className="text-ink-600">·</span>
-                    <span className="font-mono">score {pack.rankScore.toFixed(2)}</span>
+                    {isHospitalPack(pack) ? (
+                      <span className="text-rx-accent">Your hospital's pack</span>
+                    ) : (
+                      <span className="font-mono">score {pack.rankScore.toFixed(2)}</span>
+                    )}
                   </div>
                   <div className="text-sm font-semibold text-ink-100">
                     {pack.medications.map((m) => m.genericName).join(' + ')}

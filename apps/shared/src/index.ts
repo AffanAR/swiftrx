@@ -6,6 +6,7 @@ export * from './types';
 // mockDb exports stay for tests and auth.ts; ESLint keeps app code off them.
 export * from './api';
 export * from './medicine';
+export * from './quickPacks';
 export * from './patient';
 export * from './rules';
 export * from './safety';

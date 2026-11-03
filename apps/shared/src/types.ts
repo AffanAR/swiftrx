@@ -408,6 +408,20 @@ export type AuditEvent =
       changed: ('features' | 'rxDesign')[];
     }
   | {
+      /**
+       * The SwiftRx team set or removed one of a hospital's own quick packs
+       * (removing one brings back the default pack in that slot).
+       */
+      kind: 'set_quick_pack';
+      userId: string;
+      userEmail: string;
+      at: string;
+      hospitalSlug: string;
+      diagnosisCode: string;
+      shortcutKey: '1' | '2' | '3';
+      action: 'set' | 'removed';
+    }
+  | {
       /** A hospital's user changed a patient's facts; `changed` names which. */
       kind: 'update_patient';
       userId: string;

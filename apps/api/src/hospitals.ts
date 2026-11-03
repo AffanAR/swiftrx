@@ -473,7 +473,7 @@ export async function readPatients(
 // --- helpers -----------------------------------------------------------------
 
 /** Equal as JSON values. Postgres stores jsonb with its keys reordered, so key order is ignored. */
-function sameJson(a: unknown, b: unknown): boolean {
+export function sameJson(a: unknown, b: unknown): boolean {
   const sorted = (v: unknown): unknown =>
     v && typeof v === 'object' && !Array.isArray(v)
       ? Object.fromEntries(

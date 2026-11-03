@@ -22,6 +22,7 @@ import { inviteRoutes } from './auth/invites';
 import { catalogRoutes } from './catalog';
 import { hospitalRoutes } from './hospitals';
 import { prescriptionRoutes } from './prescriptions';
+import { quickPackRoutes } from './quickPacks';
 import { authRoutes } from './auth/routes';
 import { SIGN_IN_LIMITS, type SignInLimits } from './auth/rateLimit';
 import type { Db } from './db/client';
@@ -120,7 +121,8 @@ export function createApp({
   app.route('/', readRoutes({ db, now, rootDomain, secureCookies }));
   app.route('/', catalogRoutes({ db, now, rootDomain, secureCookies }));
   app.route('/', hospitalRoutes({ db, now, rootDomain, secureCookies }));
-  app.route('/', prescriptionRoutes({ db, now, rootDomain, secureCookies }));
+  app.route('/', prescriptionRoutes({ db, now, rootDomain, secureCookies, demoMode }));
+  app.route('/', quickPackRoutes({ db, now, rootDomain, secureCookies }));
 
   app.notFound((c) => c.json({ error: 'Not found.' }, 404));
 

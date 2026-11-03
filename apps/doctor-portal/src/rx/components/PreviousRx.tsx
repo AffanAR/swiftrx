@@ -1,18 +1,20 @@
 import React from 'react';
 import { useApp, previousRxForPatient } from '../store';
-import { LiveDot, medicineLabel, type SignedRx } from '@swiftrx/shared';
+import { LiveDot, api, medicineLabel, type SignedRx } from '@swiftrx/shared';
 
 const MAX_SHOWN = 5;
 
 /**
  * The selected patient's signed prescriptions, newest first, each with a
- * Repeat button. The newest one is also bound to Alt+R (in App).
+ * Repeat button (and a PDF link when the hospital allows it). The newest one
+ * is also bound to Alt+R (in App).
  */
 export function PreviousRx({ onRepeat }: { onRepeat: (rx: SignedRx) => void }) {
   // Select the raw fields and derive the list in a memo: a selector that
   // returns a fresh array would make useSyncExternalStore re-render forever.
   const signed = useApp((s) => s.signed);
   const patientId = useApp((s) => s.patientId);
+  const allowPdf = useApp((s) => s.allowPdfExport);
   const patientName = useApp((s) => s.patients.find((p) => p.id === s.patientId)?.name ?? '');
   const history = React.useMemo(() => previousRxForPatient(signed, patientId), [signed, patientId]);
 
@@ -56,6 +58,16 @@ export function PreviousRx({ onRepeat }: { onRepeat: (rx: SignedRx) => void }) {
                     {rx.diagnosis.name}
                   </div>
                 </div>
+                {allowPdf && (
+                  <a
+                    href={api.prescriptions.pdfUrl(rx.hospitalSlug, rx.id)}
+                    download
+                    className="shrink-0 px-2 py-0.5 rounded border border-ink-700 text-ink-300 font-mono text-xs hover:text-rx-accent hover:border-rx-accent/40 transition-colors"
+                    title="Download this prescription as a PDF"
+                  >
+                    PDF
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => onRepeat(rx)}

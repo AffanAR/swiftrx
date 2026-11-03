@@ -51,6 +51,8 @@ export interface AppState {
   // (duplicate-therapy) warnings. Allergies and interactions always show,
   // and the server always checks them when signing.
   hideMinorAlerts: boolean;
+  // Whether the hospital lets its doctors download signed Rx as PDFs.
+  allowPdfExport: boolean;
   // Doctor (null until loadWorkspace)
   doctor: DoctorIdentity | null;
   // A sign or a new patient is being saved
@@ -135,6 +137,7 @@ const initialState: AppState = {
   catalog: { drugs: [], brands: [], diagnoses: [], investigations: [], quickPacks: [] },
   rxDesign: null,
   hideMinorAlerts: false,
+  allowPdfExport: false,
   doctor: null,
   signing: false,
   savingPatient: false,
@@ -483,6 +486,7 @@ export interface WorkspaceData {
   catalog: Catalog;
   rxDesign: RxDesign | null;
   hideMinorAlerts?: boolean;
+  allowPdfExport?: boolean;
 }
 
 /** The alerts the pad shows: all, or with `hideMinorAlerts` all but the minor ones. */

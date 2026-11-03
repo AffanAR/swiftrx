@@ -66,6 +66,9 @@ export function HospitalDetailPage() {
           <Link to={`/hospitals/${hospital.slug}/features`} className="rx-btn-ghost">
             Features &amp; Rx design
           </Link>
+          <Link to={`/hospitals/${hospital.slug}/quick-packs`} className="rx-btn-ghost">
+            Quick packs
+          </Link>
           <StatusButton hospital={hospital} />
           <a
             className="rx-btn-primary"

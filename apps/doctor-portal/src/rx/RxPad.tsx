@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import {
   cx,
+  mergeQuickPacks,
   queries,
   type Hospital,
   type QuickPack,
@@ -57,13 +58,20 @@ export default function RxPad({
     }),
     [user, hospital.slug],
   );
-  const [{ data: patients }, { data: signed }, { data: catalog }] = useSuspenseQueries({
-    queries: [
-      queries.patients(hospital.slug),
-      queries.prescriptions(hospital.slug),
-      queries.catalog(),
-    ],
-  });
+  const [{ data: patients }, { data: signed }, { data: shared }, { data: ownPacks }] =
+    useSuspenseQueries({
+      queries: [
+        queries.patients(hospital.slug),
+        queries.prescriptions(hospital.slug),
+        queries.catalog(),
+        queries.quickPacks(hospital.slug),
+      ],
+    });
+  // The hospital's own packs replace the defaults in their slots.
+  const catalog = React.useMemo(
+    () => ({ ...shared, quickPacks: mergeQuickPacks(shared.quickPacks, ownPacks) }),
+    [shared, ownPacks],
+  );
   // Stable until the data itself changes, so the store only reloads on a real refetch.
   const data = React.useMemo<WorkspaceData>(
     () => ({
@@ -72,8 +80,9 @@ export default function RxPad({
       catalog,
       rxDesign: hospital.rxDesign,
       hideMinorAlerts: !hospital.features.enableSafetyAlerts,
+      allowPdfExport: hospital.features.allowPdfExport,
     }),
-    [patients, signed, catalog, hospital.rxDesign, hospital.features.enableSafetyAlerts],
+    [patients, signed, catalog, hospital.rxDesign, hospital.features],
   );
   const [loadedFor, setLoadedFor] = React.useState<DoctorIdentity | null>(null);
 
