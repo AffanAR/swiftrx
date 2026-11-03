@@ -49,7 +49,9 @@ describe('hospitals and patients', () => {
     const patient: NewPatient = {
       hospitalSlug: 'city-hospital',
       name: 'Rahima Begum',
-      age: 0, // infants are valid patients
+      dateOfBirth: '2026-10-01', // a baby a month old is a valid patient
+      pregnancy: 'not_applicable',
+      kidney: 'unknown',
       sex: 'F',
       weightKg: 3.4,
       contact: '—',

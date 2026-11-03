@@ -3,7 +3,7 @@ import { useApp, actions } from '../store';
 import { DiagnosisField } from './DiagnosisField';
 import { MedicationSearch } from './MedicationSearch';
 import { MedicationRow } from './MedicationRow';
-import { AnimatedNumber, Kbd, LiveDot, TypingDots, cx } from '@swiftrx/shared';
+import { AnimatedNumber, Kbd, LiveDot, TypingDots, cx, ageSexLabel } from '@swiftrx/shared';
 import { printCurrent, signAndPrint } from '../print';
 
 export function CenterColumn({
@@ -66,8 +66,7 @@ export function CenterColumn({
               </span>
             </h2>
             <p className="text-xs text-ink-400">
-              {patient.name} · {patient.age}
-              {patient.sex} · {patient.weightKg}kg
+              {patient.name} · {ageSexLabel(patient)} · {patient.weightKg}kg
             </p>
           </div>
           <div className="hidden md:flex items-center gap-1.5 text-xs text-ink-400">

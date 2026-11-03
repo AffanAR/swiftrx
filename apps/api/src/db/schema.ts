@@ -30,6 +30,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import {
   bigint,
   boolean,
+  date,
   check,
   foreignKey,
   index,
@@ -72,6 +73,21 @@ export const SEXES = ['M', 'F'] as const;
  * asked" must not look the same on a prescription (PLAN.md §2.2).
  */
 export const ALLERGY_STATUSES = ['not_recorded', 'none_known', 'recorded'] as const;
+export const PREGNANCY_STATUSES = [
+  'not_applicable',
+  'unknown',
+  'not_pregnant',
+  'pregnant',
+  'breastfeeding',
+] as const;
+export const KIDNEY_FUNCTIONS = [
+  'unknown',
+  'normal',
+  'moderate',
+  'severe',
+  'failure',
+  'dialysis',
+] as const;
 export const DOSE_UNITS = ['mg', 'ml', 'g', 'mcg', 'tablets'] as const;
 export const FREQUENCIES = ['QD', 'BID', 'TID', 'QID', 'PRN', 'QHS'] as const;
 export const INVESTIGATION_TYPES = ['lab', 'imaging', 'other'] as const;
@@ -253,12 +269,17 @@ export const patients = pgTable(
       .notNull()
       .references(() => hospitals.id, { onDelete: 'restrict' }),
     name: text('name').notNull(),
-    // The contract (types.ts) has an age, not a date of birth, so an age is
-    // what gets stored. It goes stale; move to date_of_birth before real use.
-    age: integer('age').notNull(),
+    /** An age goes stale; the date doesn't. */
+    dateOfBirth: date('date_of_birth', { mode: 'string' }).notNull(),
+    /** Worked out from an age the patient gave, not from a document. */
+    dateOfBirthEstimated: boolean('date_of_birth_estimated').notNull().default(false),
     sex: text('sex', { enum: SEXES }).notNull(),
     weightKg: numeric('weight_kg', { precision: 5, scale: 2, mode: 'number' }).notNull(),
     contact: text('contact').notNull().default(''),
+    pregnancy: text('pregnancy', { enum: PREGNANCY_STATUSES }).notNull().default('unknown'),
+    kidney: text('kidney', { enum: KIDNEY_FUNCTIONS }).notNull().default('unknown'),
+    /** The latest eGFR, mL/min/1.73 m². */
+    egfr: numeric('egfr', { precision: 5, scale: 1, mode: 'number' }),
     allergyStatus: text('allergy_status', { enum: ALLERGY_STATUSES })
       .notNull()
       .default('not_recorded'),
@@ -277,10 +298,13 @@ export const patients = pgTable(
     // The target of the (patient_id, hospital_id) references below.
     unique('patients_id_hospital_unique').on(t.id, t.hospitalId),
     index('patients_hospital_name_idx').on(t.hospitalId, t.name),
-    check('patients_age_range', sql`${t.age} between 0 and 150`),
     check('patients_sex_valid', oneOf(t.sex, SEXES)),
     check('patients_weight_positive', sql`${t.weightKg} > 0`),
     check('patients_allergy_status_valid', oneOf(t.allergyStatus, ALLERGY_STATUSES)),
+    check('patients_pregnancy_valid', oneOf(t.pregnancy, PREGNANCY_STATUSES)),
+    check('patients_kidney_valid', oneOf(t.kidney, KIDNEY_FUNCTIONS)),
+    check('patients_egfr_positive', sql`${t.egfr} > 0`),
+    check('patients_man_not_pregnant', sql`${t.sex} <> 'M' or ${t.pregnancy} = 'not_applicable'`),
   ],
 );
 

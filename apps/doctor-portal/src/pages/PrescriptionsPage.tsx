@@ -6,6 +6,7 @@ import {
   usePrescriptions,
   type Hospital,
   type User,
+  ageSexLabel,
 } from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
@@ -45,8 +46,7 @@ export function PrescriptionsPage({ hospital }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-ink-100">{r.patient.name}</span>
                     <span className="text-xs text-ink-500 font-mono">
-                      · {r.patient.age}
-                      {r.patient.sex} · {r.patient.weightKg}kg
+                      · {ageSexLabel(r.patient, r.signedAt)} · {r.patient.weightKg}kg
                     </span>
                     {r.patient.allergies.length > 0 && (
                       <span className="text-[10px] font-semibold text-rx-danger bg-rx-danger/15 border border-rx-danger/30 rounded px-1.5 py-0.5">

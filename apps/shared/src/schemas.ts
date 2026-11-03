@@ -15,6 +15,8 @@
 
 import { z } from 'zod';
 
+import { kidneyBand } from './patient';
+
 import type {
   AuditEvent,
   Brand,
@@ -160,23 +162,83 @@ export const userSchema = z
 
 export const allergyStatusSchema = z.enum(['not_recorded', 'none_known', 'recorded']);
 
-/** Allergies are listed exactly when the status says they were recorded. */
-const allergiesMatchStatus = {
-  check: (p: { allergyStatus: string; allergies: string[] }) =>
-    (p.allergyStatus === 'recorded') === p.allergies.length > 0,
-  message: 'List allergies with "recorded", and none with "none_known" or "not_recorded".',
-  path: ['allergyStatus'],
+export const pregnancyStatusSchema = z.enum([
+  'not_applicable',
+  'unknown',
+  'not_pregnant',
+  'pregnant',
+  'breastfeeding',
+]);
+export const kidneyFunctionSchema = z.enum([
+  'unknown',
+  'normal',
+  'moderate',
+  'severe',
+  'failure',
+  'dialysis',
+]);
+
+/** A real date of birth: not in the future, and not more than 150 years ago. */
+const dateOfBirth = z.iso.date().refine(
+  (d) => {
+    const t = Date.parse(`${d}T00:00:00Z`);
+    const now = Date.now();
+    return t <= now && t >= now - 150 * 365.25 * 24 * 3600 * 1000;
+  },
+  { message: 'Use a date of birth in the last 150 years, not in the future.' },
+);
+
+type PatientFacts = {
+  allergyStatus: string;
+  allergies: string[];
+  sex: string;
+  pregnancy: string;
+  kidney: string;
+  egfr?: number;
 };
+
+/**
+ * What must agree within a patient: allergies are listed exactly when the
+ * status says they were recorded; a man can't be pregnant; and an eGFR
+ * result decides the kidney band (unless the patient is on dialysis).
+ */
+function patientFactsAgree(p: PatientFacts, ctx: z.RefinementCtx) {
+  if ((p.allergyStatus === 'recorded') !== p.allergies.length > 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['allergyStatus'],
+      message: 'List allergies with "recorded", and none with "none_known" or "not_recorded".',
+    });
+  }
+  if (p.sex === 'M' && p.pregnancy !== 'not_applicable') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['pregnancy'],
+      message: 'Use "not_applicable" for a man.',
+    });
+  }
+  if (p.egfr !== undefined && p.kidney !== 'dialysis' && p.kidney !== kidneyBand(p.egfr)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['kidney'],
+      message: `An eGFR of ${p.egfr} is "${kidneyBand(p.egfr)}".`,
+    });
+  }
+}
 
 const patientFields = z.object({
   id: text,
   hospitalSlug: slug,
   name: text,
-  // Age 0 is an infant, so it is allowed; weight has to be a real reading.
-  age: z.int().min(0).max(150),
+  dateOfBirth,
+  dateOfBirthEstimated: z.literal(true).optional(),
   sex: sexSchema,
+  // Weight has to be a real reading; a newborn's is a few kilos.
   weightKg: z.number().positive().max(500),
   contact: z.string(),
+  pregnancy: pregnancyStatusSchema,
+  kidney: kidneyFunctionSchema,
+  egfr: z.number().positive().max(200).optional(),
   allergyStatus: allergyStatusSchema,
   allergies: z.array(text),
   activeProblems: z.array(text),
@@ -185,27 +247,25 @@ const patientFields = z.object({
   createdAt: timestamp,
 });
 
-export const patientSchema = patientFields.refine(allergiesMatchStatus.check, {
-  message: allergiesMatchStatus.message,
-  path: allergiesMatchStatus.path,
-});
+export const patientSchema = patientFields.superRefine(patientFactsAgree);
 
 /** What a client sends to add a patient (POST /api/hospitals/:slug/patients). */
 export const newPatientSchema = patientFields
   .pick({
     name: true,
-    age: true,
+    dateOfBirth: true,
+    dateOfBirthEstimated: true,
     sex: true,
     weightKg: true,
     contact: true,
+    pregnancy: true,
+    kidney: true,
+    egfr: true,
     allergyStatus: true,
     allergies: true,
     activeProblems: true,
   })
-  .refine(allergiesMatchStatus.check, {
-    message: allergiesMatchStatus.message,
-    path: allergiesMatchStatus.path,
-  });
+  .superRefine(patientFactsAgree);
 
 // --- Catalog -------------------------------------------------------------------
 

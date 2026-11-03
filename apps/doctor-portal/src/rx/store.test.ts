@@ -272,7 +272,9 @@ describe('sign', () => {
 describe('createPatient', () => {
   const input = {
     name: 'New Patient',
-    age: 30,
+    dateOfBirth: '1996-01-01',
+    pregnancy: 'unknown' as const,
+    kidney: 'unknown' as const,
     sex: 'F' as const,
     weightKg: 55,
     contact: '—',

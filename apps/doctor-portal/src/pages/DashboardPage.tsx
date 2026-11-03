@@ -1,6 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { LiveDot, Card, HospitalBadge, queries, type Hospital, type User } from '@swiftrx/shared';
+import {
+  LiveDot,
+  Card,
+  HospitalBadge,
+  queries,
+  type Hospital,
+  type User,
+  ageSexLabel,
+} from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
 
@@ -96,8 +104,7 @@ function DoctorDashboard({ hospital, user }: Props) {
                   <div>
                     <div className="text-sm font-medium text-ink-100">{p.name}</div>
                     <div className="text-[11px] text-ink-400 font-mono">
-                      {p.age}
-                      {p.sex} · {p.weightKg}kg
+                      {ageSexLabel(p)} · {p.weightKg}kg
                     </div>
                   </div>
                   {p.allergies.length > 0 && (

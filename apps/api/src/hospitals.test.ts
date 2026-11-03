@@ -212,7 +212,10 @@ describe('patients', () => {
       '/hospitals/city-hospital/patients',
       {
         name: 'Rahima Begum',
-        age: 34,
+        dateOfBirth: '1992-02-10',
+        pregnancy: 'pregnant',
+        kidney: 'moderate',
+        egfr: 45,
         sex: 'F',
         weightKg: 58,
         contact: '+880-1711-000000',
@@ -250,7 +253,9 @@ describe('patients', () => {
   it('refuses a patient whose allergies contradict the status, and the platform admin', async () => {
     const patient = {
       name: 'No Allergies',
-      age: 5,
+      dateOfBirth: '2021-06-01',
+      pregnancy: 'not_applicable',
+      kidney: 'unknown',
       sex: 'M',
       weightKg: 18,
       contact: '',
@@ -294,7 +299,9 @@ describe('limits and status', () => {
 
   const patient = (name: string) => ({
     name,
-    age: 30,
+    dateOfBirth: '1996-01-01',
+    pregnancy: 'unknown',
+    kidney: 'unknown',
     sex: 'F',
     weightKg: 55,
     contact: '',

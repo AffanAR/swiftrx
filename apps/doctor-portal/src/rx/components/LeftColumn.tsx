@@ -1,7 +1,14 @@
 import React from 'react';
 import { useApp, actions } from '../store';
 import { fuzzySearch } from '../search';
-import { LiveDot, StaggeredList, cx } from '@swiftrx/shared';
+import {
+  LiveDot,
+  StaggeredList,
+  cx,
+  ageSexLabel,
+  KIDNEY_LABELS,
+  PREGNANCY_LABELS,
+} from '@swiftrx/shared';
 
 // The patient search is an ARIA combobox: focus stays in the input, and
 // aria-activedescendant tells screen readers which option is highlighted.
@@ -130,10 +137,7 @@ export function LeftColumn({
               onMouseEnter={() => setActiveIdx(i)}
             >
               <span className="truncate">{p.name}</span>
-              <span className="text-xs text-ink-400 shrink-0 ml-2">
-                {p.age}
-                {p.sex}
-              </span>
+              <span className="text-xs text-ink-400 shrink-0 ml-2">{ageSexLabel(p)}</span>
             </li>
           ))}
           {!results.length && (
@@ -253,6 +257,52 @@ export function LeftColumn({
             ))}
           </ul>
         )}
+      </Section>
+
+      {/* What the dose and pregnancy checks need: shown, and flagged when unknown. */}
+      <Section title="Pregnancy & kidneys">
+        <dl className="text-sm px-2 space-y-1">
+          {current.pregnancy !== 'not_applicable' && (
+            <div className="flex justify-between gap-2">
+              <dt className="text-ink-400">Pregnancy</dt>
+              <dd
+                className={cx(
+                  (current.pregnancy === 'pregnant' || current.pregnancy === 'breastfeeding') &&
+                    'text-rx-danger font-medium',
+                  current.pregnancy === 'unknown' && 'text-rx-warn',
+                )}
+              >
+                {PREGNANCY_LABELS[current.pregnancy]}
+              </dd>
+            </div>
+          )}
+          <div className="flex justify-between gap-2">
+            <dt className="text-ink-400">Kidneys</dt>
+            <dd
+              className={cx(
+                'text-right',
+                current.kidney === 'unknown' && 'text-rx-warn',
+                current.kidney !== 'unknown' &&
+                  current.kidney !== 'normal' &&
+                  'text-rx-danger font-medium',
+              )}
+            >
+              {KIDNEY_LABELS[current.kidney]}
+              {current.egfr !== undefined && (
+                <span className="block text-[11px] font-mono text-ink-400">
+                  eGFR {current.egfr}
+                </span>
+              )}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-ink-400">Born</dt>
+            <dd className="font-mono text-xs">
+              {current.dateOfBirth}
+              {current.dateOfBirthEstimated && <span className="text-ink-400"> (est.)</span>}
+            </dd>
+          </div>
+        </dl>
       </Section>
     </aside>
   );

@@ -15,6 +15,7 @@ import {
   useInviteHospitalAdmin,
   useSetHospitalStatus,
   type Hospital,
+  ageSexLabel,
 } from '@swiftrx/shared';
 import { auditColor, auditTitle } from '../audit';
 
@@ -159,8 +160,7 @@ export function HospitalDetailPage() {
                 <div>
                   <div className="text-sm font-medium text-ink-100">{p.name}</div>
                   <div className="text-[11px] text-ink-400 font-mono">
-                    {p.age}
-                    {p.sex} · {p.contact}
+                    {ageSexLabel(p)} · {p.contact}
                   </div>
                 </div>
                 {p.allergies.length > 0 && (

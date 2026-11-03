@@ -1,4 +1,4 @@
-import { AnimatedNumber, LiveDot, ThemeToggle, cx } from '@swiftrx/shared';
+import { AnimatedNumber, LiveDot, ThemeToggle, cx, ageSexLabel } from '@swiftrx/shared';
 import { useApp, actions } from '../store';
 
 export function TopBar({ onSignOut }: { onSignOut: () => void }) {
@@ -39,8 +39,7 @@ export function TopBar({ onSignOut }: { onSignOut: () => void }) {
         <div className="text-sm">
           <span className="font-medium animate-slideInRight inline-block">{patient.name}</span>
           <span className="text-ink-400 ml-2">
-            {patient.age}
-            {patient.sex} · {patient.weightKg}kg · {patient.contact}
+            {ageSexLabel(patient)} · {patient.weightKg}kg · {patient.contact}
           </span>
         </div>
       </div>

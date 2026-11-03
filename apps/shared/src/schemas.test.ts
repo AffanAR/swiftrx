@@ -37,11 +37,24 @@ describe('schemas', () => {
     expect(userSchema.safeParse({ ...doctor, hospitalSlug: null }).success).toBe(false);
   });
 
-  it('allow an infant but not a weightless or negative-age patient', () => {
+  it('allow a newborn, but not a birth date in the future or a weightless patient', () => {
     const p = MOCK_PATIENTS[0];
-    expect(patientSchema.safeParse({ ...p, age: 0 }).success).toBe(true);
-    expect(patientSchema.safeParse({ ...p, age: -1 }).success).toBe(false);
+    const today = new Date().toISOString().slice(0, 10);
+    expect(patientSchema.safeParse({ ...p, dateOfBirth: today }).success).toBe(true);
+    expect(patientSchema.safeParse({ ...p, dateOfBirth: '3000-01-01' }).success).toBe(false);
+    expect(patientSchema.safeParse({ ...p, dateOfBirth: '01/02/1990' }).success).toBe(false);
     expect(patientSchema.safeParse({ ...p, weightKg: 0 }).success).toBe(false);
+  });
+
+  it('keep pregnancy and kidney facts consistent', () => {
+    const man = MOCK_PATIENTS.find((x) => x.sex === 'M')!;
+    const woman = MOCK_PATIENTS.find((x) => x.sex === 'F')!;
+    expect(patientSchema.safeParse({ ...man, pregnancy: 'pregnant' }).success).toBe(false);
+    expect(patientSchema.safeParse({ ...woman, pregnancy: 'pregnant' }).success).toBe(true);
+    // An eGFR of 45 is "moderate", whatever the band says, unless on dialysis.
+    expect(patientSchema.safeParse({ ...woman, egfr: 45, kidney: 'normal' }).success).toBe(false);
+    expect(patientSchema.safeParse({ ...woman, egfr: 45, kidney: 'moderate' }).success).toBe(true);
+    expect(patientSchema.safeParse({ ...woman, egfr: 8, kidney: 'dialysis' }).success).toBe(true);
   });
 
   it('reject a prescription with a zero dose, no medications or an empty override reason', () => {

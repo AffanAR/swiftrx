@@ -432,9 +432,8 @@ In this order:
   - **Usage.** `monthlyRxUsed` isn't stored. It should be counted from
     `prescriptions` for the current month, which makes the seed's demo figures
     (1247, 412, 31) disappear.
-  - **Patient age.** Patients still store an age, because the contract has no
-    date of birth, and an age goes stale. Switch to `date_of_birth` before
-    real patients.
+  - **Patient age.** Patients stored an age, which goes stale. (Done
+    2026-11-03 in Phase 3's first step: they store `date_of_birth`, below.)
   - **Not done.** There is no row-level security yet; that belongs to the
     server-side tenant-scoping item. The API isn't deployed: Render still runs
     only `serve.mjs`.
@@ -680,6 +679,24 @@ the server creates a signed Rx.
 
 #### Phase 3: Clinical safety v2 (≈2–3 weeks, plus clinician review)
 
+- [x] **Patient facts the checks need** (2026-11-03, migrations `0009` and
+      `0010`, checked in the browser):
+  - `dateOfBirth` replaces `age` (YYYY-MM-DD; `dateOfBirthEstimated` when it
+    came from an age the patient gave). `apps/shared/src/patient.ts` works out
+    the age on any date, so a signed Rx shows the age on the day it was
+    signed, and babies show months ("7 mo, F").
+  - `pregnancy`: not_applicable, unknown, not_pregnant, pregnant or
+    breastfeeding. A man, or a child under 10, is always not applicable
+    (`pregnancyFor`; the database refuses a pregnant man).
+  - `kidney`: unknown, normal (eGFR ≥ 60), moderate (30–59), severe (15–29),
+    failure (< 15) or dialysis, and the latest `egfr` when there is one,
+    which decides the band.
+  - The pad's new-patient form asks for a date of birth or an age (0 is
+    allowed now: babies under one couldn't be added before), pregnancy, kidney
+    function and eGFR; the pad shows them beside the allergies, in amber when
+    unknown. Existing databases get an estimated date of birth from the
+    stored age. Still missing: editing a patient's facts after they're
+    added (pregnancy and kidney function change).
 - [ ] Drug model: ATC class, route, strengths/forms, and dose rules (mg/kg/day
       range, max daily dose, age bands).
 - [ ] Checks:

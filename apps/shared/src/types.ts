@@ -161,14 +161,35 @@ export interface User {
 
 export type AllergyStatus = 'not_recorded' | 'none_known' | 'recorded';
 
+/**
+ * Whether a prescription could reach an unborn or breastfed baby.
+ * "not_applicable" for men and young children; "unknown" when nobody asked.
+ */
+export type PregnancyStatus =
+  'not_applicable' | 'unknown' | 'not_pregnant' | 'pregnant' | 'breastfeeding';
+
+/**
+ * Kidney function, in the bands doses are adjusted by (eGFR in
+ * mL/min/1.73 m²): normal ≥ 60, moderate 30–59, severe 15–29, failure < 15,
+ * or on dialysis. "unknown" when there's no result.
+ */
+export type KidneyFunction = 'unknown' | 'normal' | 'moderate' | 'severe' | 'failure' | 'dialysis';
+
 export interface Patient {
   id: string;
   hospitalSlug: string; // tenant key
   name: string;
-  age: number;
+  /** YYYY-MM-DD. An age goes stale; the date doesn't (ageOn() in patient.ts). */
+  dateOfBirth: string;
+  /** Worked out from an age the patient gave, not from a document. */
+  dateOfBirthEstimated?: true;
   sex: 'M' | 'F';
   weightKg: number;
   contact: string;
+  pregnancy: PregnancyStatus;
+  kidney: KidneyFunction;
+  /** The latest eGFR result, mL/min/1.73 m², when there is one. */
+  egfr?: number;
   /**
    * Whether anyone asked: "none_known" (asked, none) and "not_recorded" (not
    * asked yet) both have no allergies listed, and only the first is safe.

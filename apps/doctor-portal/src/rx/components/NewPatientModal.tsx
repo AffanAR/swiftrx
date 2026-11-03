@@ -1,15 +1,45 @@
 import React from 'react';
 import { useApp, actions } from '../store';
-import { Kbd, cx } from '@swiftrx/shared';
+import {
+  KIDNEY_LABELS,
+  Kbd,
+  PREGNANCY_LABELS,
+  cx,
+  dateOfBirthForAge,
+  kidneyBand,
+  pregnancyFor,
+  type KidneyFunction,
+  type PregnancyStatus,
+} from '@swiftrx/shared';
 
 type FieldKey = 'name' | 'age' | 'sex' | 'weightKg' | 'contact' | 'allergy' | 'problem';
+
+const PREGNANCY_CHOICES: PregnancyStatus[] = [
+  'unknown',
+  'not_pregnant',
+  'pregnant',
+  'breastfeeding',
+  'not_applicable',
+];
+const KIDNEY_CHOICES: KidneyFunction[] = [
+  'unknown',
+  'normal',
+  'moderate',
+  'severe',
+  'failure',
+  'dialysis',
+];
 
 export function NewPatientModal() {
   const open = useApp((s) => s.showNewPatient);
   const saving = useApp((s) => s.savingPatient);
   const [name, setName] = React.useState('');
   const [age, setAge] = React.useState('');
+  const [dateOfBirth, setDateOfBirth] = React.useState('');
   const [sex, setSex] = React.useState<'M' | 'F'>('M');
+  const [pregnancy, setPregnancy] = React.useState<PregnancyStatus>('unknown');
+  const [kidney, setKidney] = React.useState<KidneyFunction>('unknown');
+  const [egfr, setEgfr] = React.useState('');
   const [weight, setWeight] = React.useState('');
   const [contact, setContact] = React.useState('');
   const [allergies, setAllergies] = React.useState<string[]>([]);
@@ -25,7 +55,11 @@ export function NewPatientModal() {
       // Reset + focus name field next frame
       setName('');
       setAge('');
+      setDateOfBirth('');
       setSex('M');
+      setPregnancy('unknown');
+      setKidney('unknown');
+      setEgfr('');
       setWeight('');
       setContact('');
       setAllergies([]);
@@ -61,9 +95,14 @@ export function NewPatientModal() {
   const nameOk = name.trim().length >= 2;
   const ageNum = parseInt(age, 10);
   const weightNum = parseFloat(weight);
-  const ageOk = !Number.isNaN(ageNum) && ageNum > 0 && ageNum < 130;
+  // A date of birth wins; an age alone gives an estimated one. 0 years is a
+  // baby, so it's allowed.
+  const dobOk = /^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) && Date.parse(dateOfBirth) <= Date.now();
+  const ageOk = dobOk || (/^\d+$/.test(age.trim()) && ageNum >= 0 && ageNum < 130);
+  const egfrNum = parseFloat(egfr);
+  const egfrOk = egfr.trim() === '' || (egfrNum > 0 && egfrNum <= 200);
   const weightOk = !Number.isNaN(weightNum) && weightNum > 0 && weightNum < 400;
-  const canSubmit = nameOk && ageOk && weightOk && !saving;
+  const canSubmit = nameOk && ageOk && weightOk && egfrOk && !saving;
 
   const addChip = (kind: 'allergy' | 'problem', value: string) => {
     const v = value.trim();
@@ -88,15 +127,26 @@ export function NewPatientModal() {
   const submit = async () => {
     if (saving) return;
     if (!canSubmit) {
-      actions.setBanner({ kind: 'warn', text: 'Fill name, age, and weight to continue.' });
+      actions.setBanner({
+        kind: 'warn',
+        text: 'Fill name, age or date of birth, and weight to continue.',
+      });
       return;
     }
+    const birth = dobOk
+      ? { dateOfBirth }
+      : { dateOfBirth: dateOfBirthForAge(ageNum), dateOfBirthEstimated: true as const };
     const id = await actions.createPatient({
       name: name.trim(),
-      age: ageNum,
+      ...birth,
       sex,
       weightKg: weightNum,
       contact: contact.trim() || '—',
+      pregnancy: pregnancyFor({ sex, dateOfBirth: birth.dateOfBirth }, pregnancy),
+      // An eGFR result decides the band, unless the patient is on dialysis.
+      ...(egfr.trim() !== ''
+        ? { egfr: egfrNum, kidney: kidney === 'dialysis' ? 'dialysis' : kidneyBand(egfrNum) }
+        : { kidney }),
       allergyStatus: allergies.length > 0 ? 'recorded' : noneKnown ? 'none_known' : 'not_recorded',
       allergies,
       activeProblems: problems,
@@ -133,8 +183,8 @@ export function NewPatientModal() {
               New Patient
             </h3>
             <p className="text-xs text-ink-400">
-              Required: name · age · weight &nbsp;·&nbsp; <Kbd>Esc</Kbd> to close, <Kbd>⌘↵</Kbd> to
-              save
+              Required: name · age or date of birth · weight &nbsp;·&nbsp; <Kbd>Esc</Kbd> to close,{' '}
+              <Kbd>⌘↵</Kbd> to save
             </p>
           </div>
           <button
@@ -164,7 +214,7 @@ export function NewPatientModal() {
             />
           </Row>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <Row label="Age">
               <input
                 inputMode="numeric"
@@ -176,6 +226,15 @@ export function NewPatientModal() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && ageOk) setActiveField('weightKg');
                 }}
+              />
+            </Row>
+            <Row label="or date of birth">
+              <input
+                type="date"
+                value={dateOfBirth}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className={inputCls(false, dateOfBirth === '' || dobOk)}
               />
             </Row>
             <Row label="Sex">
@@ -207,6 +266,49 @@ export function NewPatientModal() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && weightOk) setActiveField('contact');
                 }}
+              />
+            </Row>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <Row label="Pregnancy">
+              <select
+                value={sex === 'M' ? 'not_applicable' : pregnancy}
+                disabled={sex === 'M'}
+                onChange={(e) => setPregnancy(e.target.value as PregnancyStatus)}
+                className={inputCls(false, true)}
+              >
+                {PREGNANCY_CHOICES.map((p) => (
+                  <option key={p} value={p}>
+                    {PREGNANCY_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+            </Row>
+            <Row label="Kidney function">
+              <select
+                value={
+                  egfr.trim() !== '' && egfrOk && kidney !== 'dialysis'
+                    ? kidneyBand(egfrNum)
+                    : kidney
+                }
+                onChange={(e) => setKidney(e.target.value as KidneyFunction)}
+                className={inputCls(false, true)}
+              >
+                {KIDNEY_CHOICES.map((k) => (
+                  <option key={k} value={k}>
+                    {KIDNEY_LABELS[k]}
+                  </option>
+                ))}
+              </select>
+            </Row>
+            <Row label="eGFR (if known)">
+              <input
+                inputMode="decimal"
+                value={egfr}
+                onChange={(e) => setEgfr(e.target.value)}
+                placeholder="mL/min/1.73 m²"
+                className={inputCls(false, egfrOk)}
               />
             </Row>
           </div>
@@ -255,7 +357,7 @@ export function NewPatientModal() {
             {canSubmit ? (
               <span className="text-rx-accent">Ready to create</span>
             ) : (
-              <span>Need name, age, and weight</span>
+              <span>Need name, age or date of birth, and weight</span>
             )}
           </div>
           <div className="flex items-center gap-2">

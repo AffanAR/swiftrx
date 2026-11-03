@@ -8,6 +8,9 @@ import {
   usePatients,
   type Hospital,
   type User,
+  ageSexLabel,
+  dateOfBirthForAge,
+  pregnancyFor,
 } from '@swiftrx/shared';
 
 type Props = { hospital: Hospital; user: User };
@@ -38,16 +41,20 @@ export function PatientsPage({ hospital }: Props) {
     const name = form.name.trim();
     const age = parseInt(form.age, 10);
     const weight = parseFloat(form.weight);
-    if (!name || !age || !weight) return;
+    // 0 years is a baby, so only a missing or bad age is refused.
+    if (!name || !(age >= 0 && age < 130) || !(weight > 0)) return;
     createPatient.mutate(
       {
         hospitalSlug: hospital.slug,
         name,
-        age,
+        dateOfBirth: dateOfBirthForAge(age),
+        dateOfBirthEstimated: true,
         sex: form.sex,
         weightKg: weight,
         contact: form.contact.trim() || '—',
-        // This short form doesn't ask about allergies; the Rx pad's form does.
+        // This short form asks none of these; the Rx pad's form does.
+        pregnancy: pregnancyFor({ sex: form.sex, dateOfBirth: dateOfBirthForAge(age) }, 'unknown'),
+        kidney: 'unknown',
         allergyStatus: 'not_recorded',
         allergies: [],
         activeProblems: [],
@@ -102,8 +109,7 @@ export function PatientsPage({ hospital }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-ink-100">{p.name}</div>
                 <div className="text-[11px] text-ink-400 font-mono">
-                  {p.age}
-                  {p.sex} · {p.weightKg}kg · {p.contact}
+                  {ageSexLabel(p)} · {p.weightKg}kg · {p.contact}
                 </div>
                 {p.activeProblems.length > 0 && (
                   <div className="mt-1 text-[11px] text-ink-300">

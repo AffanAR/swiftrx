@@ -2,11 +2,11 @@ import React from 'react';
 import {
   afterWrite,
   api,
-  type AllergyStatus,
   type Brand,
   type Catalog,
   type Diagnosis,
   type Investigation,
+  type NewPatient,
   type Patient,
   type PrescriptionDraft,
   type RxDesign,
@@ -27,16 +27,8 @@ export interface DoctorIdentity {
   hospitalSlug: string;
 }
 
-export interface NewPatientInput {
-  name: string;
-  age: number;
-  sex: 'M' | 'F';
-  weightKg: number;
-  contact: string;
-  allergyStatus: AllergyStatus;
-  allergies: string[];
-  activeProblems: string[];
-}
+/** A new patient as the pad's form collects it; the hospital is the doctor's. */
+export type NewPatientInput = Omit<NewPatient, 'hospitalSlug'>;
 
 export interface AppState {
   // Patient

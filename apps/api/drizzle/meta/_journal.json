@@ -64,6 +64,20 @@
       "when": 1793651082638,
       "tag": "0008_prescriptions_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793716722924,
+      "tag": "0009_patient_birth_pregnancy_kidney",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793716744966,
+      "tag": "0010_drop_patient_age",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@
 
 import { DEMO_MODE } from './config';
 import { medicineLabel } from './medicine';
+import { ageSexLabel } from './patient';
 import { DEFAULT_RX_DESIGN, type RxDesign, type SignedRx } from './types';
 
 /** Page margin used by the print @page rule and the admin preview. */
@@ -127,7 +128,7 @@ export function renderRxHtml(
               <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;">Patient</div>
               <div style="font-size:15px;font-weight:700;margin-top:2px;">${escape(rx.patient.name)}</div>
               <div style="font-size:11px;color:#475569;font-family:'JetBrains Mono',ui-monospace,monospace;">
-                ${num(rx.patient.age)}${escape(rx.patient.sex)} &middot; ${num(rx.patient.weightKg)}kg &middot; ${escape(rx.patient.contact)}
+                ${escape(ageSexLabel(rx.patient, rx.signedAt))} &middot; ${num(rx.patient.weightKg)}kg &middot; ${escape(rx.patient.contact)}
               </div>
               ${allergyBanner}
             </div>
